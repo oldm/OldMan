@@ -1,0 +1,13 @@
+log
+.pydevproject
+.directory
+*.o
+*~
+*.log
+*.pyc
+*.settings/
+env/
+dist/
+*egg-info/
+.idea/
+settings.cfg
