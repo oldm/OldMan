@@ -12,12 +12,6 @@ class RequiredAttributeError(Exception):
 
 
 AttributeMetadata = namedtuple("AttributeMetadata", ["name", "property", "language"])
-# class AttributeMetadata(object):
-#
-#     def __init__(self, name, property, language=None):
-#         self.name = name
-#         self.property = property
-#         self.language = language
 
 
 class Attribute(object):
@@ -44,7 +38,14 @@ class Attribute(object):
         """
             Attributes of the same property
         """
-        return self.property.attributes.difference([self])
+        return self.supported_property.attributes.difference([self])
+
+    def is_valid(self, instance):
+        try:
+            self.check_validity(instance)
+            return True
+        except RequiredAttributeError:
+            return False
 
     def check_validity(self, instance):
         if self.is_locally_satisfied(instance):
@@ -53,9 +54,9 @@ class Attribute(object):
         for other in self.other_attributes:
             if other.is_locally_satisfied(instance):
                 return
-        raise RequiredAttributeError()
+        raise RequiredAttributeError(self.name)
 
-    def is_locally_satified(self, instance):
+    def is_locally_satisfied(self, instance):
         if not self.is_required:
             return True
         return instance in self.data
