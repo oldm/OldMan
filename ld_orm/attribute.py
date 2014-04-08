@@ -63,9 +63,6 @@ class DataAttribute(object):
 
     def __get__(self, instance, owner):
         value = self.data.get(instance, None)
-        # # TODO: keep it? Should have been detected earlier
-        # if self.is_required and value is None:
-        #     self.check_validity(instance)
         return value
 
     def __set__(self, instance, value):
@@ -75,6 +72,11 @@ class DataAttribute(object):
         self.data[instance] = value
 
     def _check_type(self, value):
+        if isinstance(value, (list, set)):
+            for v in value:
+                self._check_type(v)
+            return
+
         if not isinstance(value,  self.value_type):
             raise DataAttributeTypeError("{0} is not a {1}".format(value, self.value_type))
 

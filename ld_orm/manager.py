@@ -36,6 +36,10 @@ class InstanceManager(object):
             instance_graph += self.graph.triples((URIRef(id), None, None))
             return self._new_instance(id, instance_graph)
 
+        else:
+            # TODO: continue
+            raise NotImplementedError()
+
     def _new_instance(self, id, instance_graph):
         if len(instance_graph) == 0:
             return None

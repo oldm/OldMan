@@ -75,17 +75,22 @@ class ModelTest(TestCase):
                     "@id": "foaf:name",
                     "@type": "xsd:string"
                 },
-                "mboxes": "foaf:mbox",
+                "mboxes": {
+                    "@id": "foaf:mbox",
+                    "@type": "xsd:string"
+                },
                 "blogs": {
                     "@id": "foaf:weblog",
                     "@type": "@id"
                 },
                 "short_bio_fr": {
                     "@id": "bio:olb",
+                    "@type": "xsd:string",
                     "@language": "fr"
                 },
                 "short_bio_en": {
                     "@id": "bio:olb",
+                    "@type": "xsd:string",
                     "@language": "en"
                 }
             }
@@ -97,7 +102,6 @@ class ModelTest(TestCase):
             ModelTest.LocalPerson = self.model_generator.generate("LocalPerson", self.person_context,
                                                                   self.schema_graph, self.data_graph,
                                                                   uri_prefix="http://localhost/persons/")
-
 
     def test_new_instances(self):
         name = "Toto"
@@ -117,6 +121,9 @@ class ModelTest(TestCase):
         self.assertTrue(p1.is_valid())
         p1.save()
 
+        # Prevent a strange bug
+        self.data_graph = p1.storage_graph
+
         self.assertEquals(name, p1.name)
         self.assertEquals(blogs, p1.blogs)
 
@@ -131,25 +138,37 @@ class ModelTest(TestCase):
         self.assertFalse(bool(self.data_graph.query("""ASK {?x foaf:name "Robert" }""")))
 
         roger_email1 = "roger@localhost"
-        p2 = self.LocalPerson(name="Roger", mboxes=[roger_email1], short_bio_fr="Spécialiste en tests.")
+        roger_name = "Roger"
+        p2 = self.LocalPerson(name=roger_name, mboxes=[roger_email1], short_bio_fr="Spécialiste en tests.")
         self.assertTrue(p2.is_valid())
         p2.save()
         # Saved
-        print self.data_graph.serialize(format="turtle")
-        self.assertTrue(bool(self.data_graph.query("""ASK {?x foaf:name "Roger" }""")))
+        #print self.data_graph.serialize(format="turtle")
+        self.assertEquals(self.data_graph, p2.storage_graph)
+        name_query = """ASK {?x foaf:name "%s"^^xsd:string }"""
+        self.assertTrue(bool(self.data_graph.query(name_query % roger_name )))
 
         # Change email addresses
         roger_email2 = "roger@example.com"
         roger_email3 = "roger@example.org"
         p2.mboxes=[roger_email2, roger_email3]
         p2.save()
-        mbox_query = """ASK {?x foaf:mbox %s }"""
-        self.assertFalse(bool(self.data_graph.query(mbox_query % roger_email1 )))
+        mbox_query = """ASK {?x foaf:mbox "%s"^^xsd:string }"""
         self.assertTrue(bool(self.data_graph.query(mbox_query % roger_email2 )))
         self.assertTrue(bool(self.data_graph.query(mbox_query % roger_email3 )))
+        # Has been removed
+        self.assertFalse(bool(self.data_graph.query(mbox_query % roger_email1 )))
 
+        gertrude_uri = "http://localhost/persons/gertrude"
+        p3 = self.LocalPerson(id=gertrude_uri, name="Gertrude", mboxes=["gertrude@localhost"])
+        self.assertFalse(p3.is_valid())
+        p3.short_bio_fr = "Enthusiasm is key."
+        p3.save()
+        self.assertTrue(bool(self.data_graph.query("ASK { <%s> ?p ?o }" % gertrude_uri)))
 
-        p3 = self.LocalPerson(id="http://localhost/persons/gertrude", name="Gertrude", mboxes=["gertrude@localhost"])
+        p4 = self.LocalPerson.objects.get(name=roger_name)
+        self.assertEquals(p2.id, p4.id)
+        self.assertEquals(p2, p4)
 
 
     def test_existing_instances(self):

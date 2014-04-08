@@ -30,8 +30,12 @@ class ModelBase(type):
                     raise MissingClassAttributeError("%s is required for class %s" % (field, name))
             attributes["context"] = mcs.clean_context(attributes["context"])
 
-            if "id" in attributes:
-                raise ReservedAttributeError("id is reserved")
+            # Should type be reserved?
+            # TODO: merge it with class_uri ?
+            reserved_attributes = ["id", "type"]
+            for field in reserved_attributes:
+                if field in attributes:
+                    raise ReservedAttributeError("%s is reserved" % field)
 
         # Descriptors
         attributes["_attributes"] = {k: v for k, v in attributes.iteritems()
@@ -51,7 +55,7 @@ class ModelBase(type):
         """
             TODO: - make sure context is structured like this:
                 {"@context": ...}
-                 - make sure "id": "@id" is in
+                 - make sure "id": "@id" and "type": "@type" are in
         """
         return context
 
@@ -122,10 +126,9 @@ class Model(object):
         #UGLY!! To be removed
         js = self.to_json()
         #print js
-        #print Graph().parse(data=js, context=self.context, format="json-ld").serialize(format="turtle")
+       # print Graph().parse(data=js, context=self.context, format="json-ld").serialize(format="turtle")
         self.storage_graph.parse(data=js, context=self.context, format="json-ld")
-
-
+        #print self.storage_graph.serialize(format="trig")
 
     def to_json(self):
         """
@@ -135,8 +138,12 @@ class Model(object):
         return json.dumps(dct)
 
     def to_dict(self):
-        return { name: self._convert_value(getattr(self, name))
+        dct = { name: self._convert_value(getattr(self, name))
                  for name in self._attributes}
+        dct["id"] = self.id
+        #TODO: class URI
+        dct["type"] = self.class_uri
+        return dct
 
     def _convert_value(self, value):
         """
