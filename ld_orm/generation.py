@@ -1,8 +1,11 @@
 import json
 from urlparse import urlparse
 from exceptions import Exception
+from uuid import uuid1
 from rdflib import Graph
+#from rdflib.plugins.sparql import prepareQuery
 from .model import Model
+
 
 # logger = logging.getLogger("ld_orm")
 # ch = logging.StreamHandler()
@@ -11,8 +14,8 @@ from .model import Model
 
 
 def default_model_generator():
-    from ld_orm.extraction.attribute import AttributeExtractor
-    attr_extractor = AttributeExtractor()
+    from ld_orm.extraction.attribute import DataAttributeExtractor
+    attr_extractor = DataAttributeExtractor()
     return ModelGenerator(attr_extractor)
 
 
@@ -29,15 +32,24 @@ class ModelGenerator(object):
     def __init__(self, attr_manager):
         self.attr_manager = attr_manager
 
-    def generate(self, class_name, context, schema_graph, write_graph):
+    def generate(self, class_name, context, schema_graph, storage_graph, uri_prefix=None, uri_generator=None):
         """
             Generates a model class
         """
         class_uri = self._extract_class_uri(class_name, context)
         attributes = self.attr_manager.extract(class_uri, context, schema_graph)
+
+        if uri_generator:
+            id_generator = uri_generator
+        elif uri_prefix:
+            id_generator = RandomPrefixedUriGenerator(prefix=uri_prefix)
+        else:
+            raise Exception("Please specify uri_prefix or uri_generator")
+
         attributes.update({"class_uri": class_uri,
                            "context": context,
-                           "write_graph": write_graph})
+                           "id_generator": id_generator,
+                           "storage_graph": storage_graph})
         return type(class_name, (Model,), attributes)
 
     def _extract_class_uri(self, class_name, context):
@@ -53,3 +65,21 @@ class ModelGenerator(object):
         if result.scheme == "file":
             raise UnknownClassNameError("Deduced URI %s is not a valid HTTP URL" % class_uri)
         return class_uri
+
+
+class UriGenerator(object):
+
+    def __init__(self, **kwargs):
+        pass
+
+    def generate(self, instance):
+        raise NotImplementedError()
+
+
+class RandomPrefixedUriGenerator(UriGenerator):
+
+    def __init__(self, **kwargs):
+        self.prefix = kwargs["prefix"]
+
+    def generate(self, instance):
+        return "%s%s"%(self.prefix, uuid1().hex)

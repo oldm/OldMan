@@ -1,8 +1,8 @@
 from .property import HydraPropertyExtractor
 from .context import JsonLdContextAttributeMdExtractor
-from ..attribute import StringAttribute, Attribute
+from ..attribute import StringAttribute, DataAttribute
 
-class AttributeExtractor(object):
+class DataAttributeExtractor(object):
     """ Extracts Attribute objects for a given class.
 
         Extensible in two ways:
@@ -15,7 +15,7 @@ class AttributeExtractor(object):
 
     def __init__(self, property_extractors=[], attr_md_extractors=[], use_hydra=True,
                  use_jsonld_context=True):
-        self._class_selector = AttributeClassSelector()
+        self._class_selector = DataAttributeClassSelector()
         self._property_extractors = property_extractors
         self._attr_md_extractors = attr_md_extractors
         if use_hydra:
@@ -57,7 +57,7 @@ class AttributeExtractor(object):
         return {a.name: a for a in attrs}
 
 
-class AttributeClassSelector(object):
+class DataAttributeClassSelector(object):
 
     def __init__(self, special_properties={}, include_default_basic_types=True):
         """
@@ -79,6 +79,6 @@ class AttributeClassSelector(object):
         cls = self._special_properties.get(property.property_uri, None)
         # If not a special property
         if cls is None:
-            cls = self._basic_types.get(property.basic_type_uri, Attribute)
+            cls = self._basic_types.get(property.basic_type_uri, DataAttribute)
         return cls
 

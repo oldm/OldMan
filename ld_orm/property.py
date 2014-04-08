@@ -1,5 +1,5 @@
 from exceptions import Exception
-from .attribute import AttributeMetadata
+from .attribute import DataAttributeMetadata
 
 class AlreadyDeclaredBasicTypeError(Exception):
     pass
@@ -85,7 +85,7 @@ class SupportedProperty(object):
         #TODO: throw an error instead?
         assert(len([md for md in self._tmp_attr_mds
                     if md.name == name]) == 0)
-        self._tmp_attr_mds.append(AttributeMetadata(name, self, language))
+        self._tmp_attr_mds.append(DataAttributeMetadata(name, self, language))
 
     def generate_attributes(self, attr_class_selector):
         """

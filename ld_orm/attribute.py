@@ -3,18 +3,18 @@ from collections import namedtuple
 from weakref import WeakKeyDictionary
 
 
-class AttributeTypeError(Exception):
+class DataAttributeTypeError(Exception):
     pass
 
 
-class RequiredAttributeError(Exception):
+class RequiredDataAttributeError(Exception):
     pass
 
 
-AttributeMetadata = namedtuple("AttributeMetadata", ["name", "property", "language"])
+DataAttributeMetadata = namedtuple("DataAttributeMetadata", ["name", "property", "language"])
 
 
-class Attribute(object):
+class DataAttribute(object):
 
     def __init__(self, metadata, value_type=object):
         self.metadata = metadata
@@ -44,7 +44,7 @@ class Attribute(object):
         try:
             self.check_validity(instance)
             return True
-        except RequiredAttributeError:
+        except RequiredDataAttributeError:
             return False
 
     def check_validity(self, instance):
@@ -54,7 +54,7 @@ class Attribute(object):
         for other in self.other_attributes:
             if other.is_locally_satisfied(instance):
                 return
-        raise RequiredAttributeError(self.name)
+        raise RequiredDataAttributeError(self.name)
 
     def is_locally_satisfied(self, instance):
         if not self.is_required:
@@ -63,9 +63,9 @@ class Attribute(object):
 
     def __get__(self, instance, owner):
         value = self.data.get(instance, None)
-        # TODO: keep it? Should have been detected earlier
-        if self.is_required and value is None:
-            self.check_validity(instance)
+        # # TODO: keep it? Should have been detected earlier
+        # if self.is_required and value is None:
+        #     self.check_validity(instance)
         return value
 
     def __set__(self, instance, value):
@@ -76,20 +76,20 @@ class Attribute(object):
 
     def _check_type(self, value):
         if not isinstance(value,  self.value_type):
-            raise AttributeTypeError("{0} is not a {1}".format(value, self.value_type))
+            raise DataAttributeTypeError("{0} is not a {1}".format(value, self.value_type))
 
 
-class StringAttribute(Attribute):
+class StringAttribute(DataAttribute):
     def __init__(self, metadata):
-        Attribute.__init__(self, metadata, str)
+        DataAttribute.__init__(self, metadata, str)
 
 
-class IntegerAttribute(Attribute):
+class IntegerAttribute(DataAttribute):
     def __init__(self, metadata):
-        Attribute.__init__(metadata, int)
+        DataAttribute.__init__(metadata, int)
 
 
-class EmailAttribute(Attribute):
+class EmailAttribute(DataAttribute):
     """ TODO: implement it """
     def __init__(self, metadata):
         super(self).__init__(metadata, str)

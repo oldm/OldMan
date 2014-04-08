@@ -5,7 +5,7 @@ from rdflib import ConjunctiveGraph, URIRef
 import json
 
 from ld_orm import default_model_generator
-from ld_orm.attribute import AttributeTypeError, RequiredAttributeError
+from ld_orm.attribute import DataAttributeTypeError, RequiredDataAttributeError
 
 class ModelTest(TestCase):
 
@@ -23,8 +23,7 @@ class ModelTest(TestCase):
                 {
                     "myvoc": self.my_voc_prefix,
                     "foaf": "http://xmlns.com/foaf/0.1/",
-                    "bio": "http://purl.org/vocab/bio/0.1/",
-                    "short_bio": "bio:olb"
+                    "bio": "http://purl.org/vocab/bio/0.1/"
                 },
                 "http://www.w3.org/ns/hydra/core"
             ],
@@ -52,7 +51,7 @@ class ModelTest(TestCase):
                     "writeonly": False
                 },
                 {
-                    "property": "short_bio",
+                    "property": "bio:olb",
                     "required": True,
                     "readonly": False,
                     "writeonly": False
@@ -61,7 +60,6 @@ class ModelTest(TestCase):
         }
 
         self.schema_graph.parse(data=json.dumps(self.local_person_def), format="json-ld")
-        self.schema_graph.parse(self.bcogrel_uri)
 
         self.person_context = {
             "@context": {
@@ -69,6 +67,8 @@ class ModelTest(TestCase):
                 "foaf": "http://xmlns.com/foaf/0.1/",
                 "bio": "http://purl.org/vocab/bio/0.1/",
                 "xsd": "http://www.w3.org/2001/XMLSchema#",
+                "id": "@id",
+                "type": "@type",
                 "LocalPerson": "myvoc:LocalPerson",
                 "Person": "foaf:Person",
                 "name": {
@@ -95,7 +95,9 @@ class ModelTest(TestCase):
         #print self.graph.serialize(format="turtle")
         if ModelTest.LocalPerson is None:
             ModelTest.LocalPerson = self.model_generator.generate("LocalPerson", self.person_context,
-                                                                  self.schema_graph, self.data_graph)
+                                                                  self.schema_graph, self.data_graph,
+                                                                  uri_prefix="http://localhost/persons/")
+
 
     def test_new_instances(self):
         name = "Toto"
@@ -109,7 +111,7 @@ class ModelTest(TestCase):
         #TODO: should sent a exception because
         # short bio is missing
         self.assertFalse(p1.is_valid())
-        self.assertRaises(RequiredAttributeError, p1.save)
+        self.assertRaises(RequiredDataAttributeError, p1.save)
 
         p1.short_bio_en = "It is my life."
         self.assertTrue(p1.is_valid())
@@ -118,10 +120,10 @@ class ModelTest(TestCase):
         self.assertEquals(name, p1.name)
         self.assertEquals(blogs, p1.blogs)
 
-        # Because of descriptors, these attributes should not appear in __dict__
-        self.assertEquals(vars(p1), {})
+        # Because of descriptors, these attributes should not appear in __dict__ except id
+        self.assertEquals(vars(p1).keys(), ["id"])
 
-        with self.assertRaises(AttributeTypeError):
+        with self.assertRaises(DataAttributeTypeError):
             p1.name = 2
         p1.name = "Robert"
 
@@ -131,7 +133,9 @@ class ModelTest(TestCase):
         roger_email1 = "roger@localhost"
         p2 = self.LocalPerson(name="Roger", mboxes=[roger_email1], short_bio_fr="Spécialiste en tests.")
         self.assertTrue(p2.is_valid())
+        p2.save()
         # Saved
+        print self.data_graph.serialize(format="turtle")
         self.assertTrue(bool(self.data_graph.query("""ASK {?x foaf:name "Roger" }""")))
 
         # Change email addresses
@@ -145,27 +149,38 @@ class ModelTest(TestCase):
         self.assertTrue(bool(self.data_graph.query(mbox_query % roger_email3 )))
 
 
-        with self.assertRaises(RequiredAttributeError):
-            self.LocalPerson(name="Gertrude", mboxes=["gertrude@localhost"])
-
-
-
+        p3 = self.LocalPerson(id="http://localhost/persons/gertrude", name="Gertrude", mboxes=["gertrude@localhost"])
 
 
     def test_existing_instances(self):
-        # Declare a LocalPerson
-        self.data_graph.parse(data=json.dumps({"@id" : self.bcogrel_uri,
-                                    "@type": "LocalPerson",
-                                    # Required (missing in my WebID)
-                                    "mboxes": [
-                                        "bcogrel@example.com"
-                                    ]
-                                    }),
-                    context=self.person_context,
-                    format="json-ld")
+        # My WebID
+        self.data_graph.parse(self.bcogrel_uri)
 
-        #TODO: get a LocalPerson from this entry
-        #print self.graph.serialize(format="trig")
+        me = self.LocalPerson.objects.get(id=self.bcogrel_uri)
+        self.assertFalse(me.is_valid())
+
+        mboxes = ["bcogrel@example.com", "bcogrel@example.org"]
+        self.data_graph.parse(data=json.dumps({"@id" : self.bcogrel_uri,
+                                   "@type": "LocalPerson",
+                                   # Required (missing in my WebID)
+                                   "mboxes": mboxes
+                                   }),
+                   context=self.person_context,
+                   format="json-ld")
+
+        #print self.data_graph.serialize(format="turtle")
+
+        # Loaded from the cache
+        me = self.LocalPerson.objects.get(id=self.bcogrel_uri)
+        # Outdated because of the out-of-band update
+        self.assertFalse(me.is_valid())
+
+        # Clear the cache and it works!
+        self.LocalPerson.objects.clear()
+        me = self.LocalPerson.objects.get(id=self.bcogrel_uri)
+        self.assertNotEquals(me.mboxes, None)
+        self.assertEquals(set(me.mboxes), set(mboxes))
+        me.is_valid()
 
 
 
