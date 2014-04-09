@@ -84,9 +84,15 @@ class Model(object):
         uri = URIRef(id)
         for attr_name, attr in instance._attributes.iteritems():
             property_uri = URIRef(attr.supported_property.property_uri)
+            language = attr.metadata.language
 
             results = subgraph.objects(uri, property_uri)
-            f = lambda x: str(x) if isinstance(r, Literal) else x
+            # Filter language
+            if language:
+                results = [r for r in results if isinstance(r, Literal)
+                           and r._language == language]
+
+            f = lambda x: unicode(x) if isinstance(x, Literal) else x
             values = [f(r) for r in results]
             #print "Results for %s: %s" %(attr_name, values)
 
@@ -115,26 +121,33 @@ class Model(object):
                 - Warns if there is some non-descriptor ("Attribute") attributes (will not be saved)
                 - Saves descriptor attributes
         """
+
+        # Checks
         for attr in self._attributes.values():
             # May raise an RequiredAttributeError
             attr.check_validity(self)
 
         #TODO: Warns
 
-        #TODO: remove former values
+        formers = {}
+        news = {}
+        for attr in self._attributes.values():
+            if not attr.has_new_value(self):
+                continue
+            property_uri = attr.supported_property.property_uri
+            # Beware: has a side effect!
+            former_value = attr.pop_serialized_former_value(self)
+            if former_value:
+                formers[property_uri] = former_value
+            new_value = attr.get_serialized_value(self)
+            if new_value:
+                news[property_uri] = new_value
 
-        #UGLY!! To be removed
-        js = self.to_json()
-        #print js
-       # print Graph().parse(data=js, context=self.context, format="json-ld").serialize(format="turtle")
-        self._storage_graph.parse(data=js, context=self._context_dict, format="json-ld")
-        #print self.storage_graph.serialize(format="trig")
-
-    def to_json(self):
-        """
-            Pure JSON (not JSON-LD)
-        """
-        return json.dumps(self.to_dict())
+        query = self._build_update_query_part("DELETE", self.id, formers)
+        query += self._build_update_query_part("INSERT", self.id, news)
+        query += "WHERE {}"
+        #print query
+        self._storage_graph.update(query)
 
     def to_dict(self):
         dct = { name: self._convert_value(getattr(self, name))
@@ -142,6 +155,32 @@ class Model(object):
         dct["id"] = self.id
         dct["types"] = self.types
         return dct
+
+    def to_json(self):
+        """
+            Pure JSON (not JSON-LD)
+        """
+        return json.dumps(self.to_dict())
+
+    def to_jsonld(self):
+        dct = deepcopy(self.context)
+        dct.update(self.to_dict())
+        return json.dumps(dct)
+
+    def _build_update_query_part(self, verb, subject, prop_objects):
+        if len(prop_objects) == 0:
+            return ""
+        query_part = "%s { " % verb
+        for p, objects in prop_objects.iteritems():
+            if isinstance(objects, (list,set)):
+                for o in objects:
+                    query_part += "    <%s> <%s> %s .\n" %(subject, p, o)
+            else:
+                o = objects
+                query_part += "    <%s> <%s> %s .\n" %(subject, p, o)
+        query_part += "} \n"
+        return query_part
+
 
     def _convert_value(self, value):
         """
@@ -159,8 +198,3 @@ class Model(object):
                 # URI
                 return value.id
         return value
-
-    def to_jsonld(self):
-        dct = deepcopy(self.context)
-        dct.update(self.to_dict())
-        return json.dumps(dct)

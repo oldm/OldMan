@@ -55,7 +55,7 @@ class SupportedProperty(object):
         if self._basic_type_uri and self._basic_type_uri != type_uri:
             raise AlreadyDeclaredBasicTypeError("New basic type %s for property %s (%s already defined)"
                                                 %(basic_type,self._property_uri, self._basic_type_uri))
-        self._basic_type_uri = ype_uri
+        self._basic_type_uri = type_uri
 
     @property
     def attributes(self):

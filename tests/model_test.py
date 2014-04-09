@@ -55,7 +55,14 @@ class ModelTest(TestCase):
                     "required": True,
                     "readonly": False,
                     "writeonly": False
-                }
+                },
+                {
+                    "property": "foaf:knows",
+                    "required": False,
+                    "readonly": False,
+                    "writeonly": False
+                },
+
             ]
         }
 
@@ -92,6 +99,10 @@ class ModelTest(TestCase):
                     "@id": "bio:olb",
                     "@type": "xsd:string",
                     "@language": "en"
+                },
+                "friends": {
+                    "@id": "foaf:knows",
+                    "@type": "@id"
                 }
             }
         }
@@ -144,7 +155,9 @@ class ModelTest(TestCase):
 
         roger_email1 = "roger@localhost"
         roger_name = "Roger"
-        p2 = self.LocalPerson(name=roger_name, mboxes=[roger_email1], short_bio_fr="Spécialiste en tests.")
+        p2_bio_fr = u"Spécialiste en tests."
+        p2 = self.LocalPerson(name=roger_name, mboxes=[roger_email1], short_bio_fr=p2_bio_fr)
+        p2_uri = p2.id
         self.assertTrue(p2.is_valid())
         p2.save()
         # Saved
@@ -162,6 +175,11 @@ class ModelTest(TestCase):
         self.assertTrue(bool(self.data_graph.query(mbox_query % roger_email3 )))
         # Has been removed
         self.assertFalse(bool(self.data_graph.query(mbox_query % roger_email1 )))
+
+        # Language-specific attributes
+        p2bis = self.LocalPerson.objects.get(id=p2_uri)
+        self.assertEquals(p2bis.short_bio_en, None)
+        self.assertEquals(p2bis.short_bio_fr, p2_bio_fr)
 
         gertrude_uri = "http://localhost/persons/gertrude"
         p3 = self.LocalPerson(id=gertrude_uri, name="Gertrude", mboxes=["gertrude@localhost"])
