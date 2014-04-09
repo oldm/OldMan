@@ -2,7 +2,7 @@ from exceptions import Exception
 from copy import deepcopy
 from six import add_metaclass
 from .attribute import DataAttribute
-from .manager import InstanceManager
+from .manager import InstanceManager, build_update_query_part
 from rdflib import URIRef, Literal, Graph
 import json
 
@@ -32,7 +32,7 @@ class ModelBase(type):
 
             # Should type be reserved?
             # TODO: merge it with class_uri ?
-            reserved_attributes = ["id"]
+            reserved_attributes = ["id", "_attributes"]
             for field in reserved_attributes:
                 if field in attributes:
                     raise ReservedAttributeError("%s is reserved" % field)
@@ -87,7 +87,8 @@ class Model(object):
             language = attr.metadata.language
 
             results = subgraph.objects(uri, property_uri)
-            # Filter language
+
+            # Filter if language is specified
             if language:
                 results = [r for r in results if isinstance(r, Literal)
                            and r._language == language]
@@ -121,7 +122,6 @@ class Model(object):
                 - Warns if there is some non-descriptor ("Attribute") attributes (will not be saved)
                 - Saves descriptor attributes
         """
-
         # Checks
         for attr in self._attributes.values():
             # May raise an RequiredAttributeError
@@ -143,8 +143,8 @@ class Model(object):
             if new_value:
                 news[property_uri] = new_value
 
-        query = self._build_update_query_part("DELETE", self.id, formers)
-        query += self._build_update_query_part("INSERT", self.id, news)
+        query = build_update_query_part("DELETE", self.id, formers)
+        query += build_update_query_part("INSERT", self.id, news)
         query += "WHERE {}"
         #print query
         self._storage_graph.update(query)
@@ -167,19 +167,9 @@ class Model(object):
         dct.update(self.to_dict())
         return json.dumps(dct)
 
-    def _build_update_query_part(self, verb, subject, prop_objects):
-        if len(prop_objects) == 0:
-            return ""
-        query_part = "%s { " % verb
-        for p, objects in prop_objects.iteritems():
-            if isinstance(objects, (list,set)):
-                for o in objects:
-                    query_part += "    <%s> <%s> %s .\n" %(subject, p, o)
-            else:
-                o = objects
-                query_part += "    <%s> <%s> %s .\n" %(subject, p, o)
-        query_part += "} \n"
-        return query_part
+    def __eq__(self, other):
+        return self.id == other.id
+
 
 
     def _convert_value(self, value):

@@ -62,7 +62,6 @@ class ModelTest(TestCase):
                     "readonly": False,
                     "writeonly": False
                 },
-
             ]
         }
 
@@ -189,8 +188,9 @@ class ModelTest(TestCase):
         self.assertTrue(bool(self.data_graph.query("ASK { <%s> ?p ?o }" % gertrude_uri)))
 
         p4 = self.LocalPerson.objects.get(name=roger_name)
-        self.assertEquals(p2.id, p4.id)
         self.assertEquals(p2, p4)
+        self.assertEquals(p2.name, p4.name)
+        self.assertEquals(roger_name, p4.name)
 
 
     def test_existing_instances(self):

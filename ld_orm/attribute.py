@@ -81,7 +81,7 @@ class DataAttribute(object):
             of pop_former_value()
         """
         values = self.pop_former_value(instance)
-        return self._serialize_values(values)
+        return self.serialize_values(values)
 
 
     def get_serialized_value(self, instance):
@@ -89,9 +89,9 @@ class DataAttribute(object):
             Serialized in a SPARQL-compatible way
         """
         values = self._data.get(instance, None)
-        return self._serialize_values(values)
+        return self.serialize_values(values)
 
-    def _serialize_values(self, values):
+    def serialize_values(self, values):
         if not values:
             return None
         type_uri = self.supported_property.basic_type_uri
