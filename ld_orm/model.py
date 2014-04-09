@@ -24,15 +24,15 @@ class ModelBase(type):
     """
     def __new__(mcs, name, bases, attributes):
         if name != "Model":
-            required_fields = ["class_uri", "storage_graph", "context"]
+            required_fields = ["class_uri", "_storage_graph", "_context_dict", "_id_generator", "types"]
             for field in required_fields:
                 if field not in attributes:
                     raise MissingClassAttributeError("%s is required for class %s" % (field, name))
-            attributes["context"] = mcs.clean_context(attributes["context"])
+            attributes["_context_dict"] = mcs.clean_context(attributes["_context_dict"])
 
             # Should type be reserved?
             # TODO: merge it with class_uri ?
-            reserved_attributes = ["id", "type"]
+            reserved_attributes = ["id"]
             for field in reserved_attributes:
                 if field in attributes:
                     raise ReservedAttributeError("%s is reserved" % field)
@@ -46,7 +46,7 @@ class ModelBase(type):
         if name != "Model":
             #TODO: log a message if "objects" was already allocated (data attribute)
             #A la Django
-            cls.objects = InstanceManager(cls)
+            cls.objects = InstanceManager(cls,attributes["_storage_graph"])
 
         return cls
 
@@ -73,7 +73,7 @@ class Model(object):
         for k,v in kwargs.iteritems():
             setattr(self, k, v)
         if "id" not in kwargs:
-            self.id = self.id_generator.generate(self)
+            self.id = self._id_generator.generate()
 
     @classmethod
     def from_graph(cls, id, subgraph):
@@ -127,22 +127,20 @@ class Model(object):
         js = self.to_json()
         #print js
        # print Graph().parse(data=js, context=self.context, format="json-ld").serialize(format="turtle")
-        self.storage_graph.parse(data=js, context=self.context, format="json-ld")
+        self._storage_graph.parse(data=js, context=self._context_dict, format="json-ld")
         #print self.storage_graph.serialize(format="trig")
 
     def to_json(self):
         """
             Pure JSON (not JSON-LD)
         """
-        dct = self.to_dict()
-        return json.dumps(dct)
+        return json.dumps(self.to_dict())
 
     def to_dict(self):
         dct = { name: self._convert_value(getattr(self, name))
                  for name in self._attributes}
         dct["id"] = self.id
-        #TODO: class URI
-        dct["type"] = self.class_uri
+        dct["types"] = self.types
         return dct
 
     def _convert_value(self, value):

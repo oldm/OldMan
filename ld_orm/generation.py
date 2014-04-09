@@ -7,12 +7,6 @@ from rdflib import Graph
 from .model import Model
 
 
-# logger = logging.getLogger("ld_orm")
-# ch = logging.StreamHandler()
-# ch.setLevel(logging.WARNING)
-# logger.addHandler(ch)
-
-
 def default_model_generator():
     from ld_orm.extraction.attribute import DataAttributeExtractor
     attr_extractor = DataAttributeExtractor()
@@ -26,7 +20,6 @@ class UnknownClassNameError(Exception):
     pass
 
 
-
 class ModelGenerator(object):
 
     def __init__(self, attr_manager):
@@ -37,6 +30,8 @@ class ModelGenerator(object):
             Generates a model class
         """
         class_uri = self._extract_class_uri(class_name, context)
+        types = self._extract_types(class_uri, schema_graph)
+        #print "Types: %s" % types
         attributes = self.attr_manager.extract(class_uri, context, schema_graph)
 
         if uri_generator:
@@ -47,9 +42,10 @@ class ModelGenerator(object):
             raise Exception("Please specify uri_prefix or uri_generator")
 
         attributes.update({"class_uri": class_uri,
-                           "context": context,
-                           "id_generator": id_generator,
-                           "storage_graph": storage_graph})
+                           "types": types,
+                           "_context_dict": context,
+                           "_id_generator": id_generator,
+                           "_storage_graph": storage_graph})
         return type(class_name, (Model,), attributes)
 
     def _extract_class_uri(self, class_name, context):
@@ -66,13 +62,23 @@ class ModelGenerator(object):
             raise UnknownClassNameError("Deduced URI %s is not a valid HTTP URL" % class_uri)
         return class_uri
 
+    def _extract_types(self, class_uri, schema_graph):
+        """
+            Useful because class_uri is often a local specialization
+            of a well-known class
+        """
+        types = [class_uri]
+        results = schema_graph.query("SELECT ?c WHERE { <%s> rdfs:subClassOf+ ?c }" % class_uri)
+        types += [str(r) for r, in results]
+        return types
+
 
 class UriGenerator(object):
 
     def __init__(self, **kwargs):
         pass
 
-    def generate(self, instance):
+    def generate(self):
         raise NotImplementedError()
 
 
@@ -81,5 +87,5 @@ class RandomPrefixedUriGenerator(UriGenerator):
     def __init__(self, **kwargs):
         self.prefix = kwargs["prefix"]
 
-    def generate(self, instance):
+    def generate(self):
         return "%s%s"%(self.prefix, uuid1().hex)

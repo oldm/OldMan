@@ -116,13 +116,18 @@ class ModelTest(TestCase):
         # short bio is missing
         self.assertFalse(p1.is_valid())
         self.assertRaises(RequiredDataAttributeError, p1.save)
+        self.assertEquals(set(p1.types), set(["http://example.com/vocab#LocalPerson",
+                                              "http://xmlns.com/foaf/0.1/Person"]))
 
         p1.short_bio_en = "It is my life."
         self.assertTrue(p1.is_valid())
         p1.save()
 
-        # Prevent a strange bug
-        self.data_graph = p1.storage_graph
+        # Objects is only accessible at the class level
+        self.assertRaises(AttributeError, getattr, p1, "objects")
+
+        # Prevent a strange bug (possibly due to the way setUp() works)
+        self.data_graph = self.LocalPerson.objects.graph
 
         self.assertEquals(name, p1.name)
         self.assertEquals(blogs, p1.blogs)
@@ -144,7 +149,6 @@ class ModelTest(TestCase):
         p2.save()
         # Saved
         #print self.data_graph.serialize(format="turtle")
-        self.assertEquals(self.data_graph, p2.storage_graph)
         name_query = """ASK {?x foaf:name "%s"^^xsd:string }"""
         self.assertTrue(bool(self.data_graph.query(name_query % roger_name )))
 
@@ -187,8 +191,6 @@ class ModelTest(TestCase):
                    context=self.person_context,
                    format="json-ld")
 
-        #print self.data_graph.serialize(format="turtle")
-
         # Loaded from the cache
         me = self.LocalPerson.objects.get(id=self.bcogrel_uri)
         # Outdated because of the out-of-band update
@@ -201,10 +203,3 @@ class ModelTest(TestCase):
         self.assertEquals(set(me.mboxes), set(mboxes))
         me.is_valid()
 
-
-
-# fields = []
-# for member_name, member_object in inspect.getmembers(LocalPerson):
-#     if inspect.isdatadescriptor(member_object):
-#          fields.append(member_name)
-# print "Fields: %s" % fields

@@ -3,15 +3,16 @@ from rdflib import URIRef, Graph
 import json
 
 class InstanceManager(object):
-    def __init__(self, cls):
+    def __init__(self, cls, storage_graph):
         self.cls = cls
+        self._graph = storage_graph
         # TODO: find a way to use a WeakKeyDictionary
         #self._cache = WeakKeyDictionary()
         self._cache = {}
 
     @property
     def graph(self):
-        return self.cls.storage_graph
+        return self._graph
 
     def create(self, **kwargs):
         """
@@ -33,7 +34,7 @@ class InstanceManager(object):
                 print "%s found in the cache" % instance
                 return instance
             instance_graph = Graph()
-            instance_graph += self.graph.triples((URIRef(id), None, None))
+            instance_graph += self._graph.triples((URIRef(id), None, None))
             return self._new_instance(id, instance_graph)
 
         else:
