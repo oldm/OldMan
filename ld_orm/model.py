@@ -170,8 +170,6 @@ class Model(object):
     def __eq__(self, other):
         return self.id == other.id
 
-
-
     def _convert_value(self, value):
         """
             TODO: improve it

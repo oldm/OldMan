@@ -180,6 +180,14 @@ class ModelTest(TestCase):
         self.assertEquals(p2bis.short_bio_en, None)
         self.assertEquals(p2bis.short_bio_fr, p2_bio_fr)
 
+        p2_bio_en = "Test-driven developer."
+        p2.short_bio_en = p2_bio_en
+        p2.save()
+        self.LocalPerson.objects.clear_cache()
+        p2bis = self.LocalPerson.objects.get(id=p2_uri)
+        self.assertEquals(p2bis.short_bio_en, p2_bio_en)
+        self.assertEquals(p2bis.short_bio_fr, p2_bio_fr)
+
         gertrude_uri = "http://localhost/persons/gertrude"
         p3 = self.LocalPerson(id=gertrude_uri, name="Gertrude", mboxes=["gertrude@localhost"])
         self.assertFalse(p3.is_valid())
@@ -191,6 +199,27 @@ class ModelTest(TestCase):
         self.assertEquals(p2, p4)
         self.assertEquals(p2.name, p4.name)
         self.assertEquals(roger_name, p4.name)
+
+        other_roger_mail = "other_roger@example.org"
+        p5 = self.LocalPerson.objects.create(name=roger_name, mboxes=[other_roger_mail], short_bio_en="I am a double." )
+
+        rogers = list(self.LocalPerson.objects.filter(name=roger_name))
+        self.assertEquals(len(rogers), 2)
+        self.assertEquals(rogers[0].name, rogers[1].name)
+
+        rogers2 = list(self.LocalPerson.objects.filter(name=roger_name,
+                                                       # mboxes is NOT REQUIRED to be exhaustive
+                                                       mboxes=[roger_email2]))
+        self.assertEquals(len(rogers2), 1)
+        rogers3 = list(self.LocalPerson.objects.filter(name=roger_name,
+                                                       mboxes=[roger_email2, roger_email3]))
+        self.assertEquals(set(rogers2), set(rogers3))
+
+        # Nothing
+        rogers4 = list(self.LocalPerson.objects.filter(name=roger_name,
+                                                       mboxes=[roger_email2, roger_email3, other_roger_mail]))
+        self.assertEquals(len(rogers4), 0)
+
 
 
     def test_existing_instances(self):
@@ -215,7 +244,7 @@ class ModelTest(TestCase):
         self.assertFalse(me.is_valid())
 
         # Clear the cache and it works!
-        self.LocalPerson.objects.clear()
+        self.LocalPerson.objects.clear_cache()
         me = self.LocalPerson.objects.get(id=self.bcogrel_uri)
         self.assertNotEquals(me.mboxes, None)
         self.assertEquals(set(me.mboxes), set(mboxes))

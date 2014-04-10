@@ -22,7 +22,7 @@ class InstanceManager(object):
         instance.save()
         return instance
 
-    def clear(self):
+    def clear_cache(self):
         """Clears its cache """
         self._cache.clear()
 
@@ -44,8 +44,8 @@ class InstanceManager(object):
         print query
         results = self._graph.query(query)
 
-        # TODO: improve with generators
-        return [self.get(id=str(r)) for r, in results]
+        # Generator expression
+        return (self.get(id=str(r)) for r, in results)
 
 
     def get(self, id=None, **kwargs):
