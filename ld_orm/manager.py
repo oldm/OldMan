@@ -1,4 +1,4 @@
-#from weakref import WeakKeyDictionary
+from weakref import WeakValueDictionary
 from rdflib import URIRef, Graph
 import json
 
@@ -6,9 +6,7 @@ class InstanceManager(object):
     def __init__(self, cls, storage_graph):
         self.cls = cls
         self._graph = storage_graph
-        # TODO: find a way to use a WeakKeyDictionary
-        #self._cache = WeakKeyDictionary()
-        self._cache = {}
+        self._cache = WeakValueDictionary()
 
     @property
     def graph(self):
