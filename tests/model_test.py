@@ -206,6 +206,8 @@ class ModelTest(TestCase):
         rogers = list(self.LocalPerson.objects.filter(name=roger_name))
         self.assertEquals(len(rogers), 2)
         self.assertEquals(rogers[0].name, rogers[1].name)
+        self.assertEquals(rogers[0].name, roger_name)
+        self.assertNotEquals(set(rogers[0].mboxes), set(rogers[1].mboxes))
 
         rogers2 = list(self.LocalPerson.objects.filter(name=roger_name,
                                                        # mboxes is NOT REQUIRED to be exhaustive

@@ -39,7 +39,7 @@ class InstanceManager(object):
                 values[property_uri] = attr.serialize_values(value)
 
         query = build_query_part("SELECT ?s WHERE", "?s", values)
-        print query
+        #print query
         results = self._graph.query(query)
 
         # Generator expression
@@ -61,7 +61,7 @@ class InstanceManager(object):
         # TODO: resolve this pb
         instance = self._cache.get(id)
         if instance:
-            print "%s found in the cache" % instance
+            #print "%s found in the cache" % instance
             return instance
         instance_graph = Graph()
         instance_graph += self._graph.triples((URIRef(id), None, None))
