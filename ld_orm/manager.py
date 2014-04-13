@@ -29,16 +29,16 @@ class InstanceManager(object):
         if "id" in kwargs:
             return self.get(**kwargs)
 
-        values = {}
+        lines = ""
         for name, attr in self.cls._attributes.iteritems():
             if not name in kwargs:
                 continue
             value = kwargs[name]
             if value:
                 property_uri = attr.ld_property.uri
-                values[property_uri] = attr.serialize_values(value)
+                lines += attr.serialize_values_into_lines(value)
 
-        query = build_query_part("SELECT ?s WHERE", "?s", values)
+        query = build_query_part("SELECT ?s WHERE", "?s", lines)
         #print query
         results = self._graph.query(query)
 
@@ -86,20 +86,14 @@ class InstanceManager(object):
         return self
 
 
-def build_query_part(verb_and_vars, subject_term, prop_objects):
-    if len(prop_objects) == 0:
+def build_query_part(verb_and_vars, subject_term, lines):
+    if len(lines) == 0:
         return ""
-    query_part = "%s { " % verb_and_vars
-    for p, objects in prop_objects.iteritems():
-        if isinstance(objects, (list,set)):
-            for o in objects:
-                query_part += "  %s <%s> %s .\n" %(subject_term, p, o)
-        else:
-            o = objects
-            query_part += "    %s <%s> %s .\n" %(subject_term, p, o)
-    query_part += "} \n"
-    return query_part
+    query_part = '%s { \n%s } \n' % (verb_and_vars, lines)
+    #{0} -> subject_term
+    # format() does not work because other special symbols
+    return query_part.replace("{0}", subject_term)
 
 
-def build_update_query_part(verb, subject, prop_objects):
-    return build_query_part(verb, "<%s>" % subject, prop_objects)
+def build_update_query_part(verb, subject, lines):
+    return build_query_part(verb, "<%s>" % subject, lines)

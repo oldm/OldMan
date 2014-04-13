@@ -131,22 +131,18 @@ class Model(object):
 
         #TODO: Warns
 
-        formers = {}
-        news = {}
+        former_lines = ""
+        new_lines = ""
         for attr in self._attributes.values():
             if not attr.has_new_value(self):
                 continue
             property_uri = attr.ld_property.uri
             # Beware: has a side effect!
-            former_value = attr.pop_serialized_former_value(self)
-            if former_value:
-                formers[property_uri] = former_value
-            new_value = attr.get_serialized_value(self)
-            if new_value:
-                news[property_uri] = new_value
+            former_lines += attr.pop_former_value_and_serialize_line(self)
+            new_lines += attr.serialize_current_value_into_line(self)
 
-        query = build_update_query_part("DELETE", self.id, formers)
-        query += build_update_query_part("INSERT", self.id, news)
+        query = build_update_query_part("DELETE", self.id, former_lines)
+        query += build_update_query_part("INSERT", self.id, new_lines)
         query += "WHERE {}"
         #print query
         self._storage_graph.update(query)

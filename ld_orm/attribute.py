@@ -98,35 +98,49 @@ class LDAttribute(object):
             return self._former_values.pop(instance)
         return None
 
-    def pop_serialized_former_value(self, instance):
+    def pop_former_value_and_serialize_line(self, instance):
         """
             SPARQL-compatible version
             of pop_former_value()
         """
         values = self.pop_former_value(instance)
-        return self.serialize_values(values)
+        return self.serialize_values_into_lines(values)
 
 
-    def get_serialized_value(self, instance):
+    def serialize_current_value_into_line(self, instance):
         """
             Serialized in a SPARQL-compatible way
         """
         values = self._data.get(instance, None)
-        return self.serialize_values(values)
+        return self.serialize_values_into_lines(values)
 
-    def serialize_values(self, values):
+    def serialize_values_into_lines(self, values):
         """
             Each value is returned as a SPARQL encoded string
         """
         if not values:
-            return None
+            return ""
 
-        #TODO: manage container
-        if isinstance(values, (list, set)):
-            return [self._convert_serialized_value(v)
-                    for v in values]
+        vs = values if isinstance(values, (list, set)) else [values]
+        serialized_values = [self._convert_serialized_value(v)
+                    for v in vs]
+
+        property_uri = self.ld_property.uri
+        lines = ""
+
+        #TODO: allow reverse value
+        reversed = False
+        if reversed:
+            assert(v.startswith("<") and v.endswith(">"))
+            for v in serialized_values:
+                lines += '  %s <%s> %s .\n' %(v, property_uri, "{0}")
         else:
-            return self._convert_serialized_value(values)
+            for v in serialized_values:
+                lines += '  %s <%s> %s .\n' %("{0}", property_uri, v)
+
+        return lines
+
+
 
     def _convert_serialized_value(self, value):
         """
