@@ -1,52 +1,61 @@
 from exceptions import Exception
 from collections import namedtuple
 from weakref import WeakKeyDictionary
+from ld_orm.property import PropertyType
 
 
-class DataAttributeTypeError(Exception):
+class LDAttributeTypeError(Exception):
     pass
 
 
-class RequiredDataAttributeError(Exception):
+class RequiredLDAttributeError(Exception):
     pass
 
 
-DataAttributeMetadata = namedtuple("DataAttributeMetadata", ["name", "property", "language"])
+LDAttributeMetadata = namedtuple("DataAttributeMetadata", ["name", "property", "language", "jsonld_type"])
 
 
-class DataAttribute(object):
+class LDAttribute(object):
 
     def __init__(self, metadata, value_type=object):
-        self.metadata = metadata
-        self.value_type = value_type
+        self._metadata = metadata
+        self._value_type = value_type
         self._data = WeakKeyDictionary()
         # Non-saved former values
         self._former_values = WeakKeyDictionary()
 
     @property
     def is_required(self):
-        return self.metadata.property.is_required
+        return self._metadata.property.is_required
 
     @property
-    def supported_property(self):
-        return self.metadata.property
+    def ld_property(self):
+        return self._metadata.property
 
     @property
     def name(self):
-        return self.metadata.name
+        return self._metadata.name
+
+    @property
+    def language(self):
+        return self._metadata.language
+
+    @property
+    def jsonld_type(self):
+        return self._metadata.jsonld_type
 
     @property
     def other_attributes(self):
         """
             Attributes of the same property
         """
-        return self.supported_property.attributes.difference([self])
+        return self.ld_property.attributes.difference([self])
 
     def is_valid(self, instance):
         try:
             self.check_validity(instance)
             return True
-        except RequiredDataAttributeError:
+        except RequiredLDAttributeError:
             return False
 
     def check_validity(self, instance):
@@ -56,7 +65,7 @@ class DataAttribute(object):
         for other in self.other_attributes:
             if other.is_locally_satisfied(instance):
                 return
-        raise RequiredDataAttributeError(self.name)
+        raise RequiredLDAttributeError(self.name)
 
     def is_locally_satisfied(self, instance):
         if not self.is_required:
@@ -92,28 +101,37 @@ class DataAttribute(object):
         return self.serialize_values(values)
 
     def serialize_values(self, values):
+        """
+            Each value is returned as a SPARQL encoded string
+        """
         if not values:
             return None
-        type_uri = self.supported_property.basic_type_uri
-        language = self.metadata.language
 
+        #TODO: manage container
         if isinstance(values, (list, set)):
-            return [self._convert_serialized_value(v, type_uri, language)
+            return [self._convert_serialized_value(v)
                     for v in values]
         else:
-            v = values
-            return self._convert_serialized_value(v, type_uri, language)
+            return self._convert_serialized_value(values)
 
-    def _convert_serialized_value(self, value, type_uri, language):
-        """ SPARQL encoding """
-        if type_uri == "@id":
+    def _convert_serialized_value(self, value):
+        """
+            SPARQL encoding
+
+             TODO: replace with line encoding
+        """
+        jsonld_type = self.jsonld_type
+        language = self.language
+        if jsonld_type == "@id":
             return "<%s>" % value
         elif language:
             return '"%s"@%s' % (value, language)
-        elif type_uri:
-            return '"%s"^^<%s>' % (value, type_uri)
+        elif jsonld_type:
+            return '"%s"^^<%s>' % (value, jsonld_type)
+        # Should we really define unknown types as string?
         else:
-            return '"%s"' % value
+            raise NotImplementedError("Untyped JSON-LD value are not (yet?) supported")
+            #return '"%s"' % value
 
     def __get__(self, instance, owner):
         value = self._data.get(instance, None)
@@ -139,21 +157,29 @@ class DataAttribute(object):
                 self._check_type(v)
             return
 
-        if not isinstance(value,  self.value_type):
-            raise DataAttributeTypeError("{0} is not a {1}".format(value, self.value_type))
+        if not isinstance(value,  self._value_type):
+            raise LDAttributeTypeError("{0} is not a {1}".format(value, self._value_type))
 
 
-class StringAttribute(DataAttribute):
+class ObjectLDAttribute(LDAttribute):
+    """
+        TODO: validate that the value is an URI
+    """
     def __init__(self, metadata):
-        DataAttribute.__init__(self, metadata, (str, unicode))
+        LDAttribute.__init__(self, metadata, (str, unicode))
 
 
-class IntegerAttribute(DataAttribute):
+class StringLDAttribute(LDAttribute):
     def __init__(self, metadata):
-        DataAttribute.__init__(metadata, int)
+        LDAttribute.__init__(self, metadata, (str, unicode))
 
 
-class EmailAttribute(DataAttribute):
+class IntegerLDAttribute(LDAttribute):
+    def __init__(self, metadata):
+        LDAttribute.__init__(metadata, int)
+
+
+class EmailLDAttribute(StringLDAttribute):
     """ TODO: implement it """
     def __init__(self, metadata):
         super(self).__init__(metadata, str)

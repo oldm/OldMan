@@ -5,7 +5,7 @@ from rdflib import ConjunctiveGraph, URIRef
 import json
 
 from ld_orm import default_model_generator
-from ld_orm.attribute import DataAttributeTypeError, RequiredDataAttributeError
+from ld_orm.attribute import LDAttributeTypeError, RequiredLDAttributeError
 
 class ModelTest(TestCase):
 
@@ -125,7 +125,7 @@ class ModelTest(TestCase):
         #TODO: should sent a exception because
         # short bio is missing
         self.assertFalse(p1.is_valid())
-        self.assertRaises(RequiredDataAttributeError, p1.save)
+        self.assertRaises(RequiredLDAttributeError, p1.save)
         self.assertEquals(set(p1.types), set(["http://example.com/vocab#LocalPerson",
                                               "http://xmlns.com/foaf/0.1/Person"]))
 
@@ -145,7 +145,7 @@ class ModelTest(TestCase):
         # Because of descriptors, these attributes should not appear in __dict__ except id
         self.assertEquals(vars(p1).keys(), ["id"])
 
-        with self.assertRaises(DataAttributeTypeError):
+        with self.assertRaises(LDAttributeTypeError):
             p1.name = 2
         p1.name = "Robert"
 

@@ -1,14 +1,14 @@
 from rdflib_jsonld.context import Context, UNDEF
 
-class DataAttributeMdExtractor(object):
+class LDAttributeMdExtractor(object):
     def update(self, properties, context_js, graph):
         """
-            No new property added, only attribute metadata
+            No property added, only attribute metadata
         """
         raise NotImplementedError()
 
 
-class JsonLdContextAttributeMdExtractor(DataAttributeMdExtractor):
+class JsonLdContextAttributeMdExtractor(LDAttributeMdExtractor):
     """
         Extracts name and basic type (if available) from the context
     """
@@ -36,7 +36,7 @@ class JsonLdContextAttributeMdExtractor(DataAttributeMdExtractor):
                     property.add_attribute_metadata(name)
 
     def _update_property(self, property, term):
-        kwargs = {'basic_type_uri': term.type,
+        kwargs = {'jsonld_type': term.type,
                   'language': term.language,
                   'container': term.container,
                   'reverse': term.reverse}

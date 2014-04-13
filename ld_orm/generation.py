@@ -8,8 +8,8 @@ from .model import Model
 
 
 def default_model_generator():
-    from ld_orm.extraction.attribute import DataAttributeExtractor
-    attr_extractor = DataAttributeExtractor()
+    from ld_orm.extraction.attribute import LDAttributeExtractor
+    attr_extractor = LDAttributeExtractor()
     return ModelGenerator(attr_extractor)
 
 

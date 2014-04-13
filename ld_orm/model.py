@@ -1,7 +1,7 @@
 from exceptions import Exception
 from copy import deepcopy
 from six import add_metaclass
-from .attribute import DataAttribute
+from .attribute import LDAttribute
 from .manager import InstanceManager, build_update_query_part
 from rdflib import URIRef, Literal, Graph
 import json
@@ -39,7 +39,7 @@ class ModelBase(type):
 
         # Descriptors
         attributes["_attributes"] = {k: v for k, v in attributes.iteritems()
-                                     if isinstance(v, DataAttribute)}
+                                     if isinstance(v, LDAttribute)}
 
         cls = type.__new__(mcs, name, bases, attributes)
 
@@ -83,8 +83,8 @@ class Model(object):
         instance = cls(id=id)
         uri = URIRef(id)
         for attr_name, attr in instance._attributes.iteritems():
-            property_uri = URIRef(attr.supported_property.property_uri)
-            language = attr.metadata.language
+            property_uri = URIRef(attr.ld_property.uri)
+            language = attr.language
 
             results = subgraph.objects(uri, property_uri)
 
@@ -134,7 +134,7 @@ class Model(object):
         for attr in self._attributes.values():
             if not attr.has_new_value(self):
                 continue
-            property_uri = attr.supported_property.property_uri
+            property_uri = attr.ld_property.uri
             # Beware: has a side effect!
             former_value = attr.pop_serialized_former_value(self)
             if former_value:

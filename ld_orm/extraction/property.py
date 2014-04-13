@@ -1,9 +1,9 @@
 from rdflib import Graph, Namespace, URIRef
 from rdflib.plugins.sparql import prepareQuery
-from ..property import SupportedProperty
+from ..property import LDProperty
 
 
-class PropertyExtractor(object):
+class LDPropertyExtractor(object):
     """
         Supported Property Extractor
     """
@@ -17,7 +17,7 @@ class PropertyExtractor(object):
         raise NotImplementedError()
 
 
-class HydraPropertyExtractor(PropertyExtractor):
+class HydraPropertyExtractor(LDPropertyExtractor):
     """
         Extracts supported properties from Hydra RDF descriptions
 
@@ -53,5 +53,5 @@ class HydraPropertyExtractor(PropertyExtractor):
             property_uri = str(property_uri)
 
             if not property_uri in properties:
-                properties[property_uri]= SupportedProperty(property_uri, class_uri, is_required)
+                properties[property_uri]= LDProperty(property_uri, class_uri, is_required)
         return properties

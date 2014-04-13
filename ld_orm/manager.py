@@ -35,7 +35,7 @@ class InstanceManager(object):
                 continue
             value = kwargs[name]
             if value:
-                property_uri = attr.supported_property.property_uri
+                property_uri = attr.ld_property.uri
                 values[property_uri] = attr.serialize_values(value)
 
         query = build_query_part("SELECT ?s WHERE", "?s", values)

@@ -1,9 +1,10 @@
 from .property import HydraPropertyExtractor
 from .context import JsonLdContextAttributeMdExtractor
-from ..attribute import StringAttribute, DataAttribute
+from ..attribute import StringLDAttribute, LDAttribute, ObjectLDAttribute
+from ..property import PropertyType
 
-class DataAttributeExtractor(object):
-    """ Extracts Attribute objects for a given class.
+class LDAttributeExtractor(object):
+    """ Extracts LDAttribute objects for a given class.
 
         Extensible in two ways:
             1. Property extractors (new RDF vocabularies)
@@ -15,7 +16,7 @@ class DataAttributeExtractor(object):
 
     def __init__(self, property_extractors=[], attr_md_extractors=[], use_hydra=True,
                  use_jsonld_context=True):
-        self._class_selector = DataAttributeClassSelector()
+        self._class_selector = LDAttributeClassSelector()
         self._property_extractors = property_extractors
         self._attr_md_extractors = attr_md_extractors
         if use_hydra:
@@ -57,28 +58,36 @@ class DataAttributeExtractor(object):
         return {a.name: a for a in attrs}
 
 
-class DataAttributeClassSelector(object):
+class LDAttributeClassSelector(object):
 
-    def __init__(self, special_properties={}, include_default_basic_types=True):
+    def __init__(self, special_properties={}, include_default_datatypes=True):
         """
-            TODO: enrich default basic types
+            TODO: enrich default datatypes
         """
         self._special_properties = special_properties
-        self._basic_types = {}
-        if include_default_basic_types:
+        self._datatypes = {}
+        if include_default_datatypes:
             #TODO: enrich it
-            self._basic_types.update({"http://www.w3.org/2001/XMLSchema#string": StringAttribute})
+            self._datatypes.update({"http://www.w3.org/2001/XMLSchema#string": StringLDAttribute})
 
     def add_special_property(self, property_uri, attr_class):
         self._special_properties[property_uri] = attr_class
 
-    def add_basic_type(self, type_uri, attr_class):
-        self._basic_types[type_uri] = attr_class
+    def add_datatype(self, type_uri, attr_class):
+        self._datatypes[type_uri] = attr_class
 
-    def find_attribute_class(self, property):
-        cls = self._special_properties.get(property.property_uri, None)
-        # If not a special property
-        if cls is None:
-            cls = self._basic_types.get(property.basic_type_uri, DataAttribute)
+    def find_attribute_class(self, attr_md):
+        property = attr_md.property
+
+        cls = self._special_properties.get(property.uri, None)
+        if cls:
+            return cls
+
+        # If not a special property but an ObjectProperty
+        if property.type == PropertyType.ObjectProperty:
+            return ObjectLDAttribute
+
+        # If a DatatypeProperty
+        cls = self._datatypes.get(attr_md.jsonld_type, LDAttribute)
         return cls
 
