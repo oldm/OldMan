@@ -1,7 +1,6 @@
 from exceptions import Exception
 from collections import namedtuple
 from weakref import WeakKeyDictionary
-from ld_orm.property import PropertyType
 
 
 class LDAttributeTypeError(Exception):
@@ -12,10 +11,17 @@ class RequiredLDAttributeError(Exception):
     pass
 
 
-LDAttributeMetadata = namedtuple("DataAttributeMetadata", ["name", "property", "language", "jsonld_type"])
+LDAttributeMetadata = namedtuple("DataAttributeMetadata", ["name", "property", "language", "jsonld_type", "container"])
 
 
 class LDAttribute(object):
+
+    CONTAINER_REQUIREMENTS = {'@set': set,
+                              '@list': list,
+                            # '@language': dict,
+                            # '@index': dict,
+                              None: object,
+                             }
 
     def __init__(self, metadata, value_type=object):
         self._metadata = metadata
@@ -23,6 +29,10 @@ class LDAttribute(object):
         self._data = WeakKeyDictionary()
         # Non-saved former values
         self._former_values = WeakKeyDictionary()
+
+        # TODO: support "@list", "@language" and "@index"
+        if not self.container in [None, "@set"]:
+            raise NotImplementedError("Container %s is not yet supported" % (self.container))
 
     @property
     def is_required(self):
@@ -57,6 +67,10 @@ class LDAttribute(object):
             return True
         except RequiredLDAttributeError:
             return False
+
+    @property
+    def container(self):
+        return self._metadata.container
 
     def check_validity(self, instance):
         if self.is_locally_satisfied(instance):
@@ -140,10 +154,10 @@ class LDAttribute(object):
     def __set__(self, instance, value):
         if self.is_required and value is None:
             self.check_validity(instance)
-        self._check_type(value)
+        self.check_value(value)
 
         # Former value (if not already in cache)
-        # (robust to multiple changes before saving
+        # (robust to multiple changes before saving)
         if not instance in self._former_values:
             # May be None (trick!)
             former_value = self._data.get(instance)
@@ -151,14 +165,27 @@ class LDAttribute(object):
 
         self._data[instance] = value
 
-    def _check_type(self, value):
-        if isinstance(value, (list, set)):
-            for v in value:
-                self._check_type(v)
-            return
+    def check_value(self, value):
+        required_container_type = LDAttribute.CONTAINER_REQUIREMENTS[self.container]
+        if not isinstance(value, required_container_type):
+            raise LDAttributeTypeError("A container (%s) was expected instead of %s"
+                                       % (required_container_type, type(value)))
 
-        if not isinstance(value,  self._value_type):
-            raise LDAttributeTypeError("{0} is not a {1}".format(value, self._value_type))
+        if isinstance(value, (list, set, dict)):
+            if not self.container:
+                #TODO: replaces by a log alert
+                print "Warning: no container declared for %s" % self.name
+
+            vs = value.values() if isinstance(value, dict) else value
+            for v in vs:
+                self._check_value(v)
+            return
+        self._check_value(value)
+
+    def _check_value(self, v):
+        if not isinstance(v,  self._value_type):
+            raise LDAttributeTypeError("{0} is not a {1}".format(v, self._value_type))
+
 
 
 class ObjectLDAttribute(LDAttribute):
@@ -184,5 +211,5 @@ class EmailLDAttribute(StringLDAttribute):
     def __init__(self, metadata):
         super(self).__init__(metadata, str)
 
-    def _check_type(self, value):
+    def check_value(self, value):
         raise NotImplementedError("TODO: implement it")

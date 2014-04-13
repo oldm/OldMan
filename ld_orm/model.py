@@ -99,8 +99,10 @@ class Model(object):
 
             if len(values) == 0:
                 continue
-            if len(values) == 1:
+            elif not attr.container and len(values) == 1:
                 values = values[0]
+            elif attr.container == "@set":
+                values = set(values)
             setattr(instance, attr_name, values)
         return instance
 
@@ -163,7 +165,7 @@ class Model(object):
         return json.dumps(self.to_dict())
 
     def to_jsonld(self):
-        dct = deepcopy(self.context)
+        dct = deepcopy(self._context_dict)
         dct.update(self.to_dict())
         return json.dumps(dct)
 
@@ -174,7 +176,7 @@ class Model(object):
         """
             TODO: improve it
         """
-        if isinstance(value, list):
+        if isinstance(value, (list, set)):
             return [self._convert_value(v) for v in value]
         if isinstance(value, Model):
             if value.is_blank_node():

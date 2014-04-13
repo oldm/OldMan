@@ -1,5 +1,6 @@
 from exceptions import Exception
 from enum import Enum
+from .attribute import LDAttributeMetadata
 
 
 class AlreadyDeclaredDatatypeError(Exception):
@@ -114,7 +115,6 @@ class LDProperty(object):
         if self._type == PropertyType.DatatypeProperty and len(self._ranges) >= 1:
             # Should be one
             return list(self._ranges)[0]
-
         return None
 
     @property
@@ -132,8 +132,6 @@ class LDProperty(object):
         """
         if self._attributes:
            raise AlreadyGeneratedAttributeError("It is too late to add attribute metadata")
-        if container:
-            raise NotImplementedError("Not yet")
         if reverse:
             raise NotImplementedError("Reverse properties are not yet supported")
         if jsonld_type:
@@ -157,12 +155,10 @@ class LDProperty(object):
                 #TODO: find a better Exception type
                 raise NotImplementedError("Untyped JSON-LD value are not (yet?) supported")
 
-        from .attribute import LDAttributeMetadata
-
         #TODO: throw an error instead?
         assert(len([md for md in self._tmp_attr_mds
                     if md.name == name]) == 0)
-        self._tmp_attr_mds.append(LDAttributeMetadata(name, self, language, jsonld_type))
+        self._tmp_attr_mds.append(LDAttributeMetadata(name, self, language, jsonld_type, container))
 
     def generate_attributes(self, attr_class_selector):
         """

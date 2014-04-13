@@ -83,11 +83,13 @@ class ModelTest(TestCase):
                 },
                 "mboxes": {
                     "@id": "foaf:mbox",
-                    "@type": "xsd:string"
+                    "@type": "xsd:string",
+                    "@container": "@set"
                 },
                 "blogs": {
                     "@id": "foaf:weblog",
-                    "@type": "@id"
+                    "@type": "@id",
+                    "@container": "@set"
                 },
                 "short_bio_fr": {
                     "@id": "bio:olb",
@@ -115,12 +117,12 @@ class ModelTest(TestCase):
 
     def test_new_instances(self):
         name = "Toto"
-        blogs = ["http://blog.bcgl.fr"]
+        blogs = set(["http://blog.bcgl.fr"])
         p1 = self.LocalPerson()
         p1.name = name
         #print p1.name
         p1.blogs = blogs
-        p1.mboxes = ["toto@localhost"]
+        p1.mboxes = set(["toto@localhost"])
 
         #TODO: should sent a exception because
         # short bio is missing
@@ -155,7 +157,7 @@ class ModelTest(TestCase):
         roger_email1 = "roger@localhost"
         roger_name = "Roger"
         p2_bio_fr = u"Spécialiste en tests."
-        p2 = self.LocalPerson(name=roger_name, mboxes=[roger_email1], short_bio_fr=p2_bio_fr)
+        p2 = self.LocalPerson(name=roger_name, mboxes=set([roger_email1]), short_bio_fr=p2_bio_fr)
         p2_uri = p2.id
         self.assertTrue(p2.is_valid())
         p2.save()
@@ -167,7 +169,7 @@ class ModelTest(TestCase):
         # Change email addresses
         roger_email2 = "roger@example.com"
         roger_email3 = "roger@example.org"
-        p2.mboxes=[roger_email2, roger_email3]
+        p2.mboxes=set([roger_email2, roger_email3])
         p2.save()
         mbox_query = """ASK {?x foaf:mbox "%s"^^xsd:string }"""
         self.assertTrue(bool(self.data_graph.query(mbox_query % roger_email2 )))
@@ -189,7 +191,7 @@ class ModelTest(TestCase):
         self.assertEquals(p2bis.short_bio_fr, p2_bio_fr)
 
         gertrude_uri = "http://localhost/persons/gertrude"
-        p3 = self.LocalPerson(id=gertrude_uri, name="Gertrude", mboxes=["gertrude@localhost"])
+        p3 = self.LocalPerson(id=gertrude_uri, name="Gertrude", mboxes=set(["gertrude@localhost"]))
         self.assertFalse(p3.is_valid())
         p3.short_bio_fr = "Enthusiasm is key."
         p3.save()
@@ -201,28 +203,36 @@ class ModelTest(TestCase):
         self.assertEquals(roger_name, p4.name)
 
         other_roger_mail = "other_roger@example.org"
-        p5 = self.LocalPerson.objects.create(name=roger_name, mboxes=[other_roger_mail], short_bio_en="I am a double." )
+        p5 = self.LocalPerson.objects.create(name=roger_name, mboxes=set([other_roger_mail]),
+                                             short_bio_en="I am a double." )
+
+        p5.to_json()
+        p5.to_jsonld()
 
         rogers = list(self.LocalPerson.objects.filter(name=roger_name))
         self.assertEquals(len(rogers), 2)
         self.assertEquals(rogers[0].name, rogers[1].name)
         self.assertEquals(rogers[0].name, roger_name)
-        self.assertNotEquals(set(rogers[0].mboxes), set(rogers[1].mboxes))
+        self.assertNotEquals(rogers[0].mboxes, rogers[1].mboxes)
 
         rogers2 = list(self.LocalPerson.objects.filter(name=roger_name,
                                                        # mboxes is NOT REQUIRED to be exhaustive
-                                                       mboxes=[roger_email2]))
+                                                       mboxes=set([roger_email2])))
         self.assertEquals(len(rogers2), 1)
         rogers3 = list(self.LocalPerson.objects.filter(name=roger_name,
-                                                       mboxes=[roger_email2, roger_email3]))
+                                                       mboxes=set([roger_email2, roger_email3])))
         self.assertEquals(set(rogers2), set(rogers3))
 
         # Nothing
         rogers4 = list(self.LocalPerson.objects.filter(name=roger_name,
-                                                       mboxes=[roger_email2, roger_email3, other_roger_mail]))
+                                                       mboxes=set([roger_email2, roger_email3, other_roger_mail])))
         self.assertEquals(len(rogers4), 0)
 
-
+        # Set container
+        with self.assertRaises(LDAttributeTypeError):
+            # Mboxes should be a list or a set
+            p6 = self.LocalPerson.objects.create(name="Lola", mboxes="lola@example.org",
+                                                 short_bio_en="Will not exist.")
 
     def test_existing_instances(self):
         # My WebID
@@ -231,11 +241,11 @@ class ModelTest(TestCase):
         me = self.LocalPerson.objects.get(id=self.bcogrel_uri)
         self.assertFalse(me.is_valid())
 
-        mboxes = ["bcogrel@example.com", "bcogrel@example.org"]
+        mboxes = set(["bcogrel@example.com", "bcogrel@example.org"])
         self.data_graph.parse(data=json.dumps({"@id" : self.bcogrel_uri,
                                    "@type": "LocalPerson",
                                    # Required (missing in my WebID)
-                                   "mboxes": mboxes
+                                   "mboxes": list(mboxes)
                                    }),
                    context=self.person_context,
                    format="json-ld")
@@ -249,6 +259,6 @@ class ModelTest(TestCase):
         self.LocalPerson.objects.clear_cache()
         me = self.LocalPerson.objects.get(id=self.bcogrel_uri)
         self.assertNotEquals(me.mboxes, None)
-        self.assertEquals(set(me.mboxes), set(mboxes))
+        self.assertEquals(me.mboxes, mboxes)
         me.is_valid()
 
