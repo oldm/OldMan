@@ -25,15 +25,19 @@ class ModelBase(type):
     def __new__(mcs, name, bases, attributes):
         if name != "Model":
             required_fields = ["class_uri", "_storage_graph", "_context_dict", "_id_generator",
-                               "types", "registry"]
+                               "types", "registry", "default_graph", "schema_graph"]
             for field in required_fields:
                 if field not in attributes:
                     raise MissingClassAttributeError("%s is required for class %s" % (field, name))
             attributes["_context_dict"] = mcs.clean_context(attributes["_context_dict"])
 
-            # Removes the registry "attribute"
-            # (used by the instance manager)
+            # Removes some "attributes"
+            # only used by the manager
             registry = attributes.pop("registry")
+            # Default graph should be managed as read-only
+            default_graph = attributes.pop("default_graph")
+            # Read-only too
+            schema_graph = attributes.pop("schema_graph")
 
             # Should type be reserved?
             # TODO: merge it with class_uri ?
@@ -51,7 +55,8 @@ class ModelBase(type):
         if name != "Model":
             #TODO: log a message if "objects" was already allocated (data attribute)
             #A la Django
-            cls.objects = InstanceManager(cls, attributes["_storage_graph"], registry)
+            cls.objects = InstanceManager(cls, attributes["_storage_graph"], default_graph,
+                                          schema_graph, registry)
             registry.register(cls)
 
         return cls

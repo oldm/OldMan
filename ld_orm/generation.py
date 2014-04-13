@@ -31,7 +31,8 @@ class ModelManager(object):
     def registry(self):
         return self._registry
 
-    def generate(self, class_name, context, schema_graph, storage_graph, uri_prefix=None, uri_generator=None):
+    def generate(self, class_name, context, schema_graph, storage_graph, default_graph,
+                 uri_prefix=None, uri_generator=None):
         """
             Generates a model class
         """
@@ -51,10 +52,13 @@ class ModelManager(object):
 
         attributes.update({"class_uri": class_uri,
                            "types": types,
-                           "registry": self.registry,
                            "_context_dict": context,
                            "_id_generator": id_generator,
-                           "_storage_graph": storage_graph})
+                           "_storage_graph": storage_graph,
+                           # Non-attributes (will be popped)
+                           "registry": self.registry,
+                           "default_graph": default_graph,
+                           "schema_graph": schema_graph})
         return type(class_name, (Model,), attributes)
 
     def _extract_class_uri(self, class_name, context):

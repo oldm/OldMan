@@ -3,15 +3,17 @@ from rdflib import URIRef, Graph
 import json
 
 class InstanceManager(object):
-    def __init__(self, cls, storage_graph, registry):
+    def __init__(self, cls, storage_graph, default_graph, schema_graph, registry):
         self._cls = cls
-        self._graph = storage_graph
+        self._storage_graph = storage_graph
+        self._default_graph = default_graph
+        self._schema_graph = schema_graph
         self._cache = WeakValueDictionary()
         self._registry = registry
 
     @property
-    def graph(self):
-        return self._graph
+    def storage_graph(self):
+        return self._storage_graph
 
     @property
     def registry(self):
@@ -45,7 +47,7 @@ class InstanceManager(object):
 
         query = build_query_part("SELECT ?s WHERE", "?s", lines)
         #print query
-        results = self._graph.query(query)
+        results = self._storage_graph.query(query)
 
         # Generator expression
         return (self.get(id=str(r)) for r, in results)
@@ -69,7 +71,7 @@ class InstanceManager(object):
             #print "%s found in the cache" % instance
             return instance
         instance_graph = Graph()
-        instance_graph += self._graph.triples((URIRef(id), None, None))
+        instance_graph += self._storage_graph.triples((URIRef(id), None, None))
         return self._new_instance(id, instance_graph)
 
 

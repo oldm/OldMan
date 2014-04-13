@@ -113,7 +113,7 @@ class ModelTest(TestCase):
         if ModelTest.LocalPerson is None:
             ModelTest.LocalPerson = self.model_generator.generate("LocalPerson", self.person_context,
                                                                   self.schema_graph, self.data_graph,
-                                                                  uri_prefix="http://localhost/persons/")
+                                                                  self.graph, uri_prefix="http://localhost/persons/")
 
     def test_new_instances(self):
         name = "Toto"
@@ -139,7 +139,7 @@ class ModelTest(TestCase):
         self.assertRaises(AttributeError, getattr, p1, "objects")
 
         # Prevent a strange bug (possibly due to the way setUp() works)
-        self.data_graph = self.LocalPerson.objects.graph
+        self.data_graph = self.LocalPerson.objects.storage_graph
 
         self.assertEquals(name, p1.name)
         self.assertEquals(blogs, p1.blogs)
