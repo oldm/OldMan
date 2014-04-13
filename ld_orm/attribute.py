@@ -11,7 +11,8 @@ class RequiredLDAttributeError(Exception):
     pass
 
 
-LDAttributeMetadata = namedtuple("DataAttributeMetadata", ["name", "property", "language", "jsonld_type", "container"])
+LDAttributeMetadata = namedtuple("DataAttributeMetadata", ["name", "property", "language", "jsonld_type",
+                                                           "container", "reversed"])
 
 
 class LDAttribute(object):
@@ -34,6 +35,10 @@ class LDAttribute(object):
         if not self.container in [None, "@set"]:
             raise NotImplementedError("Container %s is not yet supported" % (self.container))
 
+        #TODO: support
+        if self.reversed:
+            raise NotImplementedError("Reversed properties (like %s) are not yet supported" % self.name)
+
     @property
     def is_required(self):
         return self._metadata.property.is_required
@@ -53,6 +58,10 @@ class LDAttribute(object):
     @property
     def jsonld_type(self):
         return self._metadata.jsonld_type
+
+    @property
+    def reversed(self):
+        return self._metadata.reversed
 
     @property
     def other_attributes(self):
@@ -128,9 +137,7 @@ class LDAttribute(object):
         property_uri = self.ld_property.uri
         lines = ""
 
-        #TODO: allow reverse value
-        reversed = False
-        if reversed:
+        if self.reversed:
             assert(v.startswith("<") and v.endswith(">"))
             for v in serialized_values:
                 lines += '  %s <%s> %s .\n' %(v, property_uri, "{0}")

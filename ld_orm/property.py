@@ -132,8 +132,6 @@ class LDProperty(object):
         """
         if self._attributes:
            raise AlreadyGeneratedAttributeError("It is too late to add attribute metadata")
-        if reverse:
-            raise NotImplementedError("Reverse properties are not yet supported")
         if jsonld_type:
             if jsonld_type == "@id":
                 self.type = PropertyType.ObjectProperty
@@ -158,7 +156,8 @@ class LDProperty(object):
         #TODO: throw an error instead?
         assert(len([md for md in self._tmp_attr_mds
                     if md.name == name]) == 0)
-        self._tmp_attr_mds.append(LDAttributeMetadata(name, self, language, jsonld_type, container))
+        self._tmp_attr_mds.append(LDAttributeMetadata(name, self, language, jsonld_type, container,
+                                                      reverse == True))
 
     def generate_attributes(self, attr_class_selector):
         """
