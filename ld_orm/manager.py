@@ -3,20 +3,25 @@ from rdflib import URIRef, Graph
 import json
 
 class InstanceManager(object):
-    def __init__(self, cls, storage_graph):
-        self.cls = cls
+    def __init__(self, cls, storage_graph, registry):
+        self._cls = cls
         self._graph = storage_graph
         self._cache = WeakValueDictionary()
+        self._registry = registry
 
     @property
     def graph(self):
         return self._graph
 
+    @property
+    def registry(self):
+        return self._registry
+
     def create(self, **kwargs):
         """
             Creates a new instance and saves it
         """
-        instance = self.cls(**kwargs)
+        instance = self._cls(**kwargs)
         instance.save()
         return instance
 
@@ -30,7 +35,7 @@ class InstanceManager(object):
             return self.get(**kwargs)
 
         lines = ""
-        for name, attr in self.cls._attributes.iteritems():
+        for name, attr in self._cls._attributes.iteritems():
             if not name in kwargs:
                 continue
             value = kwargs[name]
@@ -72,7 +77,7 @@ class InstanceManager(object):
         if len(instance_graph) == 0:
             return None
 
-        instance = self.cls.from_graph(id, instance_graph)
+        instance = self._cls.from_graph(id, instance_graph)
         self._cache[id] = instance
         return instance
 

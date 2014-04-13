@@ -5,12 +5,13 @@ from uuid import uuid1
 from rdflib import Graph
 #from rdflib.plugins.sparql import prepareQuery
 from .model import Model
+from .registry import ModelRegistry
 
 
 def default_model_generator():
     from ld_orm.extraction.attribute import LDAttributeExtractor
     attr_extractor = LDAttributeExtractor()
-    return ModelGenerator(attr_extractor)
+    return ModelManager(attr_extractor)
 
 
 class UnknownClassNameError(Exception):
@@ -20,10 +21,15 @@ class UnknownClassNameError(Exception):
     pass
 
 
-class ModelGenerator(object):
+class ModelManager(object):
 
     def __init__(self, attr_manager):
-        self.attr_manager = attr_manager
+        self._attr_manager = attr_manager
+        self._registry = ModelRegistry()
+
+    @property
+    def registry(self):
+        return self._registry
 
     def generate(self, class_name, context, schema_graph, storage_graph, uri_prefix=None, uri_generator=None):
         """
@@ -32,7 +38,7 @@ class ModelGenerator(object):
         class_uri = self._extract_class_uri(class_name, context)
         types = self._extract_types(class_uri, schema_graph)
         #print "Types: %s" % types
-        attributes = self.attr_manager.extract(class_uri, context, schema_graph)
+        attributes = self._attr_manager.extract(class_uri, context, schema_graph)
 
         if uri_generator:
             id_generator = uri_generator
@@ -41,8 +47,11 @@ class ModelGenerator(object):
         else:
             raise Exception("Please specify uri_prefix or uri_generator")
 
+        registry = self.registry
+
         attributes.update({"class_uri": class_uri,
                            "types": types,
+                           "registry": self.registry,
                            "_context_dict": context,
                            "_id_generator": id_generator,
                            "_storage_graph": storage_graph})
