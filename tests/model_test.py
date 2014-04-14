@@ -86,10 +86,9 @@ class ModelTest(TestCase):
                     "@type": "xsd:string",
                     "@container": "@set"
                 },
-                "blogs": {
+                "blog": {
                     "@id": "foaf:weblog",
-                    "@type": "@id",
-                    "@container": "@set"
+                    "@type": "@id"
                 },
                 "short_bio_fr": {
                     "@id": "bio:olb",
@@ -108,20 +107,19 @@ class ModelTest(TestCase):
             }
         }
 
-        self.model_generator = default_model_generator()
+        self.model_generator = default_model_generator(self.schema_graph, self.graph)
         #print self.graph.serialize(format="turtle")
         if ModelTest.LocalPerson is None:
             ModelTest.LocalPerson = self.model_generator.generate("LocalPerson", self.person_context,
-                                                                  self.schema_graph, self.data_graph,
-                                                                  self.graph, uri_prefix="http://localhost/persons/")
+                                                                  self.data_graph, uri_prefix="http://localhost/persons/")
 
     def test_new_instances(self):
         name = "Toto"
-        blogs = set(["http://blog.bcgl.fr"])
+        blog = "http://blog.bcgl.fr"
         p1 = self.LocalPerson()
         p1.name = name
         #print p1.name
-        p1.blogs = blogs
+        p1.blog = blog
         p1.mboxes = set(["toto@localhost"])
 
         #TODO: should sent a exception because
@@ -142,7 +140,7 @@ class ModelTest(TestCase):
         self.data_graph = self.LocalPerson.objects.storage_graph
 
         self.assertEquals(name, p1.name)
-        self.assertEquals(blogs, p1.blogs)
+        self.assertEquals(blog, p1.blog.id)
 
         # Because of descriptors, these attributes should not appear in __dict__ except id
         self.assertEquals(vars(p1).keys(), ["id"])

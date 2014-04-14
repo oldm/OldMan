@@ -8,10 +8,10 @@ from .model import Model
 from .registry import ModelRegistry
 
 
-def default_model_generator():
+def default_model_generator(schema_graph, default_graph):
     from ld_orm.extraction.attribute import LDAttributeExtractor
     attr_extractor = LDAttributeExtractor()
-    return ModelManager(attr_extractor)
+    return ModelManager(attr_extractor, schema_graph, default_graph)
 
 
 class UnknownClassNameError(Exception):
@@ -23,23 +23,37 @@ class UnknownClassNameError(Exception):
 
 class ModelManager(object):
 
-    def __init__(self, attr_manager):
+    def __init__(self, attr_manager, schema_graph, default_graph):
         self._attr_manager = attr_manager
-        self._registry = ModelRegistry()
+        self._registry = ModelRegistry(default_graph)
+        self._schema_graph = schema_graph
+        self._default_graph = default_graph
+
+        # Registered with the "None" key
+        UntypedModel = self.generate("UntypedModel", {"@context": {}}, default_graph,
+                                     uri_prefix="http://localhost/.well-known/genid/untyped/",
+                                     untyped=True)
 
     @property
     def registry(self):
         return self._registry
 
-    def generate(self, class_name, context, schema_graph, storage_graph, default_graph,
-                 uri_prefix=None, uri_generator=None):
+    def generate(self, class_name, context, storage_graph, uri_prefix=None,
+                 uri_generator=None, untyped=False):
         """
             Generates a model class
         """
-        class_uri = self._extract_class_uri(class_name, context)
-        types = self._extract_types(class_uri, schema_graph)
-        #print "Types: %s" % types
-        attributes = self._attr_manager.extract(class_uri, context, schema_graph)
+
+        # Only for UntypedModel
+        if untyped:
+            class_uri = None
+            types = []
+            attributes = {}
+        else:
+            class_uri = self._extract_class_uri(class_name, context)
+            types = self._extract_types(class_uri, self._schema_graph)
+            attributes = self._attr_manager.extract(class_uri, context,
+                                                    self._schema_graph)
 
         if uri_generator:
             id_generator = uri_generator
@@ -57,8 +71,8 @@ class ModelManager(object):
                            "_storage_graph": storage_graph,
                            # Non-attributes (will be popped)
                            "registry": self.registry,
-                           "default_graph": default_graph,
-                           "schema_graph": schema_graph})
+                           "default_graph": self._default_graph,
+                           "schema_graph": self._schema_graph})
         return type(class_name, (Model,), attributes)
 
     def _extract_class_uri(self, class_name, context):
@@ -102,3 +116,10 @@ class RandomPrefixedUriGenerator(UriGenerator):
 
     def generate(self):
         return "%s%s"%(self.prefix, uuid1().hex)
+
+class RandomUriGenerator(RandomPrefixedUriGenerator):
+
+    def __init__(self, **kwargs):
+        hostname = kwargs.get("hostname", "localhost")
+        prefix = "http://%s/.well-known/genid/"
+        RandomPrefixedUriGenerator.__init__(self, prefix=prefix)

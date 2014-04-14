@@ -28,9 +28,8 @@ class InstanceManager(object):
         return instance
 
     def clear_cache(self):
-        """Clears its cache """
+        """ Clears its cache """
         self._cache.clear()
-
 
     def filter(self, **kwargs):
         if "id" in kwargs:
@@ -74,12 +73,17 @@ class InstanceManager(object):
         instance_graph += self._storage_graph.triples((URIRef(id), None, None))
         return self._new_instance(id, instance_graph)
 
+    def get_any(self, id):
+        """ Any class """
+        other_class_manager = self.registry.find_class_manager(id)
+        obj = other_class_manager.get(id=id)
+        return obj
 
     def _new_instance(self, id, instance_graph):
         if len(instance_graph) == 0:
-            return None
-
-        instance = self._cls.from_graph(id, instance_graph)
+            instance = self._cls(id=id)
+        else:
+            instance = self._cls.from_graph(id, instance_graph)
         self._cache[id] = instance
         return instance
 

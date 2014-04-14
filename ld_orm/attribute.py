@@ -208,13 +208,25 @@ class LDAttribute(object):
             raise LDAttributeTypeError("{0} is not a {1}".format(v, self._value_type))
 
 
-
 class ObjectLDAttribute(LDAttribute):
     """
         TODO: validate that the value is an URI
     """
     def __init__(self, metadata):
         LDAttribute.__init__(self, metadata, (str, unicode))
+
+    def __get__(self, instance, owner):
+        uris = LDAttribute.__get__(self, instance, None)
+        if isinstance(uris, (list, set)):
+            # Returns a generator
+            return (type(instance).objects.get_any(uri)
+                    for uri in uris)
+        elif isinstance(uris, dict):
+            raise NotImplementedError("Should we implement it?")
+        elif uris:
+            return type(instance).objects.get_any(uris)
+        else:
+            return None
 
 
 class StringLDAttribute(LDAttribute):
