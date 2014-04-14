@@ -10,11 +10,18 @@ from ld_orm.attribute import LDAttributeTypeError, RequiredLDAttributeError
 class ModelTest(TestCase):
 
     LocalPerson = None
+    DefaultGraph = None
+    SchemaGraph = None
+    DataGraph = None
+    
 
     def setUp(self):
-        self.graph = ConjunctiveGraph()
-        self.schema_graph = self.graph.get_context(URIRef("http://localhost/schema"))
-        self.data_graph = self.graph.get_context(URIRef("http://localhost/data"))
+        if not ModelTest.DefaultGraph:
+            ModelTest.DefaultGraph = ConjunctiveGraph()
+        if not ModelTest.SchemaGraph:
+            ModelTest.SchemaGraph = ModelTest.DefaultGraph.get_context(URIRef("http://localhost/schema"))
+        if not ModelTest.DataGraph:
+            ModelTest.DataGraph = ModelTest.DefaultGraph.get_context(URIRef("http://localhost/data"))
         self.my_voc_prefix = "http://example.com/vocab#"
         self.bcogrel_uri = "https://benjamin.bcgl.fr/profile#me"
 
@@ -23,7 +30,8 @@ class ModelTest(TestCase):
                 {
                     "myvoc": self.my_voc_prefix,
                     "foaf": "http://xmlns.com/foaf/0.1/",
-                    "bio": "http://purl.org/vocab/bio/0.1/"
+                    "bio": "http://purl.org/vocab/bio/0.1/",
+                    "rel": "http://purl.org/vocab/relationship/"
                 },
                 "http://www.w3.org/ns/hydra/core"
             ],
@@ -62,10 +70,16 @@ class ModelTest(TestCase):
                     "readonly": False,
                     "writeonly": False
                 },
+                {
+                    "property": "rel:parentOf",
+                    "required": False,
+                    "readonly": False,
+                    "writeonly": False
+                }
             ]
         }
 
-        self.schema_graph.parse(data=json.dumps(self.local_person_def), format="json-ld")
+        ModelTest.SchemaGraph.parse(data=json.dumps(self.local_person_def), format="json-ld")
 
         self.person_context = {
             "@context": {
@@ -73,6 +87,7 @@ class ModelTest(TestCase):
                 "foaf": "http://xmlns.com/foaf/0.1/",
                 "bio": "http://purl.org/vocab/bio/0.1/",
                 "xsd": "http://www.w3.org/2001/XMLSchema#",
+                "rel": "http://purl.org/vocab/relationship/",
                 "id": "@id",
                 "type": "@type",
                 "LocalPerson": "myvoc:LocalPerson",
@@ -103,15 +118,21 @@ class ModelTest(TestCase):
                 "friends": {
                     "@id": "foaf:knows",
                     "@type": "@id"
+                },
+                "children": {
+                    "@id": "rel:parentOf",
+                    "@type": "@id",
+                    #TODO: test a list
+                    "@container": "@set"
                 }
             }
         }
 
-        self.model_generator = default_model_generator(self.schema_graph, self.graph)
-        #print self.graph.serialize(format="turtle")
+        self.model_generator = default_model_generator(ModelTest.SchemaGraph, ModelTest.DefaultGraph)
+        #print ModelTest.DefaultGraph.serialize(format="turtle")
         if ModelTest.LocalPerson is None:
             ModelTest.LocalPerson = self.model_generator.generate("LocalPerson", self.person_context,
-                                                                  self.data_graph, uri_prefix="http://localhost/persons/")
+                                                                  ModelTest.DataGraph, uri_prefix="http://localhost/persons/")
 
     def test_new_instances(self):
         name = "Toto"
@@ -137,7 +158,7 @@ class ModelTest(TestCase):
         self.assertRaises(AttributeError, getattr, p1, "objects")
 
         # Prevent a strange bug (possibly due to the way setUp() works)
-        self.data_graph = self.LocalPerson.objects.storage_graph
+        ModelTest.DataGraph = self.LocalPerson.objects.storage_graph
 
         self.assertEquals(name, p1.name)
         self.assertEquals(blog, p1.blog.id)
@@ -150,7 +171,7 @@ class ModelTest(TestCase):
         p1.name = "Robert"
 
         # Not saved
-        self.assertFalse(bool(self.data_graph.query("""ASK {?x foaf:name "Robert" }""")))
+        self.assertFalse(bool(ModelTest.DataGraph.query("""ASK {?x foaf:name "Robert" }""")))
 
         roger_email1 = "roger@localhost"
         roger_name = "Roger"
@@ -160,9 +181,9 @@ class ModelTest(TestCase):
         self.assertTrue(p2.is_valid())
         p2.save()
         # Saved
-        #print self.data_graph.serialize(format="turtle")
+        #print ModelTest.DataGraph.serialize(format="turtle")
         name_query = """ASK {?x foaf:name "%s"^^xsd:string }"""
-        self.assertTrue(bool(self.data_graph.query(name_query % roger_name )))
+        self.assertTrue(bool(ModelTest.DataGraph.query(name_query % roger_name )))
 
         # Change email addresses
         roger_email2 = "roger@example.com"
@@ -170,10 +191,10 @@ class ModelTest(TestCase):
         p2.mboxes=set([roger_email2, roger_email3])
         p2.save()
         mbox_query = """ASK {?x foaf:mbox "%s"^^xsd:string }"""
-        self.assertTrue(bool(self.data_graph.query(mbox_query % roger_email2 )))
-        self.assertTrue(bool(self.data_graph.query(mbox_query % roger_email3 )))
+        self.assertTrue(bool(ModelTest.DataGraph.query(mbox_query % roger_email2 )))
+        self.assertTrue(bool(ModelTest.DataGraph.query(mbox_query % roger_email3 )))
         # Has been removed
-        self.assertFalse(bool(self.data_graph.query(mbox_query % roger_email1 )))
+        self.assertFalse(bool(ModelTest.DataGraph.query(mbox_query % roger_email1 )))
 
         # Language-specific attributes
         p2bis = self.LocalPerson.objects.get(id=p2_uri)
@@ -193,7 +214,8 @@ class ModelTest(TestCase):
         self.assertFalse(p3.is_valid())
         p3.short_bio_fr = "Enthusiasm is key."
         p3.save()
-        self.assertTrue(bool(self.data_graph.query("ASK { <%s> ?p ?o }" % gertrude_uri)))
+        p3 = self.LocalPerson.objects.get(id=gertrude_uri)
+        self.assertTrue(bool(ModelTest.DataGraph.query("ASK { <%s> ?p ?o }" % gertrude_uri)))
 
         p4 = self.LocalPerson.objects.get(name=roger_name)
         self.assertEquals(p2, p4)
@@ -232,15 +254,24 @@ class ModelTest(TestCase):
             p6 = self.LocalPerson.objects.create(name="Lola", mboxes="lola@example.org",
                                                  short_bio_en="Will not exist.")
 
+        # Children
+        p1_children = set([p2bis, p3])
+        #UGLY!!! To remove (we should be able to assign objects directly, not their id)
+        p1.children = set([p.id for p in p1_children])
+        #p1.children = p1_children
+        p1.save()
+        self.assertEquals(p1_children, set(p1.children))
+
+
     def test_existing_instances(self):
         # My WebID
-        self.data_graph.parse(self.bcogrel_uri)
+        ModelTest.DataGraph.parse(self.bcogrel_uri)
 
         me = self.LocalPerson.objects.get(id=self.bcogrel_uri)
         self.assertFalse(me.is_valid())
 
         mboxes = set(["bcogrel@example.com", "bcogrel@example.org"])
-        self.data_graph.parse(data=json.dumps({"@id" : self.bcogrel_uri,
+        ModelTest.DataGraph.parse(data=json.dumps({"@id" : self.bcogrel_uri,
                                    "@type": "LocalPerson",
                                    # Required (missing in my WebID)
                                    "mboxes": list(mboxes)

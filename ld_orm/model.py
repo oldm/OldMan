@@ -152,6 +152,14 @@ class Model(object):
             former_lines += attr.pop_former_value_and_serialize_line(self)
             new_lines += attr.serialize_current_value_into_line(self)
 
+        #TODO: only execute once (first save())
+        types = self.types
+        if former_lines == "" and len(types) > 0:
+            type_line = "<%s> a" % self.id
+            for t in types:
+                type_line += " <%s>," % t
+            new_lines = type_line[:-1] + " . \n" + new_lines
+
         query = build_update_query_part("DELETE", self.id, former_lines)
         query += build_update_query_part("INSERT", self.id, new_lines)
         query += "WHERE {}"
