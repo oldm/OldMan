@@ -271,12 +271,11 @@ class ModelTest(TestCase):
         p1.save()
 
         # Force reload from the triplestore
-        #del p1
-        #p1 = self.LocalPerson.objects.get(id=p1_uri)
+        del p1
+        p1 = self.LocalPerson.objects.get(id=p1_uri)
         self.assertEquals(p1.id, p1_uri)
         self.assertEquals(p1.name, robert_name)
         #print p1.to_json()
-
         self.assertEquals(set([c.id for c in p1_children_bis]), set([c.id for c in p1.children]))
 
 

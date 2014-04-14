@@ -125,6 +125,8 @@ class Model(object):
             elif attr.container == "@set":
                 values = set(values)
             setattr(instance, attr_name, values)
+            # Clears "None" former value
+            attr.pop_former_value(instance)
         return instance
 
     def is_valid(self):
