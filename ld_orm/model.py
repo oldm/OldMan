@@ -1,10 +1,11 @@
 from exceptions import Exception
 from copy import deepcopy
+from types import GeneratorType
 from six import add_metaclass
+import json
+from rdflib import URIRef, Literal, Graph
 from .attribute import LDAttribute
 from .manager import InstanceManager, build_update_query_part
-from rdflib import URIRef, Literal, Graph
-import json
 
 
 class MissingClassAttributeError(Exception):
@@ -213,7 +214,7 @@ class Model(object):
         """
             TODO: improve it
         """
-        if isinstance(value, (list, set)):
+        if isinstance(value, (list, set, GeneratorType)):
             return [self._convert_value(v) for v in value]
         if isinstance(value, Model):
             if value.is_blank_node():
@@ -223,5 +224,5 @@ class Model(object):
             # TODO: compare its URI if non-blank (if same document that self)
             else:
                 # URI
-                return value._id
+                return value.id
         return value
