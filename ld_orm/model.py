@@ -81,10 +81,20 @@ class Model(object):
         """
             Does not save (like Django)
         """
+
+        if "id" in kwargs:
+            # Anticipated because used in __hash__
+            self._id = kwargs.pop("id")
+        else:
+            self._id = self._id_generator.generate()
+
         for k,v in kwargs.iteritems():
             setattr(self, k, v)
-        if "id" not in kwargs:
-            self.id = self._id_generator.generate()
+
+    @property
+    def id(self):
+        return self._id
+
 
     @classmethod
     def from_graph(cls, id, subgraph):
@@ -104,7 +114,7 @@ class Model(object):
                 results = [r for r in results if isinstance(r, Literal)
                            and r._language == language]
 
-            f = lambda x: unicode(x) if isinstance(x, Literal) else x
+            f = lambda x: unicode(x) if isinstance(x, Literal) else str(x)
             values = [f(r) for r in results]
             #print "Results for %s: %s" %(attr_name, values)
 
@@ -155,13 +165,13 @@ class Model(object):
         #TODO: only execute once (first save())
         types = self.types
         if former_lines == "" and len(types) > 0:
-            type_line = "<%s> a" % self.id
+            type_line = "<%s> a" % self._id
             for t in types:
                 type_line += " <%s>," % t
             new_lines = type_line[:-1] + " . \n" + new_lines
 
-        query = build_update_query_part("DELETE", self.id, former_lines)
-        query += build_update_query_part("INSERT", self.id, new_lines)
+        query = build_update_query_part("DELETE", self._id, former_lines)
+        query += build_update_query_part("INSERT", self._id, new_lines)
         query += "WHERE {}"
         #print query
         self._storage_graph.update(query)
@@ -169,7 +179,7 @@ class Model(object):
     def to_dict(self):
         dct = { name: self._convert_value(getattr(self, name))
                  for name in self._attributes}
-        dct["id"] = self.id
+        dct["id"] = self._id
         dct["types"] = self.types
         return dct
 
@@ -184,8 +194,18 @@ class Model(object):
         dct.update(self.to_dict())
         return json.dumps(dct)
 
-    def __eq__(self, other):
-        return self.id == other.id
+    # def __hash__(self):
+    #     return hash(self.__repr__())
+    #
+    # def __eq__(self, other):
+    #     return self._id == other._id
+
+    def __str__(self):
+        return self._id
+
+    def __repr__(self):
+        return "%s(<%s>)" % (self.__class__.__name__, self._id)
+
 
     def _convert_value(self, value):
         """
@@ -197,9 +217,9 @@ class Model(object):
             if value.is_blank_node():
                 #TODO: what about its own context? Make sure contexts are
                 # not incompatible
-                return value._to_dict()
+                return value.to_dict()
             # TODO: compare its URI if non-blank (if same document that self)
             else:
                 # URI
-                return value.id
+                return value._id
         return value

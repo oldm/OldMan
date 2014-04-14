@@ -228,6 +228,20 @@ class ObjectLDAttribute(LDAttribute):
         else:
             return None
 
+    def __set__(self, instance, value):
+        from .model import Model
+        f = lambda v: v._id if isinstance(v, Model) else v
+
+        if isinstance(value, set):
+            values = set([f(v) for v in value])
+        elif isinstance(value, list):
+            values = set([f(v) for v in value])
+        elif isinstance(value, dict):
+            raise NotImplementedError("Dict are not yet supported")
+        else:
+            values = value
+        LDAttribute.__set__(self, instance, values)
+
 
 class StringLDAttribute(LDAttribute):
     def __init__(self, metadata):

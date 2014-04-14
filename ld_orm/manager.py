@@ -63,8 +63,6 @@ class InstanceManager(object):
         return None
 
     def _get_by_id(self, id):
-        # Str is not weak referenceable
-        # TODO: resolve this pb
         instance = self._cache.get(id)
         if instance:
             #print "%s found in the cache" % instance
@@ -80,6 +78,7 @@ class InstanceManager(object):
         return obj
 
     def _new_instance(self, id, instance_graph):
+        #print "Instance graph: %s" % instance_graph.serialize(format="turtle")
         if len(instance_graph) == 0:
             instance = self._cls(id=id)
         else:

@@ -164,11 +164,12 @@ class ModelTest(TestCase):
         self.assertEquals(blog, p1.blog.id)
 
         # Because of descriptors, these attributes should not appear in __dict__ except id
-        self.assertEquals(vars(p1).keys(), ["id"])
+        self.assertEquals(vars(p1).keys(), ["_id"])
 
         with self.assertRaises(LDAttributeTypeError):
             p1.name = 2
-        p1.name = "Robert"
+        robert_name = "Robert"
+        p1.name = robert_name
 
         # Not saved
         self.assertFalse(bool(ModelTest.DataGraph.query("""ASK {?x foaf:name "Robert" }""")))
@@ -218,7 +219,7 @@ class ModelTest(TestCase):
         self.assertTrue(bool(ModelTest.DataGraph.query("ASK { <%s> ?p ?o }" % gertrude_uri)))
 
         p4 = self.LocalPerson.objects.get(name=roger_name)
-        self.assertEquals(p2, p4)
+        self.assertEquals(p2.id, p4.id)
         self.assertEquals(p2.name, p4.name)
         self.assertEquals(roger_name, p4.name)
 
@@ -256,11 +257,28 @@ class ModelTest(TestCase):
 
         # Children
         p1_children = set([p2bis, p3])
-        #UGLY!!! To remove (we should be able to assign objects directly, not their id)
-        p1.children = set([p.id for p in p1_children])
-        #p1.children = p1_children
+        p1.children = p1_children
+        p1_uri = p1.id
         p1.save()
-        self.assertEquals(p1_children, set(p1.children))
+        # Force reload from the triplestore
+        del p1
+        p1 = self.LocalPerson.objects.get(id=p1_uri)
+        self.assertEquals(set([c.id for c in p1_children]),
+                          set([c.id for c in p1.children]))
+        p1_children_bis = set([p3, p5])
+        # URIs are also supported
+        p1.children = set([c.id for c in p1_children_bis])
+        p1.save()
+
+        # Force reload from the triplestore
+        #del p1
+        #p1 = self.LocalPerson.objects.get(id=p1_uri)
+        self.assertEquals(p1.id, p1_uri)
+        self.assertEquals(p1.name, robert_name)
+        #print p1.to_json()
+
+        self.assertEquals(set([c.id for c in p1_children_bis]), set([c.id for c in p1.children]))
+
 
 
     def test_existing_instances(self):
