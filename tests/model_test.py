@@ -278,7 +278,7 @@ class ModelTest(TestCase):
         self.assertEquals(set([c.id for c in p1_children_bis]), set([c.id for c in p1.children]))
         p1.to_dict()
         p1.to_json()
-        p1.to_jsonld()
+        print p1.to_jsonld()
 
 
     def test_existing_instances(self):

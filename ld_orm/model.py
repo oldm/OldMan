@@ -179,23 +179,29 @@ class Model(object):
         #print query
         self._storage_graph.update(query)
 
-    def to_dict(self):
+    def to_dict(self, remove_none_values=True):
         dct = { name: self._convert_value(getattr(self, name))
                  for name in self._attributes}
-        dct["id"] = self._id
-        dct["types"] = self.types
+        # filter None values
+        if remove_none_values:
+            dct = {k: v for k,v in dct.iteritems() if v}
+
+        if not self.is_blank_node():
+            dct["id"] = self._id
+        if self.types and len(self.types) > 0:
+            dct["types"] = self.types
         return dct
 
-    def to_json(self):
+    def to_json(self, remove_none_values=True):
         """
             Pure JSON (not JSON-LD)
         """
-        return json.dumps(self.to_dict())
+        return json.dumps(self.to_dict(remove_none_values), sort_keys=True, indent=2)
 
-    def to_jsonld(self):
+    def to_jsonld(self, remove_none_values=True):
         dct = deepcopy(self._context_dict)
-        dct.update(self.to_dict())
-        return json.dumps(dct)
+        dct.update(self.to_dict(remove_none_values))
+        return json.dumps(dct, sort_keys=True, indent=2)
 
     # def __hash__(self):
     #     return hash(self.__repr__())
