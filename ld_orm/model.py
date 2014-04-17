@@ -2,6 +2,7 @@ from exceptions import Exception
 from copy import deepcopy
 from types import GeneratorType
 from six import add_metaclass
+from urlparse import urlparse
 import json
 from rdflib import URIRef, Literal, Graph
 from .attribute import LDAttribute
@@ -92,6 +93,12 @@ class Model(object):
         for k,v in kwargs.iteritems():
             setattr(self, k, v)
 
+        # External skolemized blank nodes are not considered as blank nodes
+        id_result = urlparse(self._id)
+        self._is_blank_node = ("/.well-known/genid/" in id_result.path) \
+                              and (id_result.hostname == "localhost")
+
+
     @property
     def id(self):
         return self._id
@@ -137,10 +144,7 @@ class Model(object):
         return True
 
     def is_blank_node(self):
-        """
-            TODO: implement it
-        """
-        return True
+        return self._is_blank_node
 
     def save(self):
         """

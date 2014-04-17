@@ -164,7 +164,7 @@ class ModelTest(TestCase):
         self.assertEquals(blog, p1.blog.id)
 
         # Because of descriptors, these attributes should not appear in __dict__ except id
-        self.assertEquals(vars(p1).keys(), ["_id"])
+        self.assertEquals(vars(p1).keys(), ["_id", "_is_blank_node"])
 
         with self.assertRaises(LDAttributeTypeError):
             p1.name = 2
@@ -307,5 +307,5 @@ class ModelTest(TestCase):
         me = self.LocalPerson.objects.get(id=self.bcogrel_uri)
         self.assertNotEquals(me.mboxes, None)
         self.assertEquals(me.mboxes, mboxes)
-        me.is_valid()
+        self.assertTrue(me.is_valid())
 
