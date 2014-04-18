@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from unittest import TestCase
-from rdflib import ConjunctiveGraph, URIRef, Literal
+from rdflib import ConjunctiveGraph, URIRef, Literal, RDF
 import json
 from ld_orm import default_model_factory
 from ld_orm.attribute import LDAttributeTypeCheckError, RequiredPropertyError
+from ld_orm.exceptions import ClassInstanceError
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
@@ -385,14 +386,19 @@ class ModelTest(TestCase):
         bob.to_jsonld()
         #TODO: continue
 
-    def test_existing_instance(self):
+    def test_out_of_band_update(self):
         jason_uri = URIRef("https://example.com/jason#me")
         data_graph.add((jason_uri, URIRef(FOAF + "name"), Literal("Jason")))
         data_graph.add((jason_uri, URIRef(BIO + "olb"), Literal("Jason was a warrior", lang="en")))
 
-        #TODO: should throw an error because types are missing
+        # LocalPerson type is missing
+        with self.assertRaises(ClassInstanceError):
+            LocalPerson.objects.get(id=str(jason_uri))
+
+        data_graph.add((jason_uri, RDF["type"], URIRef(LocalPerson.class_uri)))
+
+        # Mboxes is still missing
         jason = LocalPerson.objects.get(id=str(jason_uri))
-        # Mboxes and LocalPerson type are missing
         self.assertFalse(jason.is_valid())
 
         mboxes = {"jason@example.com", "jason@example.org"}

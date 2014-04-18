@@ -25,7 +25,7 @@ class LDAttribute(object):
 
         # TODO: support "@list", "@language" and "@index"
         if not self.container in [None, "@set"]:
-            raise NotImplementedError("Container %s is not yet supported" % (self.container))
+            raise NotImplementedError("Container %s is not yet supported" % self.container)
 
         #TODO: support
         if self.reversed:

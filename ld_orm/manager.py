@@ -1,5 +1,7 @@
 from weakref import WeakValueDictionary
 from rdflib import URIRef, Graph
+from rdflib.plugins.sparql import prepareQuery
+from .exceptions import ClassInstanceError
 
 
 class InstanceManager(object):
@@ -8,6 +10,11 @@ class InstanceManager(object):
         self._storage_graph = storage_graph
         self._cache = WeakValueDictionary()
         self._registry = registry
+        class_uri = cls.class_uri
+        if class_uri:
+            self._check_type_request = prepareQuery("ASK {?s a <%s> }" % class_uri )
+        else:
+            self._check_type_request = None
 
     @property
     def storage_graph(self):
@@ -66,7 +73,11 @@ class InstanceManager(object):
             #print "%s found in the cache" % instance
             return instance
         instance_graph = Graph()
-        instance_graph += self._storage_graph.triples((URIRef(id), None, None))
+        uri = URIRef(id)
+        instance_graph += self._storage_graph.triples((uri, None, None))
+        if self._check_type_request and not self._storage_graph.query(self._check_type_request,
+                                                                      initBindings={'s': uri}):
+            raise ClassInstanceError("%s is not an instance of %s" % (id, self._cls.__name__))
         return self._new_instance(id, instance_graph)
 
     def get_any(self, id):

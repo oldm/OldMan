@@ -1,6 +1,7 @@
 from enum import Enum
 from .attribute import LDAttributeMetadata
-from .exceptions import AlreadyDeclaredDatatypeError, PropertyDefTypeError, AlreadyGeneratedAttributeError, LDInternalError
+from .exceptions import AlreadyDeclaredDatatypeError, PropertyDefTypeError
+from .exceptions import AlreadyGeneratedAttributeError, LDInternalError
 
 
 class PropertyType(Enum):
@@ -90,7 +91,7 @@ class LDProperty(object):
         # Detects XSD
         if range.startswith("http://www.w3.org/2001/XMLSchema#"):
             #TODO: find a better error type
-            raise Exception("Domain cannot have a litteral datatype")
+            raise Exception("Domain cannot have a literal datatype")
         self._domains.add(domain)
 
     @property

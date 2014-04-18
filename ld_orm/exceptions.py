@@ -59,9 +59,16 @@ class UndeclaredClassNameError(Exception):
     pass
 
 
-class LDEditError(LDError):
+class LDUserError(LDError):
     """
-        Runtime errors, occuring when editing an individual.
+        Error when accessing or editing objects
+    """
+    pass
+
+
+class LDEditError(LDUserError):
+    """
+        Runtime errors, occuring when editing an object.
     """
     pass
 
@@ -76,6 +83,20 @@ class LDAttributeTypeCheckError(LDEditError):
 class RequiredPropertyError(LDEditError):
     """
         A required property has no value.
+    """
+    pass
+
+
+class LDAccessError(LDUserError):
+    """
+        Error when accessing objects
+    """
+    pass
+
+
+class ClassInstanceError(LDAccessError):
+    """
+        The object is not an instance of the expected model class
     """
     pass
 
