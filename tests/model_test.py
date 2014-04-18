@@ -124,7 +124,7 @@ bob_name = "Bob"
 bob_blog = "http://blog.example.com"
 bob_email1 = "bob@localhost"
 bob_email2 = "bob@example.org"
-bob_emails = set([bob_email1, bob_email2])
+bob_emails = {bob_email1, bob_email2}
 bob_bio_en = "I grow up in ... ."
 bob_bio_fr = u"J'ai grandi en ... ."
 alice_name = "Alice"
@@ -143,20 +143,20 @@ class ModelTest(TestCase):
         LocalPerson.objects.clear_cache()
 
     def create_bob(self):
-        return LocalPerson.objects.create(name=bob_name, blog=bob_blog, mboxes=set([bob_email1, bob_email2]),
+        return LocalPerson.objects.create(name=bob_name, blog=bob_blog, mboxes=bob_emails,
                                           short_bio_en=bob_bio_en, short_bio_fr=bob_bio_fr)
 
     def create_alice(self):
-        return LocalPerson.objects.create(name=alice_name, mboxes=set(alice_mail), short_bio_en=alice_bio_en)
+        return LocalPerson.objects.create(name=alice_name, mboxes={alice_mail}, short_bio_en=alice_bio_en)
 
     def create_john(self):
-        return LocalPerson.objects.create(name=john_name, mboxes=set(john_mail), short_bio_en=john_bio_en)
+        return LocalPerson.objects.create(name=john_name, mboxes={john_mail}, short_bio_en=john_bio_en)
 
     def test_bio_requirement(self):
         bob = LocalPerson()
         bob.name = bob_name
         bob.blog = bob_blog
-        bob.mboxes = set([bob_email1])
+        bob.mboxes = {bob_email1}
 
         self.assertFalse(bob.is_valid())
         self.assertRaises(RequiredLDAttributeError, bob.save)
@@ -168,20 +168,20 @@ class ModelTest(TestCase):
 
     def test_person_types(self):
         bob = self.create_bob()
-        expected_types = set(["http://example.com/vocab#LocalPerson",
-                              "http://xmlns.com/foaf/0.1/Person"])
+        expected_types = {"http://example.com/vocab#LocalPerson",
+                          "http://xmlns.com/foaf/0.1/Person"}
         self.assertEquals(bob.types, expected_types)
 
         # Check the triplestore
         type_request = """SELECT ?t WHERE {?x a ?t }"""
-        retrieved_types = set([str(r) for r, in
-                               data_graph.query(type_request, initBindings={'x': URIRef(bob.id)})])
+        retrieved_types = {str(r) for r, in data_graph.query(type_request,
+                                                             initBindings={'x': URIRef(bob.id)})}
         self.assertEquals(expected_types, retrieved_types)
 
     def test_bob_in_triplestore(self):
         request = """ASK {?x foaf:name "%s"^^xsd:string }""" % bob_name
         self.assertFalse(bool(data_graph.query(request)))
-        bob = self.create_bob()
+        self.create_bob()
         self.assertTrue(bool(data_graph.query(request)))
 
     def test_bob_attributes(self):
@@ -234,14 +234,14 @@ class ModelTest(TestCase):
     def test_multiple_mboxes(self):
         bob = self.create_bob()
         email3 = "bob-fake@bob.example.org"
-        bob.mboxes = set([bob_email2, email3])
+        bob.mboxes = {bob_email2, email3}
         bob.save()
 
         mbox_query = """ASK {?x foaf:mbox "%s"^^xsd:string }"""
-        self.assertTrue(bool(data_graph.query(mbox_query % bob_email2 )))
-        self.assertTrue(bool(data_graph.query(mbox_query % email3 )))
+        self.assertTrue(bool(data_graph.query(mbox_query % bob_email2)))
+        self.assertTrue(bool(data_graph.query(mbox_query % email3)))
         # Has been removed
-        self.assertFalse(bool(data_graph.query(mbox_query % bob_email1 )))
+        self.assertFalse(bool(data_graph.query(mbox_query % bob_email1)))
 
     def test_language(self):
         bob = self.create_bob()
@@ -278,7 +278,7 @@ class ModelTest(TestCase):
         bob2_mail = "bob2@example.org"
         bob2_bio_en = "I am a double."
         # Bob 2
-        LocalPerson.objects.create(name=bob_name, mboxes=set(bob2_mail), short_bio_en=bob2_bio_en)
+        LocalPerson.objects.create(name=bob_name, mboxes={bob2_mail}, short_bio_en=bob2_bio_en)
 
         bobs = list(LocalPerson.objects.filter(name=bob_name))
         self.assertEquals(len(bobs), 2)
@@ -286,17 +286,17 @@ class ModelTest(TestCase):
         self.assertEquals(bobs[0].name, bob_name)
         self.assertNotEquals(bobs[0].mboxes, bobs[1].mboxes)
 
-        bobs2 = list(LocalPerson.objects.filter(name=bob_name,
-                                                # mboxes is NOT REQUIRED to be exhaustive
-                                                mboxes=set([bob_email2])))
+        bobs2 = set(LocalPerson.objects.filter(name=bob_name,
+                                               # mboxes is NOT REQUIRED to be exhaustive
+                                               mboxes={bob_email2}))
         self.assertEquals(len(bobs2), 1)
-        bobs3 = list(LocalPerson.objects.filter(name=bob_name,
-                                                mboxes=set([bob_email1, bob_email2])))
-        self.assertEquals(set(bobs2), set(bobs3))
+        bobs3 = set(LocalPerson.objects.filter(name=bob_name,
+                                               mboxes={bob_email1, bob_email2}))
+        self.assertEquals(bobs2, bobs3)
 
         # Nothing
         bobs4 = list(LocalPerson.objects.filter(name=bob_name,
-                                                mboxes=set([bob_email1, bob_email2, bob2_mail])))
+                                                mboxes={bob_email1, bob_email2, bob2_mail}))
         self.assertEquals(len(bobs4), 0)
 
     def test_set_validation(self):
@@ -315,8 +315,8 @@ class ModelTest(TestCase):
         john = self.create_john()
 
         # Children
-        bob_children = set([alice, john])
-        bob_children_ids = set([c.id for c in bob_children])
+        bob_children = {alice, john}
+        bob_children_ids = {c.id for c in bob_children}
         bob.children = bob_children
         bob_uri = bob.id
         bob.save()
@@ -325,7 +325,7 @@ class ModelTest(TestCase):
         del bob
         LocalPerson.objects.clear_cache()
         bob = LocalPerson.objects.get(id=bob_uri)
-        self.assertEquals(bob_children_ids, set([c.id for c in bob.children]))
+        self.assertEquals(bob_children_ids, {c.id for c in bob.children})
 
     def test_assign_children_uris(self):
         bob = self.create_bob()
@@ -333,7 +333,7 @@ class ModelTest(TestCase):
         john = self.create_john()
 
         bob_uri = bob.id
-        bob_children_uris = set([alice.id, john.id])
+        bob_children_uris = {alice.id, john.id}
         bob.children = bob_children_uris
         bob.save()
 
@@ -344,7 +344,7 @@ class ModelTest(TestCase):
         bob = LocalPerson.objects.get(id=bob_uri)
         self.assertEquals(bob.id, bob_uri)
         self.assertEquals(bob.name, bob_name)
-        self.assertEquals(bob_children_uris, set([c.id for c in bob.children]))
+        self.assertEquals(bob_children_uris, {c.id for c in bob.children})
 
     def test_json(self):
         bob = self.create_bob()
@@ -361,7 +361,7 @@ class ModelTest(TestCase):
         alice = self.create_alice()
         john = self.create_john()
 
-        bob.children = set([alice, john])
+        bob.children = {alice, john}
         bob.save()
 
         bob.to_jsonld()
@@ -377,7 +377,7 @@ class ModelTest(TestCase):
         # Mboxes and LocalPerson type are missing
         self.assertFalse(jason.is_valid())
 
-        mboxes = set(["jason@example.com", "jason@example.org"])
+        mboxes = {"jason@example.com", "jason@example.org"}
         data_graph.parse(data=json.dumps({"@id" : jason_uri,
                                    "@type": ["LocalPerson", "Person"],
                                    # Required
