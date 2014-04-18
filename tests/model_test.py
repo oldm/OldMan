@@ -243,11 +243,28 @@ class ModelTest(TestCase):
         # Has been removed
         self.assertFalse(bool(data_graph.query(mbox_query % bob_email1)))
 
+    def test_reset(self):
+        bob = self.create_bob()
+        bob.short_bio_en = None
+        bob.save()
+        bob_uri = bob.id
+        del bob
+        LocalPerson.objects.clear_cache()
+        bob = LocalPerson.objects.get(id=bob_uri)
+
+        self.assertEquals(bob.short_bio_en, None)
+        self.assertEquals(bob.short_bio_fr, bob_bio_fr)
+
+    def test_reset_and_requirement(self):
+        bob = self.create_bob()
+        bob.short_bio_en = None
+        self.assertTrue(bob.is_valid())
+        bob.short_bio_fr = None
+        self.assertFalse(bob.is_valid())
+
     def test_language(self):
         bob = self.create_bob()
-        #TODO: allow None value
-        #bob.short_bio_en = None
-        bob.short_bio_en = ""
+        bob.short_bio_en = None
         bob.save()
         bob_id = bob.id
 
@@ -256,6 +273,7 @@ class ModelTest(TestCase):
         bob.short_bio_en = forbidden_string
         self.assertEquals(bob.short_bio_en, forbidden_string)
 
+        del bob
         LocalPerson.objects.clear_cache()
         bob = LocalPerson.objects.get(id=bob_id)
         self.assertEquals(bob.short_bio_en, None)

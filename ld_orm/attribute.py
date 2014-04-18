@@ -93,7 +93,7 @@ class LDAttribute(object):
     def is_locally_satisfied(self, instance):
         if not self.is_required:
             return True
-        return instance in self._data
+        return self._data.get(instance) != None
 
     def has_new_value(self, instance):
         return instance in self._former_values
@@ -204,7 +204,7 @@ class LDAttribute(object):
         self._check_value(value)
 
     def _check_value(self, v):
-        if not isinstance(v,  self._value_type):
+        if v and not isinstance(v,  self._value_type):
             raise LDAttributeTypeError("{0} is not a {1}".format(v, self._value_type))
 
 

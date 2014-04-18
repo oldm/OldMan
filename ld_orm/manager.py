@@ -2,6 +2,7 @@ from weakref import WeakValueDictionary
 from rdflib import URIRef, Graph
 import json
 
+
 class InstanceManager(object):
     def __init__(self, cls, storage_graph, default_graph, schema_graph, registry):
         self._cls = cls
@@ -36,12 +37,13 @@ class InstanceManager(object):
             return self.get(**kwargs)
 
         lines = ""
+        # Access to a protected attribute: design choice
+        # (We do not want a regular user to access to model.attributes)
         for name, attr in self._cls._attributes.iteritems():
             if not name in kwargs:
                 continue
             value = kwargs[name]
             if value:
-                property_uri = attr.ld_property.uri
                 lines += attr.serialize_values_into_lines(value)
 
         query = build_query_part("SELECT ?s WHERE", "?s", lines)
@@ -50,7 +52,6 @@ class InstanceManager(object):
 
         # Generator expression
         return (self.get(id=str(r)) for r, in results)
-
 
     def get(self, id=None, **kwargs):
         if id:
@@ -85,7 +86,6 @@ class InstanceManager(object):
             instance = self._cls.from_graph(id, instance_graph)
         self._cache[id] = instance
         return instance
-
 
     def __get__(self, instance, type=None):
         """
