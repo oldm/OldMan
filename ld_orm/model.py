@@ -4,6 +4,7 @@ from six import add_metaclass
 from urlparse import urlparse
 import json
 from rdflib import URIRef, Literal
+from rdflib.collection import Collection
 from .attribute import LDAttribute
 from .manager import InstanceManager, build_update_query_part
 from .exceptions import MissingClassAttributeError, ReservedAttributeNameError
@@ -98,6 +99,15 @@ class Model(object):
 
             results = subgraph.objects(uri, property_uri)
 
+            if attr.container == "@list":
+                rs = list(results)
+                if len(rs) > 1:
+                    raise NotImplementedError("Multiple list attributes for the same property not yet supported."
+                                              "TODO: support it")
+                if len(rs) == 1:
+                    list_uri = rs[0]
+                    results = Collection(cls._storage_graph, list_uri)
+
             # Filter if language is specified
             if language:
                 results = [r for r in results if isinstance(r, Literal)
@@ -164,8 +174,8 @@ class Model(object):
         self._storage_graph.update(query)
 
     def to_dict(self, remove_none_values=True):
-        dct = { name: self._convert_value(getattr(self, name))
-                 for name in self._attributes}
+        dct = {name: self._convert_value(getattr(self, name))
+               for name in self._attributes}
         # filter None values
         if remove_none_values:
             dct = {k: v for k,v in dct.iteritems() if v}

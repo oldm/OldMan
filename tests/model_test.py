@@ -13,6 +13,7 @@ data_graph = default_graph.get_context(URIRef("http://localhost/data"))
 
 FOAF = "http://xmlns.com/foaf/0.1/"
 BIO = "http://purl.org/vocab/bio/0.1/"
+REL = "http://purl.org/vocab/relationship/"
 
 my_voc_prefix = "http://example.com/vocab#"
 local_person_def = {
@@ -21,7 +22,7 @@ local_person_def = {
             "myvoc": my_voc_prefix,
             "foaf": FOAF,
             "bio": BIO,
-            "rel": "http://purl.org/vocab/relationship/"
+            "rel": REL
         },
         "http://www.w3.org/ns/hydra/core"
     ],
@@ -110,8 +111,7 @@ person_context = {
         "children": {
             "@id": "rel:parentOf",
             "@type": "@id",
-            #TODO: test a list
-            "@container": "@set"
+            "@container": "@list"
         }
     }
 }
@@ -328,14 +328,14 @@ class ModelTest(TestCase):
             LocalPerson.objects.create(name="Lola", mboxes=["lola@example.org"],
                                        short_bio_en="Will not exist.")
 
-    def test_assign_children_objects(self):
+    def test_children_object_assignment(self):
         bob = self.create_bob()
         alice = self.create_alice()
         john = self.create_john()
 
         # Children
-        bob_children = {alice, john}
-        bob_children_ids = {c.id for c in bob_children}
+        bob_children = [alice, john]
+        bob_children_ids = [c.id for c in bob_children]
         bob.children = bob_children
         bob_uri = bob.id
         bob.save()
@@ -344,15 +344,15 @@ class ModelTest(TestCase):
         del bob
         LocalPerson.objects.clear_cache()
         bob = LocalPerson.objects.get(id=bob_uri)
-        self.assertEquals(bob_children_ids, {c.id for c in bob.children})
+        self.assertEquals(bob_children_ids, [c.id for c in bob.children])
 
-    def test_assign_children_uris(self):
+    def test_children_uri_assignment(self):
         bob = self.create_bob()
         alice = self.create_alice()
         john = self.create_john()
 
         bob_uri = bob.id
-        bob_children_uris = {alice.id, john.id}
+        bob_children_uris = [alice.id, john.id]
         bob.children = bob_children_uris
         bob.save()
 
@@ -363,7 +363,27 @@ class ModelTest(TestCase):
         bob = LocalPerson.objects.get(id=bob_uri)
         self.assertEquals(bob.id, bob_uri)
         self.assertEquals(bob.name, bob_name)
-        self.assertEquals(bob_children_uris, {c.id for c in bob.children})
+        self.assertEquals(bob_children_uris, [c.id for c in bob.children])
+
+    def test_children_list(self):
+        bob = self.create_bob()
+        alice = self.create_alice()
+        john = self.create_john()
+
+        # Children
+        bob_children = [alice, john]
+        bob.children = bob_children
+        bob.save()
+
+        children_request = """SELECT ?child
+                              WHERE
+                              { <%s> rel:parentOf ?children.
+                                ?children rdf:rest*/rdf:first ?child
+                              } """ % bob.id
+        children_found = [str(r) for r, in data_graph.query(children_request)]
+        print data_graph.serialize(format="turtle")
+        # No guarantee about the order
+        self.assertEquals(set(children_found), set([c.id for c in bob_children]))
 
     def test_json(self):
         bob = self.create_bob()
@@ -380,7 +400,7 @@ class ModelTest(TestCase):
         alice = self.create_alice()
         john = self.create_john()
 
-        bob.children = {alice, john}
+        bob.children = [alice, john]
         bob.save()
 
         bob.to_jsonld()

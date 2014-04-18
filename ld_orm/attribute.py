@@ -11,10 +11,9 @@ class LDAttribute(object):
 
     CONTAINER_REQUIREMENTS = {'@set': set,
                               '@list': list,
-                            # '@language': dict,
-                            # '@index': dict,
-                              None: object,
-                             }
+                              #'@language': dict,
+                              # '@index': dict,
+                              None: object}
 
     def __init__(self, metadata, value_type=object):
         self._metadata = metadata
@@ -23,8 +22,8 @@ class LDAttribute(object):
         # Non-saved former values
         self._former_values = WeakKeyDictionary()
 
-        # TODO: support "@list", "@language" and "@index"
-        if not self.container in [None, "@set"]:
+        # TODO: support "@language" and "@index"
+        if not self.container in [None, "@set", "@list"]:
             raise NotImplementedError("Container %s is not yet supported" % self.container)
 
         #TODO: support
@@ -123,22 +122,26 @@ class LDAttribute(object):
             return ""
 
         vs = values if isinstance(values, (list, set)) else [values]
-        serialized_values = [self._convert_serialized_value(v)
-                             for v in vs]
+        converted_values = [self._convert_serialized_value(v) for v in vs]
 
         property_uri = self.ld_property.uri
         lines = ""
 
+        if self.container == "@list":
+            list_value = "( " + " ".join(converted_values) + " )"
+            serialized_values = [list_value]
+        else:
+            serialized_values = converted_values
+
         if self.reversed:
             assert(v.startswith("<") and v.endswith(">"))
             for v in serialized_values:
-                lines += '  %s <%s> %s .\n' %(v, property_uri, "{0}")
+                lines += '  %s <%s> %s .\n' % (v, property_uri, "{0}")
         else:
             for v in serialized_values:
-                lines += '  %s <%s> %s .\n' %("{0}", property_uri, v)
+                lines += '  %s <%s> %s .\n' % ("{0}", property_uri, v)
 
         return lines
-
 
 
     def _convert_serialized_value(self, value):
@@ -225,9 +228,9 @@ class ObjectLDAttribute(LDAttribute):
         f = lambda v: v._id if isinstance(v, Model) else v
 
         if isinstance(value, set):
-            values = set([f(v) for v in value])
+            values = {f(v) for v in value}
         elif isinstance(value, list):
-            values = set([f(v) for v in value])
+            values = [f(v) for v in value]
         elif isinstance(value, dict):
             raise NotImplementedError("Dict are not yet supported")
         else:
