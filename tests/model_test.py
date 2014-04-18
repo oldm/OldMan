@@ -4,7 +4,7 @@ from unittest import TestCase
 from rdflib import ConjunctiveGraph, URIRef, Literal
 import json
 from ld_orm import default_model_generator
-from ld_orm.attribute import LDAttributeTypeError, RequiredLDAttributeError
+from ld_orm.attribute import LDAttributeTypeCheckError, RequiredPropertyError
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
@@ -159,7 +159,7 @@ class ModelTest(TestCase):
         bob.mboxes = {bob_email1}
 
         self.assertFalse(bob.is_valid())
-        self.assertRaises(RequiredLDAttributeError, bob.save)
+        self.assertRaises(RequiredPropertyError, bob.save)
 
         # Bio is required
         bob.short_bio_en = bob_bio_en
@@ -211,7 +211,7 @@ class ModelTest(TestCase):
 
     def test_string_validation(self):
         bob = self.create_bob()
-        with self.assertRaises(LDAttributeTypeError):
+        with self.assertRaises(LDAttributeTypeCheckError):
             bob.name = 2
 
     def test_not_saved(self):
@@ -318,11 +318,11 @@ class ModelTest(TestCase):
         self.assertEquals(len(bobs4), 0)
 
     def test_set_validation(self):
-        with self.assertRaises(LDAttributeTypeError):
+        with self.assertRaises(LDAttributeTypeCheckError):
             # Mboxes should be a set
             LocalPerson.objects.create(name="Lola", mboxes="lola@example.org",
                                        short_bio_en="Will not exist.")
-        with self.assertRaises(LDAttributeTypeError):
+        with self.assertRaises(LDAttributeTypeCheckError):
             # Mboxes should be a set not a list
             LocalPerson.objects.create(name="Lola", mboxes=["lola@example.org"],
                                        short_bio_en="Will not exist.")
@@ -396,11 +396,10 @@ class ModelTest(TestCase):
         self.assertFalse(jason.is_valid())
 
         mboxes = {"jason@example.com", "jason@example.org"}
-        data_graph.parse(data=json.dumps({"@id" : jason_uri,
-                                   "@type": ["LocalPerson", "Person"],
-                                   # Required
-                                   "mboxes": list(mboxes)
-                                   }),
+        data_graph.parse(data=json.dumps({"@id": jason_uri,
+                                          "@type": ["LocalPerson", "Person"],
+                                          # Required
+                                          "mboxes": list(mboxes)}),
                          context=person_context,
                          format="json-ld")
 

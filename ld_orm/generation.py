@@ -1,24 +1,17 @@
 import json
 from urlparse import urlparse
-from exceptions import Exception
 from uuid import uuid1
 from rdflib import Graph
 #from rdflib.plugins.sparql import prepareQuery
 from .model import Model
 from .registry import ModelRegistry
+from .exceptions import UndeclaredClassNameError
 
 
 def default_model_generator(schema_graph, default_graph):
     from ld_orm.extraction.attribute import LDAttributeExtractor
     attr_extractor = LDAttributeExtractor()
     return ModelManager(attr_extractor, schema_graph, default_graph)
-
-
-class UnknownClassNameError(Exception):
-    """ When a local (file://) URL has been deduced from the class name.
-        This happens when the class name is not defined in the context
-    """
-    pass
 
 
 class ModelManager(object):
@@ -86,7 +79,7 @@ class ModelManager(object):
         # Check the URI
         result = urlparse(class_uri)
         if result.scheme == "file":
-            raise UnknownClassNameError("Deduced URI %s is not a valid HTTP URL" % class_uri)
+            raise UndeclaredClassNameError("Deduced URI %s is not a valid HTTP URL" % class_uri)
         return class_uri
 
     def _extract_types(self, class_uri, schema_graph):

@@ -1,22 +1,6 @@
-from exceptions import Exception
 from enum import Enum
 from .attribute import LDAttributeMetadata
-
-
-class AlreadyDeclaredDatatypeError(Exception):
-    pass
-
-
-class AlreadyDeclaredPropertyTypeError(Exception):
-    pass
-
-
-class AlreadyGeneratedAttributeError(Exception):
-    """
-        Attribute generation occurs only once per SupportedProperty.
-        You should not try to add metadata or regenerate after that.
-    """
-    pass
+from .exceptions import AlreadyDeclaredDatatypeError, PropertyDefTypeError, AlreadyGeneratedAttributeError
 
 
 class PropertyType(Enum):
@@ -61,7 +45,7 @@ class LDProperty(object):
     def type(self, property_type):
         if self._type != PropertyType.UnknownPropertyType:
             if self._type != property_type:
-                raise AlreadyDeclaredPropertyTypeError("Already declared as %s so cannot also be a %s "
+                raise PropertyDefTypeError("Already declared as %s so cannot also be a %s "
                                                         %(self._type,  property_type))
             return
         self._type = property_type

@@ -1,14 +1,6 @@
-from exceptions import Exception
 from collections import namedtuple
 from weakref import WeakKeyDictionary
-
-
-class LDAttributeTypeError(Exception):
-    pass
-
-
-class RequiredLDAttributeError(Exception):
-    pass
+from .exceptions import LDAttributeTypeCheckError, RequiredPropertyError
 
 
 LDAttributeMetadata = namedtuple("DataAttributeMetadata", ["name", "property", "language", "jsonld_type",
@@ -74,7 +66,7 @@ class LDAttribute(object):
         try:
             self.check_validity(instance)
             return True
-        except RequiredLDAttributeError:
+        except RequiredPropertyError:
             return False
 
     @property
@@ -88,7 +80,7 @@ class LDAttribute(object):
         for other in self.other_attributes:
             if other.is_locally_satisfied(instance):
                 return
-        raise RequiredLDAttributeError(self.name)
+        raise RequiredPropertyError(self.name)
 
     def is_locally_satisfied(self, instance):
         if not self.is_required:
@@ -132,7 +124,7 @@ class LDAttribute(object):
 
         vs = values if isinstance(values, (list, set)) else [values]
         serialized_values = [self._convert_serialized_value(v)
-                    for v in vs]
+                             for v in vs]
 
         property_uri = self.ld_property.uri
         lines = ""
@@ -189,7 +181,7 @@ class LDAttribute(object):
     def check_value(self, value):
         required_container_type = LDAttribute.CONTAINER_REQUIREMENTS[self.container]
         if not isinstance(value, required_container_type):
-            raise LDAttributeTypeError("A container (%s) was expected instead of %s"
+            raise LDAttributeTypeCheckError("A container (%s) was expected instead of %s"
                                        % (required_container_type, type(value)))
 
         if isinstance(value, (list, set, dict)):
@@ -205,7 +197,7 @@ class LDAttribute(object):
 
     def _check_value(self, v):
         if v and not isinstance(v,  self._value_type):
-            raise LDAttributeTypeError("{0} is not a {1}".format(v, self._value_type))
+            raise LDAttributeTypeCheckError("{0} is not a {1}".format(v, self._value_type))
 
 
 class ObjectLDAttribute(LDAttribute):

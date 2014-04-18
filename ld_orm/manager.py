@@ -1,6 +1,5 @@
 from weakref import WeakValueDictionary
 from rdflib import URIRef, Graph
-import json
 
 
 class InstanceManager(object):

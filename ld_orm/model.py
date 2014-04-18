@@ -1,23 +1,12 @@
-from exceptions import Exception
 from copy import deepcopy
 from types import GeneratorType
 from six import add_metaclass
 from urlparse import urlparse
 import json
-from rdflib import URIRef, Literal, Graph
+from rdflib import URIRef, Literal
 from .attribute import LDAttribute
 from .manager import InstanceManager, build_update_query_part
-
-
-class MissingClassAttributeError(Exception):
-    """
-        Attributes "storage_graph", "class_uri" and "context" are compulsory.
-    """
-    pass
-
-
-class ReservedAttributeError(Exception):
-    pass
+from .exceptions import MissingClassAttributeError, ReservedAttributeNameError
 
 
 class ModelBase(type):
@@ -46,7 +35,7 @@ class ModelBase(type):
             reserved_attributes = ["id", "_attributes"]
             for field in reserved_attributes:
                 if field in attributes:
-                    raise ReservedAttributeError("%s is reserved" % field)
+                    raise ReservedAttributeNameError("%s is reserved" % field)
 
         # Descriptors
         attributes["_attributes"] = {k: v for k, v in attributes.iteritems()
