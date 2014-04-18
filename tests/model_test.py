@@ -168,12 +168,19 @@ class ModelTest(TestCase):
 
     def test_person_types(self):
         bob = self.create_bob()
-        self.assertEquals(set(bob.types), set(["http://example.com/vocab#LocalPerson",
-                                              "http://xmlns.com/foaf/0.1/Person"]))
+        expected_types = set(["http://example.com/vocab#LocalPerson",
+                              "http://xmlns.com/foaf/0.1/Person"])
+        self.assertEquals(bob.types, expected_types)
+
+        # Check the triplestore
+        type_request = """SELECT ?t WHERE {?x a ?t }"""
+        retrieved_types = set([str(r) for r, in
+                               data_graph.query(type_request, initBindings={'x': URIRef(bob.id)})])
+        self.assertEquals(expected_types, retrieved_types)
 
     def test_bob_in_triplestore(self):
         request = """ASK {?x foaf:name "%s"^^xsd:string }""" % bob_name
-        self.assertFalse(bool(data_graph.query(request )))
+        self.assertFalse(bool(data_graph.query(request)))
         bob = self.create_bob()
         self.assertTrue(bool(data_graph.query(request)))
 

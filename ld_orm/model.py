@@ -193,7 +193,7 @@ class Model(object):
         if not self.is_blank_node():
             dct["id"] = self._id
         if self.types and len(self.types) > 0:
-            dct["types"] = self.types
+            dct["types"] = list(self.types)
         return dct
 
     def to_json(self, remove_none_values=True):

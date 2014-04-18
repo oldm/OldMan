@@ -47,7 +47,7 @@ class ModelManager(object):
         # Only for UntypedModel
         if untyped:
             class_uri = None
-            types = []
+            types = set()
             attributes = {}
         else:
             class_uri = self._extract_class_uri(class_name, context)
@@ -94,9 +94,9 @@ class ModelManager(object):
             Useful because class_uri is often a local specialization
             of a well-known class
         """
-        types = [class_uri]
+        types = set([class_uri])
         results = schema_graph.query("SELECT ?c WHERE { <%s> rdfs:subClassOf+ ?c }" % class_uri)
-        types += [str(r) for r, in results]
+        types.update([str(r) for r, in results])
         return types
 
 
