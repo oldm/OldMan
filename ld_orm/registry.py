@@ -20,7 +20,7 @@ class ModelRegistry(object):
     def get_model_class(self, class_uri):
         return self._model_classes.get(class_uri)
 
-    def find_class_manager(self, object_uri):
+    def find_instance_manager(self, object_uri):
         types = self._default_graph.objects(URIRef(object_uri), RDF["type"])
         for t in types:
             class_uri = str(t)

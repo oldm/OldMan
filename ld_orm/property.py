@@ -1,12 +1,12 @@
 from enum import Enum
 from .attribute import LDAttributeMetadata
-from .exceptions import AlreadyDeclaredDatatypeError, PropertyDefTypeError, AlreadyGeneratedAttributeError
+from .exceptions import AlreadyDeclaredDatatypeError, PropertyDefTypeError, AlreadyGeneratedAttributeError, LDInternalError
 
 
 class PropertyType(Enum):
-     UnknownPropertyType = 1
-     DatatypeProperty = 2
-     ObjectProperty = 3
+    UnknownPropertyType = 1
+    DatatypeProperty = 2
+    ObjectProperty = 3
 
 
 class LDProperty(object):
@@ -18,6 +18,8 @@ class LDProperty(object):
         self._uri = property_uri
         self._supporter_class_uri = supporter_class_uri
         self._is_required = is_required
+        if cardinality:
+            raise NotImplementedError("Property cardinality is not yet supported")
         # 1, 42, "*", "+"
         self._cardinality = cardinality
         self._type = property_type
@@ -104,7 +106,7 @@ class LDProperty(object):
     @property
     def attributes(self):
         if self._attributes is None:
-            raise NotGeneratedAttributeError("Please generate them before accessing this attribute")
+            raise LDInternalError("Please generate them before accessing this attribute")
         return self._attributes
 
     def add_attribute_metadata(self, name, jsonld_type=None, language=None, container=None,
@@ -115,7 +117,7 @@ class LDProperty(object):
                 - reverse property
         """
         if self._attributes:
-           raise AlreadyGeneratedAttributeError("It is too late to add attribute metadata")
+            raise AlreadyGeneratedAttributeError("It is too late to add attribute metadata")
         if jsonld_type:
             if jsonld_type == "@id":
                 self.type = PropertyType.ObjectProperty
@@ -124,7 +126,7 @@ class LDProperty(object):
                 if (not jsonld_type in self._ranges) and len(self._ranges) >=1:
                     raise AlreadyDeclaredDatatypeError("Attribute %s cannot have a different datatype"
                                                        "(%s) than the property's one (%s)" % (name, jsonld_type,
-                                                        list(self._ranges)[0]))
+                                                       list(self._ranges)[0]))
         # If no datatype defined, use the property one
         else:
             #TODO: warns because this is a bad practice
@@ -141,7 +143,7 @@ class LDProperty(object):
         assert(len([md for md in self._tmp_attr_mds
                     if md.name == name]) == 0)
         self._tmp_attr_mds.append(LDAttributeMetadata(name, self, language, jsonld_type, container,
-                                                      reverse == True))
+                                                      bool(reverse)))
 
     def generate_attributes(self, attr_class_selector):
         """

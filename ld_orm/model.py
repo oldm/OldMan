@@ -16,7 +16,7 @@ class ModelBase(type):
     def __new__(mcs, name, bases, attributes):
         if name != "Model":
             required_fields = ["class_uri", "_storage_graph", "_context_dict", "_id_generator",
-                               "types", "registry", "default_graph", "schema_graph"]
+                               "types", "registry"]
             for field in required_fields:
                 if field not in attributes:
                     raise MissingClassAttributeError("%s is required for class %s" % (field, name))
@@ -25,10 +25,6 @@ class ModelBase(type):
             # Removes some "attributes"
             # only used by the manager
             registry = attributes.pop("registry")
-            # Default graph should be managed as read-only
-            default_graph = attributes.pop("default_graph")
-            # Read-only too
-            schema_graph = attributes.pop("schema_graph")
 
             # Should type be reserved?
             # TODO: merge it with class_uri ?
@@ -45,8 +41,7 @@ class ModelBase(type):
 
         if name != "Model":
             #A la Django
-            cls.objects = InstanceManager(cls, attributes["_storage_graph"], default_graph,
-                                          schema_graph, registry)
+            cls.objects = InstanceManager(cls, attributes["_storage_graph"], registry)
             registry.register(cls)
 
         return cls
@@ -84,13 +79,11 @@ class Model(object):
         # External skolemized blank nodes are not considered as blank nodes
         id_result = urlparse(self._id)
         self._is_blank_node = ("/.well-known/genid/" in id_result.path) \
-                              and (id_result.hostname == "localhost")
-
+            and (id_result.hostname == "localhost")
 
     @property
     def id(self):
         return self._id
-
 
     @classmethod
     def from_graph(cls, id, subgraph):
@@ -152,7 +145,6 @@ class Model(object):
         for attr in self._attributes.values():
             if not attr.has_new_value(self):
                 continue
-            property_uri = attr.ld_property.uri
             # Beware: has a side effect!
             former_lines += attr.pop_former_value_and_serialize_line(self)
             new_lines += attr.serialize_current_value_into_line(self)
@@ -206,7 +198,6 @@ class Model(object):
 
     def __repr__(self):
         return "%s(<%s>)" % (self.__class__.__name__, self._id)
-
 
     def _convert_value(self, value):
         """

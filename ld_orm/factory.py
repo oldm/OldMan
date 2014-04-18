@@ -62,9 +62,7 @@ class ModelFactory(object):
                               "_id_generator": id_generator,
                               "_storage_graph": storage_graph,
                               # Non-attributes (will be popped)
-                              "registry": self.registry,
-                              "default_graph": self._default_graph,
-                              "schema_graph": self._schema_graph}
+                              "registry": self.registry}
 
         # First reserved attribute check
         for name in special_attributes:

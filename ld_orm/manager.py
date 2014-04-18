@@ -3,11 +3,9 @@ from rdflib import URIRef, Graph
 
 
 class InstanceManager(object):
-    def __init__(self, cls, storage_graph, default_graph, schema_graph, registry):
+    def __init__(self, cls, storage_graph, registry):
         self._cls = cls
         self._storage_graph = storage_graph
-        self._default_graph = default_graph
-        self._schema_graph = schema_graph
         self._cache = WeakValueDictionary()
         self._registry = registry
 
@@ -73,7 +71,7 @@ class InstanceManager(object):
 
     def get_any(self, id):
         """ Any class """
-        other_class_manager = self.registry.find_class_manager(id)
+        other_class_manager = self.registry.find_instance_manager(id)
         obj = other_class_manager.get(id=id)
         return obj
 

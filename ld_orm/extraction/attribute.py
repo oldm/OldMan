@@ -3,6 +3,7 @@ from .context import JsonLdContextAttributeMdExtractor
 from ..attribute import StringLDAttribute, LDAttribute, ObjectLDAttribute
 from ..property import PropertyType
 
+
 class LDAttributeExtractor(object):
     """ Extracts LDAttribute objects for a given class.
 
@@ -50,9 +51,9 @@ class LDAttributeExtractor(object):
 
         # Generates attributes
         attrs = []
-        for property in properties.values():
-            property.generate_attributes(self._class_selector)
-            attrs += property.attributes
+        for prop in properties.values():
+            prop.generate_attributes(self._class_selector)
+            attrs += prop.attributes
 
         # TODO: detects if attribute names are not unique
         return {a.name: a for a in attrs}
@@ -77,14 +78,14 @@ class LDAttributeClassSelector(object):
         self._datatypes[type_uri] = attr_class
 
     def find_attribute_class(self, attr_md):
-        property = attr_md.property
+        prop = attr_md.property
 
-        cls = self._special_properties.get(property.uri, None)
+        cls = self._special_properties.get(prop.uri, None)
         if cls:
             return cls
 
         # If not a special property but an ObjectProperty
-        if property.type == PropertyType.ObjectProperty:
+        if prop.type == PropertyType.ObjectProperty:
             return ObjectLDAttribute
 
         # If a DatatypeProperty
