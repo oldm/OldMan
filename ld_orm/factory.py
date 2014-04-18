@@ -22,20 +22,24 @@ class ModelFactory(object):
         self._default_graph = default_graph
 
         # Registered with the "None" key
-        self.generate("UntypedModel", {"@context": {}}, default_graph, untyped=True,
-                      uri_prefix="http://localhost/.well-known/genid/untyped/")
+        self._generate("DefaultModel", {"@context": {}}, default_graph, untyped=True,
+                       uri_prefix="http://localhost/.well-known/genid/default/")
 
     @property
     def registry(self):
         return self._registry
 
     def generate(self, class_name, context, storage_graph, uri_prefix=None,
-                 uri_generator=None, untyped=False):
+                 uri_generator=None):
         """
             Generates a model class
         """
+        return self._generate(class_name, context, storage_graph, uri_prefix, uri_generator)
 
-        # Only for UntypedModel
+    def _generate(self, class_name, context, storage_graph, uri_prefix=None,
+                  uri_generator=None, untyped=False):
+
+        # Only for the DefaultModel
         if untyped:
             class_uri = None
             types = set()
