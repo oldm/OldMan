@@ -32,7 +32,7 @@ class ModelBase(type):
 
             # Should type be reserved?
             # TODO: merge it with class_uri ?
-            reserved_attributes = ["id", "_attributes"]
+            reserved_attributes = ["id", "_attributes", "objects"]
             for field in reserved_attributes:
                 if field in attributes:
                     raise ReservedAttributeNameError("%s is reserved" % field)
@@ -44,7 +44,6 @@ class ModelBase(type):
         cls = type.__new__(mcs, name, bases, attributes)
 
         if name != "Model":
-            #TODO: log a message if "objects" was already allocated (data attribute)
             #A la Django
             cls.objects = InstanceManager(cls, attributes["_storage_graph"], default_graph,
                                           schema_graph, registry)

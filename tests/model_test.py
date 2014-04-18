@@ -3,7 +3,7 @@
 from unittest import TestCase
 from rdflib import ConjunctiveGraph, URIRef, Literal
 import json
-from ld_orm import default_model_generator
+from ld_orm import default_model_factory
 from ld_orm.attribute import LDAttributeTypeCheckError, RequiredPropertyError
 
 default_graph = ConjunctiveGraph()
@@ -115,7 +115,7 @@ person_context = {
     }
 }
 
-model_generator = default_model_generator(schema_graph, default_graph)
+model_generator = default_model_factory(schema_graph, default_graph)
 # Model class is generated here!
 LocalPerson = model_generator.generate("LocalPerson", person_context,
                                        data_graph, uri_prefix="http://localhost/persons/")

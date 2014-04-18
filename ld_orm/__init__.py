@@ -1,1 +1,1 @@
-from .generation import default_model_generator
+from .factory import default_model_factory
