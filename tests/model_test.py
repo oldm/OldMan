@@ -244,6 +244,15 @@ class ModelTest(TestCase):
         # Has been removed
         self.assertFalse(bool(data_graph.query(mbox_query % bob_email1)))
 
+    def test_list_assignment_instead_of_set(self):
+        bob = LocalPerson()
+        bob.name = bob_name
+        bob.short_bio_en = bob_bio_en
+
+        # List assignment instead of a set
+        with self.assertRaises(LDAttributeTypeCheckError):
+            bob.mboxes = [bob_email1, bob_email2]
+
     def test_reset(self):
         bob = self.create_bob()
         bob.short_bio_en = None
@@ -365,6 +374,15 @@ class ModelTest(TestCase):
         self.assertEquals(bob.name, bob_name)
         self.assertEquals(bob_children_uris, [c.id for c in bob.children])
 
+    def test_set_assignment_instead_of_list(self):
+        bob = self.create_bob()
+        alice = self.create_alice()
+        john = self.create_john()
+
+        #Set assignment instead of a list
+        with self.assertRaises(LDAttributeTypeCheckError):
+            bob.children = {alice.id, john.id}
+
     def test_children_list(self):
         bob = self.create_bob()
         alice = self.create_alice()
@@ -381,7 +399,7 @@ class ModelTest(TestCase):
                                 ?children rdf:rest*/rdf:first ?child
                               } """ % bob.id
         children_found = [str(r) for r, in data_graph.query(children_request)]
-        print data_graph.serialize(format="turtle")
+        #print data_graph.serialize(format="turtle")
         # No guarantee about the order
         self.assertEquals(set(children_found), set([c.id for c in bob_children]))
 

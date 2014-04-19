@@ -10,6 +10,22 @@ LDAttributeMetadata = namedtuple("DataAttributeMetadata", ["name", "property", "
 
 
 class LDAttribute(object):
+    """
+        A LD attribute is a key-value pair.
+
+        The key is the name of the attribute. Technically, the key is a JSON-LD term,
+        namely "a short-hand string that expands to an IRI or a blank node identifier"
+        ( http://www.w3.org/TR/json-ld/#dfn-term ) which corresponds here to a RDF property
+        (see SupportedProperty).
+
+        This value may be :
+          - None
+          - A Python equivalent for a RDF literal (double, string, date, etc.)
+          - An URI
+          - A collection (set, list and dict) of these types.
+
+        TODO: explain further details.
+    """
 
     CONTAINER_REQUIREMENTS = {'@set': set,
                               '@list': list,
@@ -86,7 +102,7 @@ class LDAttribute(object):
     def is_locally_satisfied(self, instance):
         if not self.is_required:
             return True
-        return self._data.get(instance) != None
+        return self._data.get(instance) is not None
 
     def has_new_value(self, instance):
         return instance in self._former_values
@@ -164,7 +180,7 @@ class LDAttribute(object):
         # Filter if language is specified
         if language:
             results = [r for r in results if isinstance(r, Literal)
-                       and r._language == language]
+                       and r.language == language]
 
         f = lambda x: unicode(x) if isinstance(x, Literal) else str(x)
         values = [f(r) for r in results]
@@ -261,7 +277,7 @@ class ObjectLDAttribute(LDAttribute):
 
     def __set__(self, instance, value):
         from .model import Model
-        f = lambda x: x.id if isinstance(x, Model) else v
+        f = lambda x: x.id if isinstance(x, Model) else x
 
         if isinstance(value, set):
             values = {f(v) for v in value}
