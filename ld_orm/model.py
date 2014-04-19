@@ -5,9 +5,10 @@ from urlparse import urlparse
 import json
 from rdflib import URIRef, Literal
 from rdflib.collection import Collection
+from rdflib.plugins.sparql.parser import ParseException
 from .attribute import LDAttribute
 from .manager import InstanceManager, build_update_query_part
-from .exceptions import MissingClassAttributeError, ReservedAttributeNameError
+from .exceptions import MissingClassAttributeError, ReservedAttributeNameError, SPARQLParseError
 
 
 class ModelBase(type):
@@ -171,7 +172,11 @@ class Model(object):
         query += build_update_query_part("INSERT", self._id, new_lines)
         query += "WHERE {}"
         #print query
-        self._storage_graph.update(query)
+        try:
+            self._storage_graph.update(query)
+        except ParseException as e:
+            raise SPARQLParseError("%s\n %s" % (query, e))
+
 
     def to_dict(self, remove_none_values=True):
         dct = {name: self._convert_value(getattr(self, name))

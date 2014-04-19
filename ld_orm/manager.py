@@ -1,7 +1,8 @@
 from weakref import WeakValueDictionary
 from rdflib import URIRef, Graph
 from rdflib.plugins.sparql import prepareQuery
-from .exceptions import ClassInstanceError
+from rdflib.plugins.sparql.parser import ParseException
+from .exceptions import ClassInstanceError, SPARQLParseError
 
 
 class InstanceManager(object):
@@ -52,7 +53,10 @@ class InstanceManager(object):
 
         query = build_query_part("SELECT ?s WHERE", "?s", lines)
         #print query
-        results = self._storage_graph.query(query)
+        try :
+            results = self._storage_graph.query(query)
+        except ParseException as e:
+            raise SPARQLParseError("%s\n %s" % (query, e))
 
         # Generator expression
         return (self.get(id=str(r)) for r, in results)
