@@ -1,7 +1,7 @@
-from .property import HydraPropertyExtractor
-from .context import JsonLdContextAttributeMdExtractor
-from ..attribute import StringLDAttribute, LDAttribute, ObjectLDAttribute
-from ..property import PropertyType
+from ld_orm.parsing.schema.property import HydraPropertyExtractor
+from ld_orm.parsing.schema.context import JsonLdContextAttributeMdExtractor
+from ld_orm.attribute import StringLDAttribute, LDAttribute, ObjectLDAttribute
+from ld_orm.property import PropertyType
 
 
 class LDAttributeExtractor(object):

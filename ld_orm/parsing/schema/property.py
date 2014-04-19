@@ -1,6 +1,6 @@
 from rdflib import Graph, Namespace, URIRef
 from rdflib.plugins.sparql import prepareQuery
-from ..property import LDProperty
+from ld_orm.property import LDProperty
 
 
 class LDPropertyExtractor(object):
