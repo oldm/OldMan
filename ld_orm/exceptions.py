@@ -105,6 +105,7 @@ class LDInternalError(LDError):
     """ Do not expect it """
     pass
 
+
 class SPARQLParseError(LDInternalError):
     """
         Invalid SPARQL request

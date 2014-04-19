@@ -1,5 +1,7 @@
 from collections import namedtuple
 from weakref import WeakKeyDictionary
+from rdflib import URIRef, Literal
+from rdflib.collection import Collection
 from .exceptions import LDAttributeTypeCheckError, RequiredPropertyError
 
 
@@ -106,7 +108,6 @@ class LDAttribute(object):
         values = self.pop_former_value(instance)
         return self.serialize_values_into_lines(values)
 
-
     def serialize_current_value_into_line(self, instance):
         """
             Serialized in a SPARQL-compatible way
@@ -143,6 +144,41 @@ class LDAttribute(object):
 
         return lines
 
+    def update_from_graph(self, instance, subgraph, storage_graph):
+        property_uri = URIRef(self.ld_property.uri)
+        instance_uri = URIRef(instance.id)
+        language = self.language
+        container = self.container
+
+        results = subgraph.objects(instance_uri, property_uri)
+
+        if container == "@list":
+            rs = list(results)
+            if len(rs) > 1:
+                raise NotImplementedError("Multiple list attributes for the same property not yet supported."
+                                          "TODO: support it")
+            if len(rs) == 1:
+                list_uri = rs[0]
+                results = Collection(storage_graph, list_uri)
+
+        # Filter if language is specified
+        if language:
+            results = [r for r in results if isinstance(r, Literal)
+                       and r._language == language]
+
+        f = lambda x: unicode(x) if isinstance(x, Literal) else str(x)
+        values = [f(r) for r in results]
+        #print "Results for %s: %s" %(attr_name, values)
+
+        if len(values) == 0:
+            return
+        elif not container and len(values) == 1:
+            values = values[0]
+        elif container == "@set":
+            values = set(values)
+        setattr(instance, self.name, values)
+        # Clears "None" former value
+        self.pop_former_value(instance)
 
     def _convert_serialized_value(self, value):
         """
@@ -225,7 +261,7 @@ class ObjectLDAttribute(LDAttribute):
 
     def __set__(self, instance, value):
         from .model import Model
-        f = lambda v: v._id if isinstance(v, Model) else v
+        f = lambda x: x.id if isinstance(x, Model) else v
 
         if isinstance(value, set):
             values = {f(v) for v in value}

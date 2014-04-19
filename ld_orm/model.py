@@ -3,8 +3,7 @@ from types import GeneratorType
 from six import add_metaclass
 from urlparse import urlparse
 import json
-from rdflib import URIRef, Literal
-from rdflib.collection import Collection
+from rdflib import URIRef
 from rdflib.plugins.sparql.parser import ParseException
 from .attribute import LDAttribute
 from .manager import InstanceManager, build_update_query_part
@@ -94,39 +93,8 @@ class Model(object):
         """
         instance = cls(id=id)
         uri = URIRef(id)
-        for attr_name, attr in instance._attributes.iteritems():
-            property_uri = URIRef(attr.ld_property.uri)
-            language = attr.language
-
-            results = subgraph.objects(uri, property_uri)
-
-            if attr.container == "@list":
-                rs = list(results)
-                if len(rs) > 1:
-                    raise NotImplementedError("Multiple list attributes for the same property not yet supported."
-                                              "TODO: support it")
-                if len(rs) == 1:
-                    list_uri = rs[0]
-                    results = Collection(cls._storage_graph, list_uri)
-
-            # Filter if language is specified
-            if language:
-                results = [r for r in results if isinstance(r, Literal)
-                           and r._language == language]
-
-            f = lambda x: unicode(x) if isinstance(x, Literal) else str(x)
-            values = [f(r) for r in results]
-            #print "Results for %s: %s" %(attr_name, values)
-
-            if len(values) == 0:
-                continue
-            elif not attr.container and len(values) == 1:
-                values = values[0]
-            elif attr.container == "@set":
-                values = set(values)
-            setattr(instance, attr_name, values)
-            # Clears "None" former value
-            attr.pop_former_value(instance)
+        for attr in instance._attributes.values():
+            attr.update_from_graph(instance, subgraph, cls._storage_graph)
         return instance
 
     def is_valid(self):
@@ -176,7 +144,6 @@ class Model(object):
             self._storage_graph.update(query)
         except ParseException as e:
             raise SPARQLParseError("%s\n %s" % (query, e))
-
 
     def to_dict(self, remove_none_values=True):
         dct = {name: self._convert_value(getattr(self, name))
