@@ -161,8 +161,8 @@ class LDAttribute(object):
 
         return lines
 
-    def update_from_graph(self, instance, subgraph, storage_graph):
-        values = self._value_extractor.extract_values(instance, subgraph, storage_graph)
+    def update_from_graph(self, instance, sub_graph, storage_graph):
+        values = self._value_extractor.extract_values(instance, sub_graph, storage_graph)
 
         if values:
             setattr(instance, self.name, values)
@@ -191,16 +191,22 @@ class LDAttribute(object):
         return value
 
     def __set__(self, instance, value):
-        if self.is_required and value is None:
-            self.check_validity(instance)
-        self.check_value(value)
+        # None value are always allowed
+        # (at assignment time)
+        if not value is None:
+            self.check_value(value)
+
+        # Empty container -> None
+        if isinstance(value, (list, set, dict)) and len(value) == 0:
+            value = None
 
         # Former value (if not already in cache)
         # (robust to multiple changes before saving)
         if not instance in self._former_values:
             # May be None (trick!)
             former_value = self._data.get(instance)
-            self._former_values[instance] = former_value
+            if former_value != value:
+                self._former_values[instance] = former_value
 
         self._data[instance] = value
 
@@ -209,21 +215,30 @@ class LDAttribute(object):
         if not isinstance(value, required_container_type):
             raise LDAttributeTypeCheckError("A container (%s) was expected instead of %s"
                                             % (required_container_type, type(value)))
-
         if isinstance(value, (list, set, dict)):
-            if not self.container:
-                #TODO: replaces by a log alert
-                print "Warning: no container declared for %s" % self.name
-
-            vs = value.values() if isinstance(value, dict) else value
-            for v in vs:
-                self._check_value(v)
-            return
-        self._check_value(value)
+            self._check_container(value)
+        else:
+            self._check_value(value)
 
     def _check_value(self, v):
         if v and not isinstance(v,  self._value_type):
             raise LDAttributeTypeCheckError("{0} is not a {1}".format(v, self._value_type))
+
+    def _check_container(self, value):
+        if not self.container:
+            #TODO: replaces by a log alert
+            print "Warning: no container declared for %s" % self.name
+
+            # List declaration is required (default: set)
+            # TODO: what about dict?
+            if isinstance(value, list):
+                raise LDAttributeTypeCheckError("Undeclared list %s assigned to %s ."
+                                                "For using a list, '@container': '@list' must be declared"
+                                                "in the JSON-LD context." % (value, self.name))
+
+        vs = value.values() if isinstance(value, dict) else value
+        for v in vs:
+            self._check_value(v)
 
 
 class ObjectLDAttribute(LDAttribute):

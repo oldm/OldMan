@@ -4,10 +4,11 @@
 """
 
 from unittest import TestCase
-from rdflib import ConjunctiveGraph, URIRef, Literal, RDF
+from rdflib import ConjunctiveGraph, URIRef
 import json
-from ld_orm import default_model_factory
 from copy import copy
+from ld_orm import default_model_factory
+from ld_orm.exceptions import RequiredPropertyError, LDAttributeTypeCheckError
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
@@ -33,6 +34,12 @@ local_person_def = {
         },
         {
             "property": "ex:localizedList",
+            "required": True,
+            "readonly": False,
+            "writeonly": False
+        },
+        {
+            "property": "ex:undeclaredSet",
             "required": False,
             "readonly": False,
             "writeonly": False
@@ -63,14 +70,19 @@ context = {
             "@type": "xsd:string",
             "@container": "@list",
             "@language": "fr"
+        },
+        "undeclared_set": {
+            "@id": "ex:localizedList",
+            "@type": "xsd:string"
         }
     }
 }
 
 model_generator = default_model_factory(schema_graph, default_graph)
 # Model class is generated here!
-LocalClass = model_generator.generate("LocalClass", context,
-                                       data_graph, uri_prefix="http://localhost/objects/")
+LocalClass = model_generator.generate("LocalClass", context, data_graph,
+                                      uri_prefix="http://localhost/objects/")
+default_list_en = ["w1", "w2"]
 
 
 class ContainerTest(TestCase):
@@ -80,8 +92,11 @@ class ContainerTest(TestCase):
         data_graph.update("CLEAR DEFAULT")
         LocalClass.objects.clear_cache()
 
+    def create_object(self):
+        return LocalClass.objects.create(list_en=default_list_en)
+
     def test_basic_list(self):
-        obj = LocalClass()
+        obj = self.create_object()
         uri = obj.id
         lst = ["Hello", "hi", "hi", "Hello"]
         backup_list = copy(lst)
@@ -100,8 +115,8 @@ class ContainerTest(TestCase):
         uri = obj.id
         list_fr = ["Salut", "Bonjour"]
         list_en = ["Hi", "Hello"]
-        obj.list_fr = list_fr
-        obj.list_en = list_en
+        obj.list_fr = copy(list_fr)
+        obj.list_en = copy(list_en)
         obj.save()
 
         del obj
@@ -109,3 +124,37 @@ class ContainerTest(TestCase):
         obj = LocalClass.objects.get(id=uri)
         self.assertEquals(obj.list_fr, list_fr)
         self.assertEquals(obj.list_en, list_en)
+
+    def test_required_list(self):
+        obj = LocalClass()
+        with self.assertRaises(RequiredPropertyError):
+            obj.save()
+        obj.list_fr = []
+        with self.assertRaises(RequiredPropertyError):
+            obj.save()
+
+    def test_undeclared_set(self):
+        obj = self.create_object()
+        lst = ["Hello", "hi", "hi", "Hello"]
+        # No declaration -> implicit set or unique value
+        # (lists are not accepted)
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.undeclared_set = lst
+        obj.undeclared_set = set(lst)
+        obj.save()
+        # Unique values are also supported
+        obj.undeclared_set = "unique value"
+        obj.save()
+
+    def test_change_attribute_of_required_property(self):
+        obj = LocalClass()
+        list_fr = ["Salut", "Bonjour"]
+        list_en = ["Hi", "Hello"]
+        obj.list_en = list_en
+        obj.save()
+        obj.list_en = None
+        self.assertFalse(obj.is_valid())
+        obj.list_fr = list_fr
+        obj.save()
+
+

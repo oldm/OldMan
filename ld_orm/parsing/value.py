@@ -10,7 +10,7 @@ class AttributeValueExtractorFromGraph(object):
         self._language = attribute.language
         self._property_uri = URIRef(attribute.ld_property.uri)
         self._container = attribute.container
-        self._extract_fct = AttributeValueExtractorFromGraph.extract_fcts[self._container]
+        self._extract_fct = AttributeValueExtractorFromGraph.EXTRACT_FCTS[self._container]
 
     def extract_values(self, instance, subgraph, storage_graph):
         instance_uri = URIRef(instance.id)
@@ -63,7 +63,7 @@ class AttributeValueExtractorFromGraph(object):
 
         return [f(r) for r in rdf_values]
 
-    extract_fcts = {'@list': _extract_list_values,
+    EXTRACT_FCTS = {'@list': _extract_list_values,
                     '@set': _extract_set_values,
                     #TODO: support other type of containers
                     None: _extract_regular_values}
