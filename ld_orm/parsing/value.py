@@ -8,6 +8,7 @@ class AttributeValueExtractorFromGraph(object):
     def __init__(self, attribute):
         self._attribute = attribute
         self._language = attribute.language
+        self._value_format = attribute.value_format
         self._property_uri = URIRef(attribute.ld_property.uri)
         self._container = attribute.container
         self._extract_fct = AttributeValueExtractorFromGraph.EXTRACT_FCTS[self._container]
@@ -43,7 +44,7 @@ class AttributeValueExtractorFromGraph(object):
             rdf_values = Collection(storage_graph, vlist)
             values = self._filter_and_convert(rdf_values)
             if len(values) > 0:
-                if final_list:
+                if final_list is not None :
                     raise DataStoreError("Same language in multiple list for the property %s"
                                          % self._property_uri)
                 final_list = values
@@ -58,10 +59,7 @@ class AttributeValueExtractorFromGraph(object):
             rdf_values = [r for r in rdf_values if isinstance(r, Literal)
                           and r.language == self._language]
 
-        #TODO: use unicode anywhere?
-        f = lambda x: unicode(x) if isinstance(x, Literal) else str(x)
-
-        return [f(r) for r in rdf_values]
+        return [self._value_format.to_python(unicode(r)) for r in rdf_values]
 
     EXTRACT_FCTS = {'@list': _extract_list_values,
                     '@set': _extract_set_values,

@@ -43,6 +43,24 @@ local_person_def = {
             "required": False,
             "readonly": False,
             "writeonly": False
+        },
+        {
+            "property": "ex:boolList",
+            "required": False,
+            "readonly": False,
+            "writeonly": False
+        },
+        {
+            "property": "ex:boolSet",
+            "required": False,
+            "readonly": False,
+            "writeonly": False
+        },
+        {
+            "property": "ex:singleBool",
+            "required": False,
+            "readonly": False,
+            "writeonly": False
         }
     ]
 }
@@ -51,6 +69,7 @@ schema_graph.parse(data=json.dumps(local_person_def), format="json-ld")
 context = {
     "@context": {
         "ex": EXAMPLE,
+        "xsd": "http://www.w3.org/2001/XMLSchema#",
         "id": "@id",
         "type": "@type",
         "LocalClass": "ex:LocalClass",
@@ -74,6 +93,20 @@ context = {
         "undeclared_set": {
             "@id": "ex:localizedList",
             "@type": "xsd:string"
+        },
+        "bool_list": {
+            "@id": "ex:boolList",
+            "@type": "xsd:boolean",
+            "@container": "@list"
+        },
+        "bool_set": {
+            "@id": "ex:boolSet",
+            "@type": "xsd:boolean",
+            "@container": "@set"
+        },
+        "single_bool": {
+            "@id": "ex:singleBool",
+            "@type": "xsd:boolean"
         }
     }
 }
@@ -156,5 +189,46 @@ class ContainerTest(TestCase):
         self.assertFalse(obj.is_valid())
         obj.list_fr = list_fr
         obj.save()
+
+    def test_single_bool(self):
+        obj = self.create_object()
+        uri = obj.id
+        obj.single_bool = True
+        obj.save()
+        del obj
+        LocalClass.objects.clear_cache()
+        obj = LocalClass.objects.get(id=uri)
+        self.assertEquals(obj.single_bool, True)
+
+        obj.single_bool = None
+        obj.save()
+        del obj
+        LocalClass.objects.clear_cache()
+        obj = LocalClass.objects.get(id=uri)
+        self.assertEquals(obj.single_bool, None)
+
+        obj.single_bool = False
+        obj.save()
+        del obj
+        LocalClass.objects.clear_cache()
+        obj = LocalClass.objects.get(id=uri)
+        self.assertEquals(obj.single_bool, False)
+
+    def test_bool_list(self):
+        obj = self.create_object()
+        uri = obj.id
+        lst = [True, False, True]
+        obj.bool_list = lst
+        self.assertEquals(obj.bool_list, lst)
+        obj.save()
+        del obj
+        LocalClass.objects.clear_cache()
+        obj = LocalClass.objects.get(id=uri)
+        self.assertEquals(obj.bool_list, lst)
+        obj.bool_list = [True]
+        obj.save()
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.bool_list = ["Wrong"]
+
 
 

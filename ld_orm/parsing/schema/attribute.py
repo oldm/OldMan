@@ -1,6 +1,6 @@
 from ld_orm.parsing.schema.property import HydraPropertyExtractor
 from ld_orm.parsing.schema.context import JsonLdContextAttributeMdExtractor
-from ld_orm.attribute import StringLDAttribute, LDAttribute, ObjectLDAttribute
+from ld_orm.value_format import StringValueFormat, AnyValueFormat, URIValueFormat, BooleanValueFormat
 from ld_orm.property import PropertyType
 
 
@@ -17,7 +17,7 @@ class LDAttributeExtractor(object):
 
     def __init__(self, property_extractors=[], attr_md_extractors=[], use_hydra=True,
                  use_jsonld_context=True):
-        self._class_selector = LDAttributeClassSelector()
+        self._class_selector = ValueFormatSelector()
         self._property_extractors = property_extractors
         self._attr_md_extractors = attr_md_extractors
         if use_hydra:
@@ -59,7 +59,7 @@ class LDAttributeExtractor(object):
         return {a.name: a for a in attrs}
 
 
-class LDAttributeClassSelector(object):
+class ValueFormatSelector(object):
 
     def __init__(self, special_properties={}, include_default_datatypes=True):
         """
@@ -69,26 +69,30 @@ class LDAttributeClassSelector(object):
         self._datatypes = {}
         if include_default_datatypes:
             #TODO: enrich it
-            self._datatypes.update({"http://www.w3.org/2001/XMLSchema#string": StringLDAttribute})
+            xsd = "http://www.w3.org/2001/XMLSchema#"
+            self._datatypes.update({xsd + "string": StringValueFormat(),
+                                    xsd + "boolean": BooleanValueFormat(),
+                                   })
+            self._uri_format = URIValueFormat()
+            self._any_format = AnyValueFormat()
 
-    def add_special_property(self, property_uri, attr_class):
-        self._special_properties[property_uri] = attr_class
+    def add_special_property(self, property_uri, value_format):
+        self._special_properties[property_uri] = value_format
 
-    def add_datatype(self, type_uri, attr_class):
-        self._datatypes[type_uri] = attr_class
+    def add_datatype(self, type_uri, value_format):
+        self._datatypes[type_uri] = value_format
 
-    def find_attribute_class(self, attr_md):
+    def find_value_format(self, attr_md):
         prop = attr_md.property
 
-        cls = self._special_properties.get(prop.uri, None)
-        if cls:
-            return cls
+        value_format = self._special_properties.get(prop.uri, None)
+        if value_format:
+            return value_format
 
         # If not a special property but an ObjectProperty
         if prop.type == PropertyType.ObjectProperty:
-            return ObjectLDAttribute
+            return self._uri_format
 
         # If a DatatypeProperty
-        cls = self._datatypes.get(attr_md.jsonld_type, LDAttribute)
-        return cls
+        return self._datatypes.get(attr_md.jsonld_type, self._any_format)
 

@@ -1,5 +1,5 @@
 from enum import Enum
-from .attribute import LDAttributeMetadata
+from .attribute import LDAttributeMetadata, LDAttribute, ObjectLDAttribute
 from .exceptions import AlreadyDeclaredDatatypeError, PropertyDefTypeError
 from .exceptions import AlreadyGeneratedAttributeError, LDInternalError
 
@@ -140,13 +140,14 @@ class LDProperty(object):
                 #TODO: find a better Exception type
                 raise NotImplementedError("Untyped JSON-LD value are not (yet?) supported")
 
-        #TODO: throw an error instead?
-        assert(len([md for md in self._tmp_attr_mds
-                    if md.name == name]) == 0)
+        if len([md for md in self._tmp_attr_mds
+                    if md.name == name]) > 0:
+            raise LDInternalError("Multiple attribute named %s" % name)
+
         self._tmp_attr_mds.append(LDAttributeMetadata(name, self, language, jsonld_type, container,
                                                       bool(reverse)))
 
-    def generate_attributes(self, attr_class_selector):
+    def generate_attributes(self, attr_format_selector):
         """
             Can be called only once
         """
@@ -155,8 +156,9 @@ class LDProperty(object):
 
         self._attributes = set()
         for md in self._tmp_attr_mds:
-            attr_cls = attr_class_selector.find_attribute_class(md)
-            self._attributes.add(attr_cls(md))
+            value_format = attr_format_selector.find_value_format(md)
+            attr_cls = ObjectLDAttribute if self._type == PropertyType.ObjectProperty else LDAttribute
+            self._attributes.add(attr_cls(md, value_format))
 
         # Clears mds
         self._tmp_attr_mds = []
