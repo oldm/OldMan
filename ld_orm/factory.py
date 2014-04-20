@@ -10,7 +10,7 @@ from .uri import RandomPrefixedUriGenerator
 
 
 def default_model_factory(schema_graph, default_graph):
-    from ld_orm.extraction.schema.attribute import LDAttributeExtractor
+    from ld_orm.parsing.schema.attribute import LDAttributeExtractor
     attr_extractor = LDAttributeExtractor()
     return ModelFactory(attr_extractor, schema_graph, default_graph)
 

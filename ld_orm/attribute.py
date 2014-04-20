@@ -1,8 +1,7 @@
 from collections import namedtuple
 from weakref import WeakKeyDictionary
-from rdflib import URIRef, Literal
-from rdflib.collection import Collection
 from .exceptions import LDAttributeTypeCheckError, RequiredPropertyError
+from ld_orm.parsing.value import AttributeValueExtractorFromGraph
 
 
 LDAttributeMetadata = namedtuple("DataAttributeMetadata", ["name", "property", "language", "jsonld_type",
@@ -39,6 +38,8 @@ class LDAttribute(object):
         self._data = WeakKeyDictionary()
         # Non-saved former values
         self._former_values = WeakKeyDictionary()
+
+        self._value_extractor = AttributeValueExtractorFromGraph(self)
 
         # TODO: support "@language" and "@index"
         if not self.container in [None, "@set", "@list"]:
@@ -161,46 +162,16 @@ class LDAttribute(object):
         return lines
 
     def update_from_graph(self, instance, subgraph, storage_graph):
-        property_uri = URIRef(self.ld_property.uri)
-        instance_uri = URIRef(instance.id)
-        language = self.language
-        container = self.container
+        values = self._value_extractor.extract_values(instance, subgraph, storage_graph)
 
-        results = subgraph.objects(instance_uri, property_uri)
-
-        if container == "@list":
-            rs = list(results)
-            if len(rs) > 1:
-                raise NotImplementedError("Multiple list attributes for the same property not yet supported."
-                                          "TODO: support it")
-            if len(rs) == 1:
-                list_uri = rs[0]
-                results = Collection(storage_graph, list_uri)
-
-        # Filter if language is specified
-        if language:
-            results = [r for r in results if isinstance(r, Literal)
-                       and r.language == language]
-
-        f = lambda x: unicode(x) if isinstance(x, Literal) else str(x)
-        values = [f(r) for r in results]
-        #print "Results for %s: %s" %(attr_name, values)
-
-        if len(values) == 0:
-            return
-        elif not container and len(values) == 1:
-            values = values[0]
-        elif container == "@set":
-            values = set(values)
-        setattr(instance, self.name, values)
-        # Clears "None" former value
-        self.pop_former_value(instance)
+        if values:
+            setattr(instance, self.name, values)
+            # Clears "None" former value
+            self.pop_former_value(instance)
 
     def _convert_serialized_value(self, value):
         """
             SPARQL encoding
-
-             TODO: replace with line encoding
         """
         jsonld_type = self.jsonld_type
         language = self.language
@@ -237,7 +208,7 @@ class LDAttribute(object):
         required_container_type = LDAttribute.CONTAINER_REQUIREMENTS[self.container]
         if not isinstance(value, required_container_type):
             raise LDAttributeTypeCheckError("A container (%s) was expected instead of %s"
-                                       % (required_container_type, type(value)))
+                                            % (required_container_type, type(value)))
 
         if isinstance(value, (list, set, dict)):
             if not self.container:
