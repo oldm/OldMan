@@ -162,7 +162,7 @@ LocalClass = model_generator.generate("LocalClass", context, data_graph,
 default_list_en = ["w1", "w2"]
 
 
-class ContainerTest(TestCase):
+class DatatypeTest(TestCase):
 
     def tearDown(self):
         """ Clears the data graph """
@@ -404,11 +404,3 @@ class ContainerTest(TestCase):
             obj.float = "not a number"
         obj.float = -2.433
         obj.float = 0
-
-
-
-
-
-
-
-

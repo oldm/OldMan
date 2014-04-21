@@ -158,6 +158,7 @@ class ContainerTest(TestCase):
 
     def test_undeclared_set(self):
         obj = self.create_object()
+        uri = obj.id
         lst = ["Hello", "hi", "hi", "Hello"]
         # No declaration -> implicit set or unique value
         # (lists are not accepted)
@@ -198,8 +199,17 @@ class ContainerTest(TestCase):
         with self.assertRaises(LDAttributeTypeCheckError):
             obj.bool_list = [True, None, False]
 
-
-
-
-
-
+    def test_bool_set(self):
+        obj = self.create_object()
+        uri = obj.id
+        bools = {False, True}
+        obj.bool_set = bools
+        obj.save()
+        del obj
+        LocalClass.objects.clear_cache()
+        obj = LocalClass.objects.get(id=uri)
+        self.assertEquals(obj.bool_set, bools)
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.bool_set = [True]
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.bool_set = {True, "Should not be there"}
