@@ -21,7 +21,9 @@ EXAMPLE = "http://localhost/vocab#"
 local_person_def = {
     "@context": [
         {
-            "ex": EXAMPLE
+            "ex": EXAMPLE,
+            "schema": "http://schema.org/",
+            "foaf": "http://xmlns.com/foaf/0.1/"
         },
         "http://www.w3.org/ns/hydra/core"
     ],
@@ -83,6 +85,14 @@ local_person_def = {
         {
             "property": "ex:double",
             "required": False
+        },
+        {
+            "property": "foaf:mbox",
+            "required": False
+        },
+        {
+            "property": "schema:email",
+            "required": False
         }
 
     ]
@@ -93,6 +103,8 @@ context = {
     "@context": {
         "ex": EXAMPLE,
         "xsd": "http://www.w3.org/2001/XMLSchema#",
+        "foaf": "http://xmlns.com/foaf/0.1/",
+        "schema": "http://schema.org/",
         "id": "@id",
         "type": "@type",
         "LocalClass": "ex:LocalClass",
@@ -151,6 +163,16 @@ context = {
         "double": {
             "@id": "ex:double",
             "@type": "xsd:double"
+        },
+        "mbox": {
+            # foaf:mbox should have priority
+            "@id": "foaf:mbox",
+            "@type": "xsd:string"
+        },
+        "email": {
+            # schema:email should have priority
+            "@id": "schema:email",
+            "@type": "xsd:string"
         }
     }
 }
@@ -404,3 +426,41 @@ class DatatypeTest(TestCase):
             obj.float = "not a number"
         obj.float = -2.433
         obj.float = 0
+
+    def test_mbox(self):
+        obj = self.create_object()
+        uri = obj.id
+        mail = "john.doe@example.org"
+        obj.mbox = mail
+        obj.save()
+        del obj
+        LocalClass.objects.clear_cache()
+        obj = LocalClass.objects.get(id=uri)
+        self.assertEquals(obj.mbox, mail)
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.mbox = "john@somewhere@nowhereindeed.org"
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.mbox = "john"
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.mbox = 5
+        obj.mbox = "john+spam@example.org"
+
+    def test_email(self):
+        obj = self.create_object()
+        uri = obj.id
+        mail = "john.doe@example.org"
+        obj.email = mail
+        obj.save()
+        del obj
+        LocalClass.objects.clear_cache()
+        obj = LocalClass.objects.get(id=uri)
+        self.assertEquals(obj.email, mail)
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.email = "john@somewhere@nowhereindeed.org"
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.email = "john"
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.email = 5
+        obj.email = "john+spam@example.org"
+
+

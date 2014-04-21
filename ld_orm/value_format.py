@@ -1,4 +1,5 @@
 from rdflib import Literal
+from validate_email import validate_email
 
 class ValueFormatError(Exception):
     pass
@@ -74,8 +75,14 @@ class NonNegativeTypedValueFormat(TypedValueFormat):
             raise ValueFormatError(u"%s should not be negative" % value)
 
 
-class EmailValueFormat(ValueFormat):
-    """ TODO: implement it """
+class EmailValueFormat(TypedValueFormat):
+
+    def __init__(self):
+        TypedValueFormat.__init__(self, (str, unicode))
 
     def check_value(self, value):
-        raise NotImplementedError(u"TODO: implement it")
+        # Check that it is a string
+        TypedValueFormat.check_value(self, value)
+
+        if not validate_email(value):
+            raise ValueFormatError(u"%s is not a valid email (bad format)" % value)

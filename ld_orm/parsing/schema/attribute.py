@@ -66,7 +66,8 @@ class LDAttributeExtractor(object):
 
 class ValueFormatSelector(object):
 
-    def __init__(self, special_properties={}, include_default_datatypes=True):
+    def __init__(self, special_properties={}, include_default_datatypes=True,
+                 include_well_known_properties=True):
         """
             TODO: enrich default datatypes
         """
@@ -103,6 +104,10 @@ class ValueFormatSelector(object):
                                     xsd + u'double': TypedValueFormat((float, int, long, Decimal))})
             self._uri_format = IRIValueFormat()
             self._any_format = AnyValueFormat()
+        if include_well_known_properties:
+            email_value_format = EmailValueFormat()
+            self.add_special_property(u"http://xmlns.com/foaf/0.1/mbox", email_value_format)
+            self.add_special_property(u"http://schema.org/email", email_value_format)
 
     def add_special_property(self, property_uri, value_format):
         self._special_properties[property_uri] = value_format
