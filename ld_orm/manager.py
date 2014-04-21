@@ -13,7 +13,7 @@ class InstanceManager(object):
         self._registry = registry
         class_uri = cls.class_uri
         if class_uri:
-            self._check_type_request = prepareQuery("ASK {?s a <%s> }" % class_uri )
+            self._check_type_request = prepareQuery(u"ASK {?s a <%s> }" % class_uri )
         else:
             self._check_type_request = None
 
@@ -41,7 +41,7 @@ class InstanceManager(object):
         if "id" in kwargs:
             return self.get(**kwargs)
 
-        lines = ""
+        lines = u""
         # Access to a protected attribute: design choice
         # (We do not want a regular user to access to model.attributes)
         for name, attr in self._cls._attributes.iteritems():
@@ -51,12 +51,12 @@ class InstanceManager(object):
             if value:
                 lines += attr.serialize_values_into_lines(value)
 
-        query = build_query_part("SELECT ?s WHERE", "?s", lines)
+        query = build_query_part(u"SELECT ?s WHERE", u"?s", lines)
         #print query
         try :
             results = self._storage_graph.query(query)
         except ParseException as e:
-            raise SPARQLParseError("%s\n %s" % (query, e))
+            raise SPARQLParseError(u"%s\n %s" % (query, e))
 
         # Generator expression
         return (self.get(id=str(r)) for r, in results)
@@ -81,7 +81,7 @@ class InstanceManager(object):
         instance_graph += self._storage_graph.triples((uri, None, None))
         if self._check_type_request and not self._storage_graph.query(self._check_type_request,
                                                                       initBindings={'s': uri}):
-            raise ClassInstanceError("%s is not an instance of %s" % (id, self._cls.__name__))
+            raise ClassInstanceError(u"%s is not an instance of %s" % (id, self._cls.__name__))
         return self._new_instance(id, instance_graph)
 
     def get_any(self, id):
@@ -104,18 +104,18 @@ class InstanceManager(object):
             Not accessible via model instances (like in Django)
         """
         if instance is not None:
-            raise AttributeError("Manager isn't accessible via %s instances" % type.__name__)
+            raise AttributeError(u"Manager isn't accessible via %s instances" % type.__name__)
         return self
 
 
 def build_query_part(verb_and_vars, subject_term, lines):
     if len(lines) == 0:
         return ""
-    query_part = '%s { \n%s } \n' % (verb_and_vars, lines)
+    query_part = u'%s { \n%s } \n' % (verb_and_vars, lines)
     #{0} -> subject_term
     # format() does not work because other special symbols
-    return query_part.replace("{0}", subject_term)
+    return query_part.replace(u"{0}", subject_term)
 
 
 def build_update_query_part(verb, subject, lines):
-    return build_query_part(verb, "<%s>" % subject, lines)
+    return build_query_part(verb, u"<%s>" % subject, lines)

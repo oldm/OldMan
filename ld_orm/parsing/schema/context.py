@@ -1,5 +1,6 @@
 from rdflib_jsonld.context import Context, UNDEF
 
+
 class LDAttributeMdExtractor(object):
     def update(self, properties, context_js, graph):
         """
@@ -32,7 +33,7 @@ class JsonLdContextAttributeMdExtractor(LDAttributeMdExtractor):
                 # Not declared (worst case)
                 elif len(property_uri) == 0:
                     name = graph.qname(property_uri).replace(":", "_")
-                    logger.warn("No short name found for property %s. QName %s used instead" %(property_uri, name))
+                    print u"No short name found for property %s. QName %s used instead" % (property_uri, name)
                     property.add_attribute_metadata(name)
 
     def _update_property(self, property, term):
@@ -41,5 +42,5 @@ class JsonLdContextAttributeMdExtractor(LDAttributeMdExtractor):
                   'container': term.container,
                   'reverse': term.reverse}
         clean_fct = lambda v: None if v == UNDEF else v
-        kwargs = {k: clean_fct(v) for k,v in kwargs.iteritems()}
+        kwargs = {k: clean_fct(v) for k, v in kwargs.iteritems()}
         property.add_attribute_metadata(term.name, **kwargs)

@@ -79,8 +79,8 @@ class Model(object):
 
         # External skolemized blank nodes are not considered as blank nodes
         id_result = urlparse(self._id)
-        self._is_blank_node = ("/.well-known/genid/" in id_result.path) \
-            and (id_result.hostname == "localhost")
+        self._is_blank_node = (u"/.well-known/genid/" in id_result.path) \
+            and (id_result.hostname == u"localhost")
 
     @property
     def id(self):
@@ -119,8 +119,8 @@ class Model(object):
 
         #TODO: Warns
 
-        former_lines = ""
-        new_lines = ""
+        former_lines = u""
+        new_lines = u""
         for attr in self._attributes.values():
             if not attr.has_new_value(self):
                 continue
@@ -130,20 +130,20 @@ class Model(object):
 
         #TODO: only execute once (first save())
         types = self.types
-        if former_lines == "" and len(types) > 0:
-            type_line = "<%s> a" % self._id
+        if former_lines == u"" and len(types) > 0:
+            type_line = u"<%s> a" % self._id
             for t in types:
-                type_line += " <%s>," % t
+                type_line += u" <%s>," % t
             new_lines = type_line[:-1] + " . \n" + new_lines
 
-        query = build_update_query_part("DELETE", self._id, former_lines)
-        query += build_update_query_part("INSERT", self._id, new_lines)
-        query += "WHERE {}"
+        query = build_update_query_part(u"DELETE", self._id, former_lines)
+        query += build_update_query_part(u"INSERT", self._id, new_lines)
+        query += u"WHERE {}"
         #print query
         try:
             self._storage_graph.update(query)
         except ParseException as e:
-            raise SPARQLParseError("%s\n %s" % (query, e))
+            raise SPARQLParseError(u"%s\n %s" % (query, e))
 
     def to_dict(self, remove_none_values=True):
         dct = {name: self._convert_value(getattr(self, name))
@@ -179,7 +179,7 @@ class Model(object):
         return self._id
 
     def __repr__(self):
-        return "%s(<%s>)" % (self.__class__.__name__, self._id)
+        return u"%s(<%s>)" % (self.__class__.__name__, self._id)
 
     def _convert_value(self, value):
         """

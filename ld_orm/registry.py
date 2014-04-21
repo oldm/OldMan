@@ -23,7 +23,7 @@ class ModelRegistry(object):
     def find_instance_manager(self, object_uri):
         types = self._default_graph.objects(URIRef(object_uri), RDF["type"])
         for t in types:
-            class_uri = str(t)
+            class_uri = unicode(t)
             if class_uri in self._model_classes:
                 return self.get_model_class(class_uri).objects
 

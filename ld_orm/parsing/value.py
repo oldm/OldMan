@@ -37,7 +37,7 @@ class AttributeValueExtractorFromGraph(object):
             Filters by language (unique way to discriminate)
         """
         if not self._language and len(raw_rdf_values) > 1:
-            raise DataStoreError("Multiple list found for the property %s"
+            raise DataStoreError(u"Multiple list found for the property %s"
                                  % self._property_uri)
         final_list = None
         for vlist in raw_rdf_values:
@@ -45,7 +45,7 @@ class AttributeValueExtractorFromGraph(object):
             values = self._filter_and_convert(rdf_values)
             if len(values) > 0:
                 if final_list is not None :
-                    raise DataStoreError("Same language in multiple list for the property %s"
+                    raise DataStoreError(u"Same language in multiple list for the property %s"
                                          % self._property_uri)
                 final_list = values
 

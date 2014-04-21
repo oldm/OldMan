@@ -74,7 +74,7 @@ class LDProperty(object):
 
     def add_range(self, p_range):
         # Detects XSD
-        if p_range.startswith("http://www.w3.org/2001/XMLSchema#"):
+        if p_range.startswith(u"http://www.w3.org/2001/XMLSchema#"):
             self.type = PropertyType.DatatypeProperty
 
         if self.type == PropertyType.DatatypeProperty and (not p_range in self._ranges) \
@@ -89,7 +89,7 @@ class LDProperty(object):
 
     def add_domain(self, domain):
         # Detects XSD
-        if range.startswith("http://www.w3.org/2001/XMLSchema#"):
+        if range.startswith(u"http://www.w3.org/2001/XMLSchema#"):
             #TODO: find a better error type
             raise Exception("Domain cannot have a literal datatype")
         self._domains.add(domain)

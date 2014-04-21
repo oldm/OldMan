@@ -16,12 +16,12 @@ class RandomPrefixedUriGenerator(UriGenerator):
         self.prefix = kwargs["prefix"]
 
     def generate(self):
-        return "%s%s" % (self.prefix, uuid1().hex)
+        return u"%s%s" % (self.prefix, uuid1().hex)
 
 
 class RandomUriGenerator(RandomPrefixedUriGenerator):
 
     def __init__(self, **kwargs):
-        hostname = kwargs.get("hostname", "localhost")
-        prefix = "http://%s/.well-known/genid/" % hostname
+        hostname = kwargs.get("hostname", u"localhost")
+        prefix = u"http://%s/.well-known/genid/" % hostname
         RandomPrefixedUriGenerator.__init__(self, prefix=prefix)

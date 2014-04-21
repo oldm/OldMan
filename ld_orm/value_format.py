@@ -11,7 +11,7 @@ class ValueFormat(object):
         """
             Raise a ValueFormatError if the value is wrongly formatted
         """
-        raise NotImplementedError("check_value must be overwritten")
+        raise NotImplementedError(u"check_value must be overwritten")
 
     def xsdify_value(self, value):
         """
@@ -33,11 +33,10 @@ class AnyValueFormat(ValueFormat):
         pass
 
 
-class URIValueFormat(ValueFormat):
+class IRIValueFormat(ValueFormat):
     """
         TODO:
             - implement it.
-            - rename it IRIValueFormat?
     """
     pass
 
@@ -49,24 +48,24 @@ class URIValueFormat(ValueFormat):
 
     def to_python(self, value):
         """ TODO: check value """
-        return str(value)
+        return unicode(value)
 
 
 class StringValueFormat(ValueFormat):
 
     def check_value(self, value):
         if not isinstance(value, (str, unicode)):
-            raise ValueFormatError("%s is not a string" % value)
+            raise ValueFormatError(u"%s is not a string" % value)
 
 
 class BooleanValueFormat(ValueFormat):
 
     def check_value(self, value):
         if not isinstance(value, bool):
-            raise ValueFormatError("%s is not a bool" % value)
+            raise ValueFormatError(u"%s is not a bool" % value)
 
     def xsdify_value(self, value):
-        return str(value).lower()
+        return unicode(value).lower()
 
     def to_python(self, value):
         return literal_eval(value.capitalize())
@@ -88,4 +87,4 @@ class EmailValueFormat(ValueFormat):
     """ TODO: implement it """
 
     def check_value(self, value):
-        raise NotImplementedError("TODO: implement it")
+        raise NotImplementedError(u"TODO: implement it")

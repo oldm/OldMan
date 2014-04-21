@@ -44,11 +44,11 @@ class LDAttribute(object):
 
         # TODO: support "@language" and "@index"
         if not self.container in [None, "@set", "@list"]:
-            raise NotImplementedError("Container %s is not yet supported" % self.container)
+            raise NotImplementedError(u"Container %s is not yet supported" % self.container)
 
         #TODO: support
         if self.reversed:
-            raise NotImplementedError("Reversed properties (like %s) are not yet supported" % self.name)
+            raise NotImplementedError(u"Reversed properties (like %s) are not yet supported" % self.name)
 
     @property
     def is_required(self):
@@ -151,18 +151,18 @@ class LDAttribute(object):
         lines = ""
 
         if self.container == "@list":
-            list_value = "( " + " ".join(converted_values) + " )"
+            list_value = u"( " + u" ".join(converted_values) + u" )"
             serialized_values = [list_value]
         else:
             serialized_values = converted_values
 
         if self.reversed:
-            assert(v.startswith("<") and v.endswith(">"))
+            assert(v.startswith(u"<") and v.endswith(u">"))
             for v in serialized_values:
-                lines += '  %s <%s> %s .\n' % (v, property_uri, "{0}")
+                lines += u'  %s <%s> %s .\n' % (v, property_uri, u"{0}")
         else:
             for v in serialized_values:
-                lines += '  %s <%s> %s .\n' % ("{0}", property_uri, v)
+                lines += u'  %s <%s> %s .\n' % (u"{0}", property_uri, v)
 
         return lines
 
@@ -181,14 +181,14 @@ class LDAttribute(object):
         jsonld_type = self.jsonld_type
         language = self.language
         if jsonld_type == "@id":
-            return "<%s>" % value
+            return u"<%s>" % value
         elif language:
-            return '"%s"@%s' % (self._value_format.xsdify_value(value), language)
+            return u'"%s"@%s' % (self._value_format.xsdify_value(value), language)
         elif jsonld_type:
-            return '"%s"^^<%s>' % (self._value_format.xsdify_value(value), jsonld_type)
+            return u'"%s"^^<%s>' % (self._value_format.xsdify_value(value), jsonld_type)
         # Should we really define unknown types as string?
         else:
-            raise NotImplementedError("Untyped JSON-LD value are not (yet?) supported")
+            raise NotImplementedError(u"Untyped JSON-LD value are not (yet?) supported")
 
     def __get__(self, instance, owner):
         value = self._data.get(instance, None)
@@ -220,7 +220,7 @@ class LDAttribute(object):
 
         required_container_type = LDAttribute.CONTAINER_REQUIREMENTS[self.container]
         if not isinstance(value, required_container_type):
-            raise LDAttributeTypeCheckError("A container (%s) was expected instead of %s"
+            raise LDAttributeTypeCheckError(u"A container (%s) was expected instead of %s"
                                             % (required_container_type, type(value)))
         try:
             if isinstance(value, (list, set, dict)):
@@ -228,19 +228,19 @@ class LDAttribute(object):
             else:
                 self._value_format.check_value(value)
         except ValueFormatError as e:
-            raise LDAttributeTypeCheckError(str(e))
+            raise LDAttributeTypeCheckError(unicode(e))
 
     def _check_container(self, value):
         if not self.container:
             #TODO: replaces by a log alert
-            print "Warning: no container declared for %s" % self.name
+            print u"Warning: no container declared for %s" % self.name
 
             # List declaration is required (default: set)
             # TODO: what about dict?
             if isinstance(value, list):
-                raise LDAttributeTypeCheckError("Undeclared list %s assigned to %s ."
-                                                "For using a list, '@container': '@list' must be declared"
-                                                "in the JSON-LD context." % (value, self.name))
+                raise LDAttributeTypeCheckError(u"Undeclared list %s assigned to %s ."
+                                                u"For using a list, '@container': '@list' must be declared"
+                                                u"in the JSON-LD context." % (value, self.name))
 
         vs = value.values() if isinstance(value, dict) else value
         for v in vs:
@@ -259,7 +259,7 @@ class ObjectLDAttribute(LDAttribute):
             return (type(instance).objects.get_any(uri)
                     for uri in uris)
         elif isinstance(uris, dict):
-            raise NotImplementedError("Should we implement it?")
+            raise NotImplementedError(u"Should we implement it?")
         elif uris is not None:
             return type(instance).objects.get_any(uris)
         else:
@@ -274,7 +274,7 @@ class ObjectLDAttribute(LDAttribute):
         elif isinstance(value, list):
             values = [f(v) for v in value]
         elif isinstance(value, dict):
-            raise NotImplementedError("Dict are not yet supported")
+            raise NotImplementedError(u"Dict are not yet supported")
         else:
             values = value
         LDAttribute.__set__(self, instance, values)

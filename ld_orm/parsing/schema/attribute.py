@@ -1,6 +1,6 @@
 from ld_orm.parsing.schema.property import HydraPropertyExtractor
 from ld_orm.parsing.schema.context import JsonLdContextAttributeMdExtractor
-from ld_orm.value_format import StringValueFormat, AnyValueFormat, URIValueFormat, BooleanValueFormat
+from ld_orm.value_format import StringValueFormat, AnyValueFormat, IRIValueFormat, BooleanValueFormat
 from ld_orm.property import PropertyType
 
 
@@ -69,11 +69,11 @@ class ValueFormatSelector(object):
         self._datatypes = {}
         if include_default_datatypes:
             #TODO: enrich it
-            xsd = "http://www.w3.org/2001/XMLSchema#"
-            self._datatypes.update({xsd + "string": StringValueFormat(),
-                                    xsd + "boolean": BooleanValueFormat(),
+            xsd = u"http://www.w3.org/2001/XMLSchema#"
+            self._datatypes.update({xsd + u"string": StringValueFormat(),
+                                    xsd + u"boolean": BooleanValueFormat(),
                                    })
-            self._uri_format = URIValueFormat()
+            self._uri_format = IRIValueFormat()
             self._any_format = AnyValueFormat()
 
     def add_special_property(self, property_uri, value_format):

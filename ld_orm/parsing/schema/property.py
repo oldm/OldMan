@@ -32,14 +32,14 @@ class HydraPropertyExtractor(LDPropertyExtractor):
            - rdfs:range
     """
     EXTRACT_HYDRA_PROPERTIES = prepareQuery(
-        """
+        u"""
         SELECT ?p ?required
         WHERE {
             ?class_uri hydra:supportedProperty ?sp.
             ?sp hydra:property ?p;
                 hydra:required ?required.
         }
-    """, initNs={'hydra': Namespace("http://www.w3.org/ns/hydra/core#") })
+    """, initNs={u'hydra': Namespace(u"http://www.w3.org/ns/hydra/core#") })
 
     def update(self, properties, class_uri, graph):
         """
@@ -47,11 +47,11 @@ class HydraPropertyExtractor(LDPropertyExtractor):
             TODO: Support rdfs:range (optional)
         """
         results = graph.query(self.EXTRACT_HYDRA_PROPERTIES,
-                              initBindings={'class_uri': URIRef(class_uri)})
+                              initBindings={u'class_uri': URIRef(class_uri)})
 
         for property_uri, is_required in results:
-            property_uri = str(property_uri)
+            property_uri = unicode(property_uri)
 
             if not property_uri in properties:
-                properties[property_uri]= LDProperty(property_uri, class_uri, is_required)
+                properties[property_uri] = LDProperty(property_uri, class_uri, is_required)
         return properties

@@ -24,8 +24,8 @@ class ModelFactory(object):
         self._default_graph = default_graph
 
         # Registered with the "None" key
-        self._generate("DefaultModel", {"@context": {}}, default_graph, untyped=True,
-                       uri_prefix="http://localhost/.well-known/genid/default/")
+        self._generate("DefaultModel", {u"@context": {}}, default_graph, untyped=True,
+                       uri_prefix=u"http://localhost/.well-known/genid/default/")
 
     @property
     def registry(self):
@@ -56,7 +56,7 @@ class ModelFactory(object):
         elif uri_prefix:
             id_generator = RandomPrefixedUriGenerator(prefix=uri_prefix)
         else:
-            raise TypeError("Please specify uri_prefix or uri_generator")
+            raise TypeError(u"Please specify uri_prefix or uri_generator")
 
         special_attributes = {"class_uri": class_uri,
                               "types": types,
@@ -69,7 +69,7 @@ class ModelFactory(object):
         # First reserved attribute check
         for name in special_attributes:
             if name in attributes:
-                raise ReservedAttributeNameError("%s is reserved" % name)
+                raise ReservedAttributeNameError(u"%s is reserved" % name)
         attributes.update(special_attributes)
 
         return type(class_name, (Model,), attributes)
@@ -79,14 +79,14 @@ def extract_class_uri(class_name, context):
     """
         Extracts the class URI as the type of a blank node
     """
-    g = Graph().parse(data=json.dumps({"@type": class_name}),
+    g = Graph().parse(data=json.dumps({u"@type": class_name}),
                       context=context, format="json-ld")
-    class_uri = str(g.objects().next())
+    class_uri = unicode(g.objects().next())
 
     # Check the URI
     result = urlparse(class_uri)
-    if result.scheme == "file":
-        raise UndeclaredClassNameError("Deduced URI %s is not a valid HTTP URL" % class_uri)
+    if result.scheme == u"file":
+        raise UndeclaredClassNameError(u"Deduced URI %s is not a valid HTTP URL" % class_uri)
     return class_uri
 
 
@@ -96,6 +96,6 @@ def extract_types(class_uri, schema_graph):
         of a well-known class
     """
     types = {class_uri}
-    results = schema_graph.query("SELECT ?c WHERE { <%s> rdfs:subClassOf+ ?c }" % class_uri)
-    types.update([str(r) for r, in results])
+    results = schema_graph.query(u"SELECT ?c WHERE { <%s> rdfs:subClassOf+ ?c }" % class_uri)
+    types.update([unicode(r) for r, in results])
     return types
