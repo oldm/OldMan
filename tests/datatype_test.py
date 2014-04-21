@@ -6,8 +6,9 @@
 from unittest import TestCase
 from rdflib import ConjunctiveGraph, URIRef
 import json
+from decimal import Decimal
 from copy import copy
-from datetime import date
+from datetime import date, datetime, time
 from ld_orm import default_model_factory
 from ld_orm.exceptions import RequiredPropertyError, LDAttributeTypeCheckError
 
@@ -29,16 +30,61 @@ local_person_def = {
     "supportedProperty": [
         {
             "property": "ex:singleBool",
-            "required": False,
-            "readonly": False,
-            "writeonly": False
+            "required": False
         },
         {
             "property": "ex:date",
-            "required": False,
-            "readonly": False,
-            "writeonly": False
+            "required": False
+        },
+        {
+            "property": "ex:dateTime",
+            "required": False
+        },
+        {
+            "property": "ex:time",
+            "required": False
+        },
+        {
+            "property": "ex:int",
+            "required": False
+        },
+        {
+            "property": "ex:integer",
+            "required": False
+        },
+        {
+            "property": "ex:short",
+            "required": False
+        },
+        {
+            "property": "ex:positiveInt",
+            "required": False
+        },
+        {
+            "property": "ex:negativeInt",
+            "required": False
+        },
+        {
+            "property": "ex:nonPositiveInt",
+            "required": False
+        },
+        {
+            "property": "ex:nonNegativeInt",
+            "required": False
+        },
+        {
+            "property": "ex:decimal",
+            "required": False
+        },
+        {
+            "property": "ex:float",
+            "required": False
+        },
+        {
+            "property": "ex:double",
+            "required": False
         }
+
     ]
 }
 schema_graph.parse(data=json.dumps(local_person_def), format="json-ld")
@@ -57,6 +103,54 @@ context = {
         "date": {
             "@id": "ex:date",
             "@type": "xsd:date"
+        },
+        "datetime": {
+            "@id": "ex:dateTime",
+            "@type": "xsd:dateTime"
+        },
+        "time": {
+            "@id": "ex:time",
+            "@type": "xsd:time"
+        },
+        "int": {
+            "@id": "ex:int",
+            "@type": "xsd:int"
+        },
+        "integer": {
+            "@id": "ex:integer",
+            "@type": "xsd:integer"
+        },
+        "short": {
+            "@id": "ex:short",
+            "@type": "xsd:short"
+        },
+        "positiveInt": {
+            "@id": "ex:positiveInt",
+            "@type": "xsd:positiveInteger"
+        },
+        "negativeInt": {
+            "@id": "ex:negativeInt",
+            "@type": "xsd:negativeInteger"
+        },
+        "nonPositiveInt": {
+            "@id": "ex:nonPositiveInt",
+            "@type": "xsd:nonPositiveInteger"
+        },
+        "nonNegativeInt": {
+            "@id": "ex:nonNegativeInt",
+            "@type": "xsd:nonNegativeInteger"
+        },
+        "decimal": {
+            "@id": "ex:decimal",
+            "@type": "xsd:decimal"
+        },
+        "float": {
+            "@id": "ex:float",
+            "@type": "xsd:float"
+        },
+        "double": {
+            "@id": "ex:double",
+            "@type": "xsd:double"
         }
     }
 }
@@ -112,8 +206,205 @@ class ContainerTest(TestCase):
         LocalClass.objects.clear_cache()
         obj = LocalClass.objects.get(id=uri)
         self.assertEquals(obj.date, d)
-        # with self.assertRaises(LDAttributeTypeCheckError):
-        #     obj.date = "not a date"
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.date = "not a date object"
+
+    def test_single_datetime(self):
+        obj = self.create_object()
+        uri = obj.id
+        d = datetime.now()
+        obj.datetime = copy(d)
+        obj.save()
+        del obj
+        LocalClass.objects.clear_cache()
+        obj = LocalClass.objects.get(id=uri)
+        self.assertEquals(obj.datetime, d)
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.datetime = "not a date time object"
+
+    def test_single_time(self):
+        obj = self.create_object()
+        uri = obj.id
+        t = time(12, 55, 30)
+        obj.time = copy(t)
+        obj.save()
+        del obj
+        LocalClass.objects.clear_cache()
+        obj = LocalClass.objects.get(id=uri)
+        self.assertEquals(obj.time, t)
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.time = "not a time object"
+
+    def test_int(self):
+        obj = self.create_object()
+        uri = obj.id
+        value = -5
+        obj.int = value
+        obj.save()
+        del obj
+        LocalClass.objects.clear_cache()
+        obj = LocalClass.objects.get(id=uri)
+        self.assertEquals(obj.int, value)
+        obj.int = 0
+        obj.int = 5
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.int = "not a number"
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.int = 5.5
+
+    def test_integer(self):
+        obj = self.create_object()
+        uri = obj.id
+        value = 5
+        obj.integer = value
+        obj.save()
+        del obj
+        LocalClass.objects.clear_cache()
+        obj = LocalClass.objects.get(id=uri)
+        self.assertEquals(obj.integer, value)
+        obj.integer = 0
+        obj.integer = -5
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.integer = "not a number"
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.integer = 5.5
+
+    def test_short(self):
+        obj = self.create_object()
+        uri = obj.id
+        value = -5
+        obj.short = value
+        obj.save()
+        del obj
+        LocalClass.objects.clear_cache()
+        obj = LocalClass.objects.get(id=uri)
+        self.assertEquals(obj.short, value)
+        obj.short = 0
+        obj.short = 5
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.short = "not a number"
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.short = 5.5
+
+    def test_positive_int(self):
+        obj = self.create_object()
+        uri = obj.id
+        value = 5
+        obj.positiveInt = value
+        obj.save()
+        del obj
+        LocalClass.objects.clear_cache()
+        obj = LocalClass.objects.get(id=uri)
+        self.assertEquals(obj.positiveInt, value)
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.positiveInt = -1
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.positiveInt = "not a number"
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.positiveInt = 5.5
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.positiveInt = 0
+
+    def test_negative_int(self):
+        obj = self.create_object()
+        uri = obj.id
+        value = -5
+        obj.negativeInt = value
+        obj.save()
+        del obj
+        LocalClass.objects.clear_cache()
+        obj = LocalClass.objects.get(id=uri)
+        self.assertEquals(obj.negativeInt, value)
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.negativeInt = 1
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.negativeInt = "not a number"
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.negativeInt = - 5.5
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.negativeInt = 0
+
+    def test_non_positive_int(self):
+        obj = self.create_object()
+        uri = obj.id
+        value = -5
+        obj.nonPositiveInt = value
+        obj.save()
+        del obj
+        LocalClass.objects.clear_cache()
+        obj = LocalClass.objects.get(id=uri)
+        self.assertEquals(obj.nonPositiveInt, value)
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.nonPositiveInt = 1
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.nonPositiveInt = "not a number"
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.nonPositiveInt = - 5.5
+        obj.nonPositiveInt = 0
+
+    def test_non_negative_int(self):
+        obj = self.create_object()
+        uri = obj.id
+        value = 5
+        obj.nonNegativeInt = value
+        obj.save()
+        del obj
+        LocalClass.objects.clear_cache()
+        obj = LocalClass.objects.get(id=uri)
+        self.assertEquals(obj.nonNegativeInt, value)
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.nonNegativeInt = -1
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.nonNegativeInt = "not a number"
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.nonNegativeInt = 5.5
+        obj.nonNegativeInt = 0
+    
+    def test_decimal(self):
+        obj = self.create_object()
+        uri = obj.id
+        value = Decimal(23.05)
+        obj.decimal = value
+        obj.save()
+        del obj
+        LocalClass.objects.clear_cache()
+        obj = LocalClass.objects.get(id=uri)
+        self.assertEquals(obj.decimal, value)
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.decimal = "not a number"
+        obj.decimal = -2.433
+        obj.decimal = 0
+
+    def test_double(self):
+        obj = self.create_object()
+        uri = obj.id
+        value = Decimal(23.05)
+        obj.double = value
+        obj.save()
+        del obj
+        LocalClass.objects.clear_cache()
+        obj = LocalClass.objects.get(id=uri)
+        self.assertEquals(obj.double, value)
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.double = "not a number"
+        obj.double = -2.433
+        obj.double = 0
+        
+    def test_float(self):
+        obj = self.create_object()
+        uri = obj.id
+        value = Decimal(23.05)
+        obj.float = value
+        obj.save()
+        del obj
+        LocalClass.objects.clear_cache()
+        obj = LocalClass.objects.get(id=uri)
+        self.assertEquals(obj.float, value)
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.float = "not a number"
+        obj.float = -2.433
+        obj.float = 0
+
 
 
 

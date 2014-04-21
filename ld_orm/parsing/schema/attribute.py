@@ -1,6 +1,10 @@
+from datetime import date, datetime, time
+from decimal import Decimal
 from ld_orm.parsing.schema.property import HydraPropertyExtractor
 from ld_orm.parsing.schema.context import JsonLdContextAttributeMdExtractor
-from ld_orm.value_format import StringValueFormat, AnyValueFormat, IRIValueFormat, BooleanValueFormat
+from ld_orm.value_format import AnyValueFormat, IRIValueFormat, TypedValueFormat, EmailValueFormat
+from ld_orm.value_format import PositiveTypedValueFormat, NegativeTypedValueFormat
+from ld_orm.value_format import NonPositiveTypedValueFormat, NonNegativeTypedValueFormat
 from ld_orm.property import PropertyType
 
 
@@ -68,11 +72,34 @@ class ValueFormatSelector(object):
         self._special_properties = special_properties
         self._datatypes = {}
         if include_default_datatypes:
-            #TODO: enrich it
+            #TODO: token, duration, gYearMonth, gYear, gMonthDay, gDay, gMonth (wait for rdflib support)
+            #TODO: XMLLiteral and HTMLLiteral validation
             xsd = u"http://www.w3.org/2001/XMLSchema#"
-            self._datatypes.update({xsd + u"string": StringValueFormat(),
-                                    xsd + u"boolean": BooleanValueFormat(),
-                                   })
+            self._datatypes.update({xsd + u"string": TypedValueFormat((str, unicode)),
+                                    xsd + u"boolean": TypedValueFormat(bool),
+                                    xsd + u"date": TypedValueFormat(date),
+                                    xsd + u"dateTime": TypedValueFormat(datetime),
+                                    xsd + u"time": TypedValueFormat(time),
+                                    #TODO: improve validation
+                                    xsd + u'normalizedString': TypedValueFormat((str, unicode)),
+                                    #TODO: improve language validation
+                                    xsd + u'language': TypedValueFormat((str, unicode)),
+                                    xsd + u'decimal': TypedValueFormat((Decimal, int, long, float)),
+                                    xsd + u'integer': TypedValueFormat((int, long)),
+                                    xsd + u'nonPositiveInteger': NonPositiveTypedValueFormat(int),
+                                    xsd + u'long': TypedValueFormat((int, long)),
+                                    xsd + u'nonNegativeInteger': NonNegativeTypedValueFormat(int),
+                                    xsd + u'negativeInteger': NegativeTypedValueFormat(int),
+                                    xsd + u'int': TypedValueFormat((long, int)),
+                                    xsd + u'unsignedLong': NonNegativeTypedValueFormat((long, int)),
+                                    xsd + u'positiveInteger': PositiveTypedValueFormat(int),
+                                    xsd + u'short': TypedValueFormat(int),
+                                    xsd + u'unsignedInt': NonNegativeTypedValueFormat((int, long)),
+                                    xsd + u'byte': TypedValueFormat(int),
+                                    xsd + u'unsignedShort': NonNegativeTypedValueFormat(int),
+                                    xsd + u'unsignedByte': NonNegativeTypedValueFormat(int),
+                                    xsd + u'float': TypedValueFormat((float, int, long, Decimal)),
+                                    xsd + u'double': TypedValueFormat((float, int, long, Decimal))})
             self._uri_format = IRIValueFormat()
             self._any_format = AnyValueFormat()
 

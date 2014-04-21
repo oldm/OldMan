@@ -19,6 +19,16 @@ class AnyValueFormat(ValueFormat):
         pass
 
 
+class TypedValueFormat(ValueFormat):
+
+    def __init__(self, types):
+        self._types = types
+
+    def check_value(self, value):
+        if not isinstance(value, self._types):
+            raise ValueFormatError(u"%s is not a %s" % (value, self._types))
+
+
 class IRIValueFormat(ValueFormat):
     """
         TODO:
@@ -32,30 +42,36 @@ class IRIValueFormat(ValueFormat):
         pass
 
 
-class StringValueFormat(ValueFormat):
+class PositiveTypedValueFormat(TypedValueFormat):
 
     def check_value(self, value):
-        if not isinstance(value, (str, unicode)):
-            raise ValueFormatError(u"%s is not a string" % value)
+        TypedValueFormat.check_value(self, value)
+        if value <= 0:
+            raise ValueFormatError(u"%s should be positive" % value)
 
 
-class BooleanValueFormat(ValueFormat):
+class NegativeTypedValueFormat(TypedValueFormat):
 
     def check_value(self, value):
-        if not isinstance(value, bool):
-            raise ValueFormatError(u"%s is not a bool" % value)
+        TypedValueFormat.check_value(self, value)
+        if value >= 0:
+            raise ValueFormatError(u"%s should be negative" % value)
 
 
-class IntegerValueFormat(ValueFormat):
-    """
-        TODO: implement
-    """
-    pass
+class NonPositiveTypedValueFormat(TypedValueFormat):
+
+    def check_value(self, value):
+        TypedValueFormat.check_value(self, value)
+        if value > 0:
+            raise ValueFormatError(u"%s should not be positive" % value)
 
 
-class DateValueFormat(ValueFormat):
-    """ TODO: implement it """
-    pass
+class NonNegativeTypedValueFormat(TypedValueFormat):
+
+    def check_value(self, value):
+        TypedValueFormat.check_value(self, value)
+        if value < 0:
+            raise ValueFormatError(u"%s should not be negative" % value)
 
 
 class EmailValueFormat(ValueFormat):
