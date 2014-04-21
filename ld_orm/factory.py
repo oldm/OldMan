@@ -1,16 +1,14 @@
 import json
 from urlparse import urlparse
-
 from rdflib import Graph
-
 from .model import Model
 from .registry import ModelRegistry
 from .exceptions import UndeclaredClassNameError, ReservedAttributeNameError
 from .uri import RandomPrefixedUriGenerator
+from ld_orm.parsing.schema.attribute import LDAttributeExtractor
 
 
 def default_model_factory(schema_graph, default_graph):
-    from ld_orm.parsing.schema.attribute import LDAttributeExtractor
     attr_extractor = LDAttributeExtractor()
     return ModelFactory(attr_extractor, schema_graph, default_graph)
 
