@@ -55,12 +55,6 @@ local_person_def = {
             "required": False,
             "readonly": False,
             "writeonly": False
-        },
-        {
-            "property": "ex:singleBool",
-            "required": False,
-            "readonly": False,
-            "writeonly": False
         }
     ]
 }
@@ -103,10 +97,6 @@ context = {
             "@id": "ex:boolSet",
             "@type": "xsd:boolean",
             "@container": "@set"
-        },
-        "single_bool": {
-            "@id": "ex:singleBool",
-            "@type": "xsd:boolean"
         }
     }
 }
@@ -190,34 +180,10 @@ class ContainerTest(TestCase):
         obj.list_fr = list_fr
         obj.save()
 
-    def test_single_bool(self):
-        obj = self.create_object()
-        uri = obj.id
-        obj.single_bool = True
-        obj.save()
-        del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
-        self.assertEquals(obj.single_bool, True)
-
-        obj.single_bool = None
-        obj.save()
-        del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
-        self.assertEquals(obj.single_bool, None)
-
-        obj.single_bool = False
-        obj.save()
-        del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
-        self.assertEquals(obj.single_bool, False)
-
     def test_bool_list(self):
         obj = self.create_object()
         uri = obj.id
-        lst = [True, False, True]
+        lst = [True, False, True, False]
         obj.bool_list = lst
         self.assertEquals(obj.bool_list, lst)
         obj.save()
@@ -229,6 +195,11 @@ class ContainerTest(TestCase):
         obj.save()
         with self.assertRaises(LDAttributeTypeCheckError):
             obj.bool_list = ["Wrong"]
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.bool_list = [True, None, False]
+
+
+
 
 
 

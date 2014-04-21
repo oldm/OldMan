@@ -1,5 +1,6 @@
 from collections import namedtuple
 from weakref import WeakKeyDictionary
+from rdflib import Literal
 from .exceptions import LDAttributeTypeCheckError, RequiredPropertyError
 from ld_orm.parsing.value import AttributeValueExtractorFromGraph
 from .value_format import ValueFormatError
@@ -145,7 +146,7 @@ class LDAttribute(object):
             return ""
 
         vs = values if isinstance(values, (list, set)) else [values]
-        converted_values = [self._convert_value_to_turtle(v) for v in vs]
+        converted_values = [self._encode_value(v) for v in vs]
 
         property_uri = self.ld_property.uri
         lines = ""
@@ -174,7 +175,7 @@ class LDAttribute(object):
             # Clears "None" former value
             self.pop_former_value(instance)
 
-    def _convert_value_to_turtle(self, value):
+    def _encode_value(self, value):
         """
             SPARQL encoding
         """
@@ -183,9 +184,9 @@ class LDAttribute(object):
         if jsonld_type == "@id":
             return u"<%s>" % value
         elif language:
-            return u'"%s"@%s' % (self._value_format.xsdify_value(value), language)
+            return u'"%s"@%s' % (Literal(value), language)
         elif jsonld_type:
-            return u'"%s"^^<%s>' % (self._value_format.xsdify_value(value), jsonld_type)
+            return u'"%s"^^<%s>' % (Literal(value), jsonld_type)
         # Should we really define unknown types as string?
         else:
             raise NotImplementedError(u"Untyped JSON-LD value are not (yet?) supported")

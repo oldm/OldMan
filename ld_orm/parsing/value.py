@@ -59,7 +59,8 @@ class AttributeValueExtractorFromGraph(object):
             rdf_values = [r for r in rdf_values if isinstance(r, Literal)
                           and r.language == self._language]
 
-        return [self._value_format.to_python(unicode(r)) for r in rdf_values]
+        #return [self._value_format.to_python(unicode(r)) for r in rdf_values]
+        return [r.toPython() for r in rdf_values]
 
     EXTRACT_FCTS = {'@list': _extract_list_values,
                     '@set': _extract_set_values,
