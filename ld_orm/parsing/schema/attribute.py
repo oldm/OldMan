@@ -1,5 +1,6 @@
 from datetime import date, datetime, time
 from decimal import Decimal
+from copy import copy
 from ld_orm.parsing.schema.property import HydraPropertyExtractor
 from ld_orm.parsing.schema.context import JsonLdContextAttributeMdExtractor
 from ld_orm.value_format import AnyValueFormat, IRIValueFormat, TypedValueFormat, EmailValueFormat
@@ -22,8 +23,8 @@ class LDAttributeExtractor(object):
     def __init__(self, property_extractors=[], attr_md_extractors=[], use_hydra=True,
                  use_jsonld_context=True):
         self._class_selector = ValueFormatSelector()
-        self._property_extractors = property_extractors
-        self._attr_md_extractors = attr_md_extractors
+        self._property_extractors = copy(property_extractors)
+        self._attr_md_extractors = copy(attr_md_extractors)
         if use_hydra:
             self.add_property_extractor(HydraPropertyExtractor())
         if use_jsonld_context:
