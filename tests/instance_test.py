@@ -10,6 +10,7 @@ from decimal import Decimal
 from copy import copy
 from datetime import date, datetime, time
 from ld_orm import default_model_factory
+from ld_orm.model import Model
 from ld_orm.exceptions import RequiredPropertyError, LDAttributeTypeCheckError
 
 default_graph = ConjunctiveGraph()
@@ -121,11 +122,11 @@ context = {
 }
 
 model_generator = default_model_factory(schema_graph, default_graph)
-# ChildClass is generated before the older!!
+# ChildClass is generated before its ancestors!!
 ChildClass = model_generator.generate("ChildClass", context, data_graph,
                                       uri_prefix="http://localhost/children/")
 GrandParentClass = model_generator.generate("GrandParentClass", context, data_graph,
-                                      uri_prefix="http://localhost/ancestors/")
+                                            uri_prefix="http://localhost/ancestors/")
 ParentClass = model_generator.generate("ParentClass", context, data_graph,
                                        uri_prefix="http://localhost/parents/")
 
@@ -193,3 +194,44 @@ class DatatypeTest(TestCase):
         self.assertEquals(tom.new_value, new_value)
         self.assertEquals(tom.mid_values, mid_values)
         self.assertEquals(tom.old_number_value, old_value)
+
+    def test_isinstance(self):
+        john = GrandParentClass.objects.create()
+        self.assertTrue(isinstance(john, GrandParentClass))
+        self.assertTrue(isinstance(john, Model))
+        self.assertTrue(isinstance(john, object))
+        self.assertFalse(isinstance(john, ParentClass))
+        self.assertFalse(isinstance(john, ChildClass))
+
+        jack = ParentClass.objects.create()
+        self.assertTrue(isinstance(jack, ParentClass))
+        self.assertTrue(isinstance(jack, GrandParentClass))
+        self.assertTrue(isinstance(jack, Model))
+        self.assertTrue(isinstance(jack, object))
+        self.assertFalse(isinstance(jack, ChildClass))
+
+        tom = ChildClass.objects.create()
+        self.assertTrue(isinstance(tom, ChildClass))
+        self.assertTrue(isinstance(tom, ParentClass))
+        self.assertTrue(isinstance(tom, GrandParentClass))
+        self.assertTrue(isinstance(tom, Model))
+        self.assertTrue(isinstance(tom, object))
+
+        self.assertFalse(isinstance(5, Model))
+
+    def test_subclass(self):
+        self.assertTrue(issubclass(ChildClass, ParentClass))
+        self.assertTrue(issubclass(ParentClass, GrandParentClass))
+        self.assertTrue(issubclass(ChildClass, GrandParentClass))
+
+        self.assertFalse(issubclass(ParentClass, ChildClass))
+        self.assertFalse(issubclass(GrandParentClass, ParentClass))
+        self.assertFalse(issubclass(GrandParentClass, ChildClass))
+
+        self.assertTrue(issubclass(ChildClass, Model))
+        self.assertTrue(issubclass(ParentClass, Model))
+        self.assertTrue(issubclass(GrandParentClass, Model))
+
+        self.assertTrue(issubclass(Model, Model))
+        self.assertFalse(issubclass(Model, ChildClass))
+        self.assertFalse(issubclass(int, Model))

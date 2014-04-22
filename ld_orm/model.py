@@ -47,6 +47,19 @@ class ModelBase(type):
 
         return cls
 
+    def __instancecheck__(cls, instance):
+        return issubclass(type(instance), cls)
+
+    def __subclasscheck__(cls, subclass):
+        if cls == subclass:
+            return True
+        if not hasattr(subclass, "class_uri"):
+            return False
+        if cls.__name__  == "Model":
+            return True
+        return cls.class_uri in subclass.types
+
+
     @classmethod
     def clean_context(mcs, context):
         """
