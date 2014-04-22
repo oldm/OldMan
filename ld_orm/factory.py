@@ -20,7 +20,7 @@ class ModelFactory(object):
         self._registry = ModelRegistry(default_graph)
         self._schema_graph = schema_graph
         self._default_graph = default_graph
-
+        self._methods = {}
         # Registered with the "None" key
         self._generate("DefaultModel", {u"@context": {}}, default_graph, untyped=True,
                        uri_prefix=u"http://localhost/.well-known/genid/default/")
@@ -28,6 +28,12 @@ class ModelFactory(object):
     @property
     def registry(self):
         return self._registry
+
+    def add_method(self, method, name, class_uri):
+        if class_uri in self._methods:
+            self._methods[class_uri].append((method, name))
+        else:
+            self._methods[class_uri] = [(method, name)]
 
     def generate(self, class_name, context, storage_graph, uri_prefix=None,
                  uri_generator=None):
@@ -69,7 +75,14 @@ class ModelFactory(object):
                 raise ReservedAttributeNameError(u"%s is reserved" % name)
         attributes.update(special_attributes)
 
-        return type(class_name, (Model,), attributes)
+        model_cls = type(class_name, (Model,), attributes)
+        #TODO: give priority to sub-classes
+        for type_uri in types:
+            methods = self._methods.get(type_uri)
+            if methods is not None:
+                for method, name in methods:
+                    setattr(model_cls,name, method)
+        return model_cls
 
 
 def extract_class_uri(class_name, context):

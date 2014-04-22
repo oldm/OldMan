@@ -19,7 +19,6 @@ data_graph = default_graph.get_context(URIRef("http://localhost/data"))
 
 EXAMPLE = "http://localhost/vocab#"
 
-
 #Turtle instead of JSON-LD because of a bug with the JSON-LD parser
 schema_ttl = """
 @prefix ex: <%s> .
@@ -121,7 +120,19 @@ context = {
     }
 }
 
+def square_value(self):
+    if self.old_number_value is None:
+        return 0
+    return self.old_number_value**2
+
+def print_new_value(self):
+    print self.new_value
+
 model_generator = default_model_factory(schema_graph, default_graph)
+# Methods
+model_generator.add_method(square_value, "square_value", EXAMPLE + "GrandParentClass")
+model_generator.add_method(print_new_value, "print_new_value", EXAMPLE + "ChildClass")
+
 # ChildClass is generated before its ancestors!!
 ChildClass = model_generator.generate("ChildClass", context, data_graph,
                                       uri_prefix="http://localhost/children/")
@@ -163,7 +174,7 @@ class DatatypeTest(TestCase):
     def test_parent_assignment(self):
         jack = ParentClass()
         uri = jack.id
-        mid_values = { "Hello", "world" }
+        mid_values = {"Hello", "world" }
         jack.mid_values = mid_values
         old_value = 8
         jack.old_number_value = old_value
@@ -181,7 +192,7 @@ class DatatypeTest(TestCase):
     def test_child_assignment(self):
         tom = ChildClass()
         uri = tom.id
-        mid_values = { "Hello", "world" }
+        mid_values = {"Hello", "world" }
         tom.mid_values = mid_values
         old_value = 10
         tom.old_number_value = old_value
@@ -235,3 +246,31 @@ class DatatypeTest(TestCase):
         self.assertTrue(issubclass(Model, Model))
         self.assertFalse(issubclass(Model, ChildClass))
         self.assertFalse(issubclass(int, Model))
+
+    def test_square_method(self):
+        john = GrandParentClass.objects.create()
+        self.assertEquals(john.square_value(), 0)
+        john.old_number_value = 5
+        self.assertEquals(john.square_value(), 25)
+        jack = ParentClass.objects.create()
+        self.assertEquals(jack.square_value(), 0)
+        jack.old_number_value = 6
+        self.assertEquals(jack.square_value(), 36)
+        tom = ChildClass.objects.create()
+        self.assertEquals(tom.square_value(), 0)
+        tom.old_number_value = 7
+        self.assertEquals(tom.square_value(), 49)
+
+    def test_new_method(self):
+        john = GrandParentClass.objects.create()
+        with self.assertRaises(AttributeError):
+            john.print_new_value()
+        jack = ParentClass.objects.create()
+        with self.assertRaises(AttributeError):
+            jack.print_new_value()
+        tom = ChildClass.objects.create()
+        tom.print_new_value()
+        tom.new_value = "Hello"
+        tom.print_new_value()
+
+

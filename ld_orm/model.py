@@ -59,7 +59,6 @@ class ModelBase(type):
             return True
         return cls.class_uri in subclass.types
 
-
     @classmethod
     def clean_context(mcs, context):
         """
