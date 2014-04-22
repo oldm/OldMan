@@ -47,8 +47,7 @@ class ModelFactory(object):
         else:
             class_uri = extract_class_uri(class_name, context)
             types = extract_types(class_uri, self._schema_graph)
-            attributes = self._attr_manager.extract(class_uri, context,
-                                                    self._schema_graph)
+            attributes = self._attr_manager.extract(class_uri, types, context, self._schema_graph)
         if uri_generator:
             id_generator = uri_generator
         elif uri_prefix:
