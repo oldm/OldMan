@@ -30,8 +30,8 @@ class LDAttribute(object):
 
     CONTAINER_REQUIREMENTS = {'@set': set,
                               '@list': list,
-                              #'@language': dict,
-                              # '@index': dict,
+                              '@language': dict,
+                              #'@index': dict,
                               None: object}
 
     def __init__(self, metadata, value_format):
@@ -43,8 +43,8 @@ class LDAttribute(object):
 
         self._value_extractor = AttributeValueExtractorFromGraph(self)
 
-        # TODO: support "@language" and "@index"
-        if not self.container in [None, "@set", "@list"]:
+        # TODO: support "@index"
+        if not self.container in [None, "@set", "@list", "@language"]:
             raise NotImplementedError(u"Container %s is not yet supported" % self.container)
 
         #TODO: support
@@ -145,8 +145,11 @@ class LDAttribute(object):
         if values is None:
             return ""
 
-        vs = values if isinstance(values, (list, set)) else [values]
-        converted_values = [self._encode_value(v) for v in vs]
+        vs = values if isinstance(values, (list, set, dict)) else [values]
+        if isinstance(vs, dict):
+            converted_values = [self._encode_value(v, language) for language, v in vs.iteritems()]
+        else:
+            converted_values = [self._encode_value(v) for v in vs]
 
         property_uri = self.ld_property.uri
         lines = ""
@@ -175,12 +178,13 @@ class LDAttribute(object):
             # Clears "None" former value
             self.pop_former_value(instance)
 
-    def _encode_value(self, value):
+    def _encode_value(self, value, language=None):
         """
             SPARQL encoding
         """
         jsonld_type = self.jsonld_type
-        language = self.language
+        if language is None:
+            language = self.language
         if jsonld_type == "@id":
             return u"<%s>" % value
         elif language:

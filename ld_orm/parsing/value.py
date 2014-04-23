@@ -44,12 +44,15 @@ class AttributeValueExtractorFromGraph(object):
             rdf_values = Collection(storage_graph, vlist)
             values = self._filter_and_convert(rdf_values)
             if len(values) > 0:
-                if final_list is not None :
+                if final_list is not None:
                     raise DataStoreError(u"Same language in multiple list for the property %s"
                                          % self._property_uri)
                 final_list = values
 
         return final_list
+
+    def _extract_language_map_values(self, raw_rdf_values, useless_graph):
+        return {r.language: r.toPython() for r in raw_rdf_values}
 
     def _filter_and_convert(self, rdf_values):
         """
@@ -64,5 +67,6 @@ class AttributeValueExtractorFromGraph(object):
 
     EXTRACT_FCTS = {'@list': _extract_list_values,
                     '@set': _extract_set_values,
+                    '@language': _extract_language_map_values,
                     #TODO: support other type of containers
                     None: _extract_regular_values}

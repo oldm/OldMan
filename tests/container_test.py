@@ -55,7 +55,14 @@ local_person_def = {
             "required": False,
             "readonly": False,
             "writeonly": False
+        },
+        {
+            "property": "ex:localizedValue",
+            "required": False,
+            "readonly": False,
+            "writeonly": False
         }
+
     ]
 }
 schema_graph.parse(data=json.dumps(local_person_def), format="json-ld")
@@ -97,6 +104,11 @@ context = {
             "@id": "ex:boolSet",
             "@type": "xsd:boolean",
             "@container": "@set"
+        },
+        "lang_map": {
+            "@id": "ex:localizedValue",
+            "@type": "xsd:string",
+            "@container": "@language"
         }
     }
 }
@@ -213,3 +225,30 @@ class ContainerTest(TestCase):
             obj.bool_set = [True]
         with self.assertRaises(LDAttributeTypeCheckError):
             obj.bool_set = {True, "Should not be there"}
+
+    def test_lang_map(self):
+        obj = self.create_object()
+        uri = obj.id
+        values = {'fr': u"Hé, salut!",
+                  'en': u"What's up?"}
+        obj.lang_map = values
+        obj.save()
+        del obj
+        LocalClass.objects.clear_cache()
+        obj = LocalClass.objects.get(id=uri)
+        self.assertEquals(obj.lang_map, values)
+
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.lang_map = ["Not a map"]
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.lang_map = {"Not a map"}
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.lang_map = "Not a map"
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.lang_map = {"en": {"key": "should not support level-2 map"}}
+        with self.assertRaises(LDAttributeTypeCheckError):
+            obj.lang_map = {"en": 2}
+        obj.lang_map = {"en": "ok",
+                        "fr": "ok aussi"}
+
+
