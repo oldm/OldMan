@@ -5,13 +5,8 @@
 
 from unittest import TestCase
 from rdflib import ConjunctiveGraph, URIRef
-import json
-from decimal import Decimal
-from copy import copy
-from datetime import date, datetime, time
 from ld_orm import default_model_factory
 from ld_orm.model import Model
-from ld_orm.exceptions import RequiredPropertyError, LDAttributeTypeCheckError
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
@@ -120,18 +115,34 @@ context = {
     }
 }
 
+old_disclaim = "Old disclam"
+new_disclaim = "New disclam"
+
 def square_value(self):
     if self.old_number_value is None:
         return 0
     return self.old_number_value**2
 
+
 def print_new_value(self):
     print self.new_value
+
+
+def disclaim1(self):
+    return old_disclaim
+
+
+def disclaim2(self):
+    return new_disclaim
+
 
 model_generator = default_model_factory(schema_graph, default_graph)
 # Methods
 model_generator.add_method(square_value, "square_value", EXAMPLE + "GrandParentClass")
 model_generator.add_method(print_new_value, "print_new_value", EXAMPLE + "ChildClass")
+# Method overloading
+model_generator.add_method(disclaim1, "disclaim", EXAMPLE + "GrandParentClass")
+model_generator.add_method(disclaim2, "disclaim", EXAMPLE + "ParentClass")
 
 # ChildClass is generated before its ancestors!!
 ChildClass = model_generator.generate("ChildClass", context, data_graph,
@@ -150,6 +161,14 @@ class DatatypeTest(TestCase):
         ChildClass.objects.clear_cache()
         ParentClass.objects.clear_cache()
         GrandParentClass.objects.clear_cache()
+
+    def test_types(self):
+        john = GrandParentClass()
+        jack = ParentClass()
+        tom = ChildClass()
+        self.assertEquals(john.types,[GrandParentClass.class_uri])
+        self.assertEquals(jack.types, [ParentClass.class_uri, GrandParentClass.class_uri])
+        self.assertEquals(tom.types, [ChildClass.class_uri, ParentClass.class_uri, GrandParentClass.class_uri])
 
     def test_ancestor_assignment(self):
         john = GrandParentClass()
@@ -174,7 +193,7 @@ class DatatypeTest(TestCase):
     def test_parent_assignment(self):
         jack = ParentClass()
         uri = jack.id
-        mid_values = {"Hello", "world" }
+        mid_values = {"Hello", "world"}
         jack.mid_values = mid_values
         old_value = 8
         jack.old_number_value = old_value
@@ -192,7 +211,7 @@ class DatatypeTest(TestCase):
     def test_child_assignment(self):
         tom = ChildClass()
         uri = tom.id
-        mid_values = {"Hello", "world" }
+        mid_values = {"Hello", "world"}
         tom.mid_values = mid_values
         old_value = 10
         tom.old_number_value = old_value
@@ -273,4 +292,10 @@ class DatatypeTest(TestCase):
         tom.new_value = "Hello"
         tom.print_new_value()
 
-
+    def test_method_overloading(self):
+        john = GrandParentClass.objects.create()
+        self.assertEquals(john.disclaim(), old_disclaim)
+        jack = ParentClass.objects.create()
+        self.assertEquals(jack.disclaim(), new_disclaim)
+        tom = ChildClass.objects.create()
+        self.assertEquals(tom.disclaim(), new_disclaim)

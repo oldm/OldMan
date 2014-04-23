@@ -17,7 +17,7 @@ class ModelBase(type):
     def __new__(mcs, name, bases, attributes):
         if name != "Model":
             required_fields = ["class_uri", "_storage_graph", "_context_dict", "_id_generator",
-                               "types", "registry"]
+                               "_ancestry", "types", "registry"]
             for field in required_fields:
                 if field not in attributes:
                     raise MissingClassAttributeError("%s is required for class %s" % (field, name))
@@ -27,8 +27,6 @@ class ModelBase(type):
             # only used by the manager
             registry = attributes.pop("registry")
 
-            # Should type be reserved?
-            # TODO: merge it with class_uri ?
             reserved_attributes = ["id", "_attributes", "objects"]
             for field in reserved_attributes:
                 if field in attributes:
