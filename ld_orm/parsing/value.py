@@ -11,7 +11,10 @@ class AttributeValueExtractorFromGraph(object):
         self._value_format = attribute.value_format
         self._property_uri = URIRef(attribute.ld_property.uri)
         self._container = attribute.container
-        self._extract_fct = AttributeValueExtractorFromGraph.EXTRACT_FCTS[self._container]
+        try:
+            self._extract_fct = AttributeValueExtractorFromGraph.EXTRACT_FCTS[self._container]
+        except KeyError as e:
+            raise NotImplementedError("Container %s is not supported" % e)
 
     def extract_values(self, instance, subgraph, storage_graph):
         instance_uri = URIRef(instance.id)
