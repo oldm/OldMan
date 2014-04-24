@@ -13,7 +13,7 @@ class InstanceManager(object):
         self._registry = registry
         class_uri = cls.class_uri
         if class_uri:
-            self._check_type_request = prepareQuery(u"ASK {?s a <%s> }" % class_uri )
+            self._check_type_request = prepareQuery(u"ASK {?s a <%s> }" % class_uri)
         else:
             self._check_type_request = None
 
@@ -42,18 +42,16 @@ class InstanceManager(object):
             return self.get(**kwargs)
 
         lines = u""
-        # Access to a protected attribute: design choice
-        # (We do not want a regular user to access to model.attributes)
-        for name, attr in self._cls._attributes.iteritems():
-            if not name in kwargs:
-                continue
+        for name, value in kwargs.iteritems():
+            # May raise a LDAttributeAccessError
+            attr = self._cls.get_attribute(name)
             value = kwargs[name]
             if value:
                 lines += attr.serialize_values_into_lines(value)
 
         query = build_query_part(u"SELECT ?s WHERE", u"?s", lines)
         #print query
-        try :
+        try:
             results = self._storage_graph.query(query)
         except ParseException as e:
             raise SPARQLParseError(u"%s\n %s" % (query, e))

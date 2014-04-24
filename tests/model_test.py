@@ -5,7 +5,7 @@ from rdflib import ConjunctiveGraph, URIRef, Literal, RDF
 import json
 from ld_orm import default_model_factory
 from ld_orm.attribute import LDAttributeTypeCheckError, RequiredPropertyError
-from ld_orm.exceptions import ClassInstanceError
+from ld_orm.exceptions import ClassInstanceError, LDAttributeAccessError
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
@@ -326,6 +326,10 @@ class ModelTest(TestCase):
         bobs4 = list(LocalPerson.objects.filter(name=bob_name,
                                                 mboxes={bob_email1, bob_email2, bob2_mail}))
         self.assertEquals(len(bobs4), 0)
+
+    def test_wrong_filter(self):
+        with self.assertRaises(LDAttributeAccessError):
+            LocalPerson.objects.filter(undeclared_attr="not in datastore")
 
     def test_set_validation(self):
         with self.assertRaises(LDAttributeTypeCheckError):

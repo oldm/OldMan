@@ -94,6 +94,13 @@ class LDAccessError(LDUserError):
     pass
 
 
+class LDAttributeAccessError(LDAccessError):
+    """
+        When such an attribute does not exist (is not supported)
+    """
+    pass
+
+
 class ClassInstanceError(LDAccessError):
     """
         The object is not an instance of the expected model class

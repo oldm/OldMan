@@ -8,6 +8,7 @@ from rdflib.plugins.sparql.parser import ParseException
 from .attribute import LDAttribute
 from .manager import InstanceManager, build_update_query_part
 from .exceptions import MissingClassAttributeError, ReservedAttributeNameError, SPARQLParseError
+from .exceptions import LDAttributeAccessError
 
 
 class ModelBase(type):
@@ -106,6 +107,13 @@ class Model(object):
         for attr in instance._attributes.values():
             attr.update_from_graph(instance, subgraph, cls._storage_graph)
         return instance
+
+    @classmethod
+    def get_attribute(cls, name):
+        try:
+            return cls._attributes[name]
+        except KeyError:
+            raise LDAttributeAccessError("%s has no supported attribute %s" % (cls, name))
 
     def is_valid(self):
         for attr in self._attributes.values():
