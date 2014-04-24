@@ -4,7 +4,7 @@ from rdflib import Graph
 from .model import Model
 from .registry import ModelRegistry
 from .exceptions import UndeclaredClassNameError, ReservedAttributeNameError
-from .uri import RandomPrefixedUriGenerator
+from .iri import RandomPrefixedIriGenerator
 from .ancestry import Ancestry
 from ld_orm.parsing.schema.attribute import LDAttributeExtractor
 
@@ -59,7 +59,7 @@ class ModelFactory(object):
         if uri_generator:
             id_generator = uri_generator
         elif uri_prefix:
-            id_generator = RandomPrefixedUriGenerator(prefix=uri_prefix)
+            id_generator = RandomPrefixedIriGenerator(prefix=uri_prefix)
         else:
             raise TypeError(u"Please specify uri_prefix or uri_generator")
 

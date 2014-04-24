@@ -7,6 +7,7 @@ from unittest import TestCase
 from rdflib import ConjunctiveGraph, URIRef
 from ld_orm import default_model_factory
 from ld_orm.model import Model
+from ld_orm.iri import IncrementalIriGenerator
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
@@ -145,8 +146,11 @@ model_generator.add_method(disclaim1, "disclaim", EXAMPLE + "GrandParentClass")
 model_generator.add_method(disclaim2, "disclaim", EXAMPLE + "ParentClass")
 
 # ChildClass is generated before its ancestors!!
+child_prefix = "http://localhost/children/"
+child_uri_generator = IncrementalIriGenerator(prefix=child_prefix, graph=data_graph,
+                                              class_uri=EXAMPLE+"ChildClass")
 ChildClass = model_generator.generate("ChildClass", context, data_graph,
-                                      uri_prefix="http://localhost/children/")
+                                      uri_generator=child_uri_generator)
 GrandParentClass = model_generator.generate("GrandParentClass", context, data_graph,
                                             uri_prefix="http://localhost/ancestors/")
 ParentClass = model_generator.generate("ParentClass", context, data_graph,
@@ -158,6 +162,7 @@ class DatatypeTest(TestCase):
     def tearDown(self):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
+        child_uri_generator.reset_counter()
         ChildClass.objects.clear_cache()
         ParentClass.objects.clear_cache()
         GrandParentClass.objects.clear_cache()
@@ -334,3 +339,9 @@ class DatatypeTest(TestCase):
         self.assertTrue(isinstance(john, GrandParentClass))
         self.assertFalse(isinstance(john, ParentClass))
         self.assertFalse(isinstance(john, ChildClass))
+
+    def test_uris(self):
+        for i in range(1,6):
+            child = ChildClass()
+            self.assertEquals(child.id, "%s%d" % (child_prefix, i))
+            print child.id
