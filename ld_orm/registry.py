@@ -1,5 +1,5 @@
-from rdflib.plugins.sparql import prepareQuery
 from rdflib import RDF, URIRef
+from .exceptions import SchemaError, LDInternalError
 
 
 class ModelRegistry(object):
@@ -21,16 +21,35 @@ class ModelRegistry(object):
         return self._model_classes.get(class_uri)
 
     def find_instance_manager(self, object_uri):
-        types = self._default_graph.objects(URIRef(object_uri), RDF["type"])
+        types = {t.toPython() for t in self._default_graph.objects(URIRef(object_uri), RDF["type"])}
+
+        models = set()
         for t in types:
-            class_uri = unicode(t)
-            if class_uri in self._model_classes:
-                return self.get_model_class(class_uri).objects
+            model = self._model_classes.get(t)
+            if model is not None:
+                models.add(model)
 
-        #Untyped one
-        untyped_model = self._model_classes.get(None)
-        if untyped_model:
-            return untyped_model.objects
+        if len(models) == 1:
+            return list(models)[0].objects
+        elif len(models) > 1:
+            remaining_models = list(models)
+            for model in models:
+                for remaining in remaining_models:
+                    if (model != remaining) and issubclass(remaining, model):
+                        remaining_models.remove(model)
+                        break
+            if len(remaining_models) == 1:
+                return remaining_models[0].objects
+            if len(remaining_models) > 1:
+                raise SchemaError("Cannot make a choice between classes %s for object %s"
+                                  % (remaining_models, object_uri))
+            raise LDInternalError("No remaining model class from %s" % models)
 
-        raise Exception("No model found, no untyped model registered")
+        else:
+            #Untyped one
+            untyped_model = self._model_classes.get(None)
+            if untyped_model:
+                return untyped_model.objects
+
+        raise LDInternalError("No model found, no untyped model registered")
 

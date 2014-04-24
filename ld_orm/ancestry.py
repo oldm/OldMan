@@ -66,5 +66,3 @@ class Ancestry(object):
 
     def parents(self, class_uri):
         return self._ancestry.get(class_uri)
-
-

@@ -299,3 +299,38 @@ class DatatypeTest(TestCase):
         self.assertEquals(jack.disclaim(), new_disclaim)
         tom = ChildClass.objects.create()
         self.assertEquals(tom.disclaim(), new_disclaim)
+
+    def test_gets(self):
+        john = GrandParentClass.objects.create()
+        john_uri = john.id
+        jack = ParentClass.objects.create()
+        jack_uri = jack.id
+        jack_mid_values = {"jack"}
+        jack.mid_values = jack_mid_values
+        jack.save()
+        tom = ChildClass.objects.create()
+        tom_uri = tom.id
+        tom_new_value = "Tom new value"
+        tom.new_value = tom_new_value
+        tom.save()
+        del john
+        del jack
+        del tom
+        GrandParentClass.objects.clear_cache()
+        ParentClass.objects.clear_cache()
+        ChildClass.objects.clear_cache()
+
+        tom = GrandParentClass.objects.get_any(id=tom_uri)
+        self.assertEquals(tom.new_value, tom_new_value)
+        self.assertEquals(tom.disclaim(), new_disclaim)
+        self.assertTrue(isinstance(tom, ChildClass))
+
+        jack = GrandParentClass.objects.get_any(id=jack_uri)
+        self.assertEquals(jack.mid_values, jack_mid_values)
+        self.assertTrue(isinstance(jack, ParentClass))
+        self.assertFalse(isinstance(jack, ChildClass))
+
+        john = GrandParentClass.objects.get_any(id=john_uri)
+        self.assertTrue(isinstance(john, GrandParentClass))
+        self.assertFalse(isinstance(john, ParentClass))
+        self.assertFalse(isinstance(john, ChildClass))
