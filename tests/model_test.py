@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from unittest import TestCase
-from rdflib import ConjunctiveGraph, URIRef, Literal, RDF
+from rdflib import ConjunctiveGraph, Graph, URIRef, Literal, RDF
 import json
 from ld_orm import default_model_factory
 from ld_orm.attribute import LDAttributeTypeCheckError, RequiredPropertyError
@@ -124,7 +124,7 @@ LocalPerson = model_generator.generate("LocalPerson", person_context,
                                        uri_fragment="me")
 
 bob_name = "Bob"
-bob_blog = "http://blog.example.com"
+bob_blog = "http://blog.example.com/"
 bob_email1 = "bob@localhost"
 bob_email2 = "bob@example.org"
 bob_emails = {bob_email1, bob_email2}
@@ -222,7 +222,7 @@ class ModelTest(TestCase):
         new_name = "Fake Bob"
         bob.name = new_name
         # Not saved
-        self.assertFalse(bool(data_graph.query("""ASK {?x foaf:name "%s"^^xsd:string }""" % new_name )))
+        self.assertFalse(bool(data_graph.query("""ASK {?x foaf:name "%s"^^xsd:string }""" % new_name)))
 
     def test_objects_access(self):
         """ Object manager is only accessible at the class level """
@@ -426,8 +426,20 @@ class ModelTest(TestCase):
         self.assertEquals(set(bob_jsonld["mboxes"]), bob_emails)
         self.assertEquals(bob_jsonld["short_bio_en"], bob_bio_en)
         self.assertEquals(bob_jsonld["short_bio_fr"], bob_bio_fr)
-        self.assertTrue(bob_jsonld.has_key("@context"))
+        self.assertTrue("@context" in bob_jsonld)
         self.assertEquals(bob_jsonld["@context"], person_context["@context"])
+
+    def test_rdf(self):
+        bob = self.create_bob()
+        bob_uri = URIRef(bob.id)
+        g = Graph()
+        g.parse(data=bob.to_rdf("turtle"), format="turtle")
+        self.assertEquals(g.value(bob_uri, URIRef(FOAF + "name")).toPython(), bob_name)
+        self.assertEquals(g.value(bob_uri, URIRef(FOAF + "weblog")).toPython(), bob_blog)
+        self.assertEquals({mbox.toPython() for mbox in g.objects(bob_uri, URIRef(FOAF + "mbox"))},
+                          bob_emails)
+        self.assertEquals({bio.toPython() for bio in g.objects(bob_uri, URIRef(BIO + "olb"))},
+                          {bob_bio_en, bob_bio_fr})
 
     def test_is_blank_node(self):
         bob = self.create_bob()
@@ -487,9 +499,30 @@ class ModelTest(TestCase):
         bob_jsonld = json.loads(bob.to_jsonld())
         self.assertEquals([c["id"] for c in bob_jsonld["friends"]],
                           [c.id for c in bob_friends])
-        self.assertEquals([c.has_key("@context") for c in bob_jsonld["friends"]],
+        self.assertEquals(["@context" in c for c in bob_jsonld["friends"]],
                           [False])
         self.assertEquals(bob_jsonld["friends"][0]["friends"][0], bob_uri)
+
+    def test_friendship_rdf(self):
+        friendship_uri = u"http://localhost/friendship"
+        bob_uri = friendship_uri + "#bob"
+        bob = LocalPerson.objects.create(id=bob_uri, name=bob_name, blog=bob_blog, mboxes=bob_emails,
+                                         short_bio_en=bob_bio_en, short_bio_fr=bob_bio_fr)
+        alice_uri = friendship_uri + "#alice"
+        alice = LocalPerson.objects.create(id=alice_uri, name=alice_name, mboxes={alice_mail},
+                                           short_bio_en=alice_bio_en)
+        bob_friends = {alice}
+        bob.friends = bob_friends
+        bob.save()
+        alice_friends = {bob}
+        alice.friends = alice_friends
+        alice.save()
+
+        g = Graph()
+        g.parse(data=bob.to_rdf("turtle"), format="turtle")
+        self.assertEquals(g.value(URIRef(bob_uri), URIRef(FOAF + "knows")).toPython(), alice_uri)
+        self.assertEquals(g.value(URIRef(bob_uri), URIRef(FOAF + "name")).toPython(), bob_name)
+        self.assertEquals(g.value(URIRef(alice_uri), URIRef(FOAF + "name")).toPython(), alice_name)
 
     def test_out_of_band_update(self):
         jason_uri = URIRef("https://example.com/jason#me")

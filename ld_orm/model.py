@@ -3,7 +3,7 @@ from types import GeneratorType
 from six import add_metaclass
 from urlparse import urlparse
 import json
-from rdflib import URIRef
+from rdflib import URIRef, Graph
 from rdflib.plugins.sparql.parser import ParseException
 from .attribute import LDAttribute
 from .manager import InstanceManager, build_update_query_part
@@ -207,6 +207,11 @@ class Model(object):
     #
     # def __eq__(self, other):
     #     return self._id == other._id
+
+    def to_rdf(self, format):
+        g = Graph()
+        g.parse(data=self.to_jsonld(), format="json-ld")
+        return g.serialize(format=format)
 
     def __str__(self):
         return self._id
