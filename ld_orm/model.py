@@ -172,12 +172,18 @@ class Model(object):
         except ParseException as e:
             raise SPARQLParseError(u"%s\n %s" % (query, e))
 
-    def to_dict(self, remove_none_values=True):
-        dct = {name: self._convert_value(getattr(self, name))
+    def to_dict(self, remove_none_values=True, include_different_contexts=False,
+                ignored_iris=None):
+        if ignored_iris is None:
+            ignored_iris = set()
+        ignored_iris.add(self._id)
+
+        dct = {name: self._convert_value(getattr(self, name), ignored_iris, remove_none_values,
+                                         include_different_contexts)
                for name in self._attributes}
         # filter None values
         if remove_none_values:
-            dct = {k: v for k,v in dct.iteritems() if v}
+            dct = {k: v for k,v in dct.iteritems() if v is not None}
 
         if not self.is_blank_node():
             dct["id"] = self._id
@@ -208,19 +214,27 @@ class Model(object):
     def __repr__(self):
         return u"%s(<%s>)" % (self.__class__.__name__, self._id)
 
-    def _convert_value(self, value):
-        """
-            TODO: improve it
-        """
+    def _convert_value(self, value, ignored_iris, remove_none_values, include_different_contexts=False):
+        # Containers
         if isinstance(value, (list, set, GeneratorType)):
-            return [self._convert_value(v) for v in value]
+            return [self._convert_value(v, ignored_iris, remove_none_values, include_different_contexts)
+                    for v in value]
+        # Object
         if isinstance(value, Model):
-            if value.is_blank_node():
-                #TODO: what about its own context? Make sure contexts are
-                # not incompatible
-                return value.to_dict()
-            # TODO: compare its URI if non-blank (if same document that self)
+            # If non-blank or in the same document
+            if value.id not in ignored_iris and \
+                    (value.is_blank_node() or self.in_same_document(value)):
+                value_dict = dict(value.to_dict(remove_none_values, include_different_contexts, ignored_iris))
+                # TODO: should we improve this test?
+                if include_different_contexts and value._context_dict != self._context_dict:
+                    value_dict.update(value._context_dict)
+                return value_dict
             else:
                 # URI
                 return value.id
+        # Literal
         return value
+
+    def in_same_document(self, other_obj):
+        return self._id.split("#")[0] == other_obj.id.split("#")[0]
+

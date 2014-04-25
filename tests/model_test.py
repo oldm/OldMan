@@ -106,7 +106,8 @@ person_context = {
         },
         "friends": {
             "@id": "foaf:knows",
-            "@type": "@id"
+            "@type": "@id",
+            "@container": "@set"
         },
         "children": {
             "@id": "rel:parentOf",
@@ -410,24 +411,85 @@ class ModelTest(TestCase):
 
     def test_json(self):
         bob = self.create_bob()
-        bob.to_json()
-        #TODO: continue
+        bob_json = json.loads(bob.to_json())
+        self.assertEquals(bob_json["name"], bob_name)
+        self.assertEquals(bob_json["blog"], bob_blog)
+        self.assertEquals(set(bob_json["mboxes"]), bob_emails)
+        self.assertEquals(bob_json["short_bio_en"], bob_bio_en)
+        self.assertEquals(bob_json["short_bio_fr"], bob_bio_fr)
 
     def test_jsonld(self):
         bob = self.create_bob()
-        bob.to_jsonld()
-        #TODO: continue
+        bob_jsonld = json.loads(bob.to_jsonld())
+        self.assertEquals(bob_jsonld["name"], bob_name)
+        self.assertEquals(bob_jsonld["blog"], bob_blog)
+        self.assertEquals(set(bob_jsonld["mboxes"]), bob_emails)
+        self.assertEquals(bob_jsonld["short_bio_en"], bob_bio_en)
+        self.assertEquals(bob_jsonld["short_bio_fr"], bob_bio_fr)
+        self.assertTrue(bob_jsonld.has_key("@context"))
+        self.assertEquals(bob_jsonld["@context"], person_context["@context"])
+
+    def test_is_blank_node(self):
+        bob = self.create_bob()
+        self.assertFalse(bob.is_blank_node())
+        alice = LocalPerson()
+        self.assertFalse(alice.is_blank_node())
+
+        raoul = LocalPerson(id="http://localhost/.well-known/genid/2387335")
+        self.assertTrue(raoul.is_blank_node())
+
+    def test_same_document(self):
+        bob = self.create_bob()
+        alice = self.create_alice()
+        self.assertFalse(bob.in_same_document(alice))
+
+        partial_uri = u"http://localhost/persons"
+        bob_uri = partial_uri + "#bob"
+        bob = LocalPerson.objects.create(id=bob_uri, name=bob_name, blog=bob_blog, mboxes=bob_emails,
+                                         short_bio_en=bob_bio_en, short_bio_fr=bob_bio_fr)
+        alice_uri = partial_uri + "#alice"
+        alice = LocalPerson.objects.create(id=alice_uri, name=alice_name, mboxes={alice_mail},
+                                           short_bio_en=alice_bio_en)
+        self.assertTrue(bob.in_same_document(alice))
 
     def test_children_jsonld(self):
         bob = self.create_bob()
         alice = self.create_alice()
         john = self.create_john()
-
-        bob.children = [alice, john]
+        bob_children = [alice, john]
+        bob.children = bob_children
         bob.save()
 
-        bob.to_jsonld()
-        #TODO: continue
+        bob_jsonld = json.loads(bob.to_jsonld())
+        self.assertEquals(bob_jsonld["name"], bob_name)
+        self.assertEquals(bob_jsonld["blog"], bob_blog)
+        self.assertEquals(set(bob_jsonld["mboxes"]), bob_emails)
+        self.assertEquals(bob_jsonld["short_bio_en"], bob_bio_en)
+        self.assertEquals(bob_jsonld["short_bio_fr"], bob_bio_fr)
+        self.assertEquals(bob_jsonld["@context"], person_context["@context"])
+        self.assertEquals(bob_jsonld["children"], [c.id for c in bob_children])
+
+    def test_friendship_jsonld(self):
+        friendship_uri = u"http://localhost/friendship"
+        bob_uri = friendship_uri + "#bob"
+        bob = LocalPerson.objects.create(id=bob_uri, name=bob_name, blog=bob_blog, mboxes=bob_emails,
+                                         short_bio_en=bob_bio_en, short_bio_fr=bob_bio_fr)
+        alice_uri = friendship_uri + "#alice"
+        alice = LocalPerson.objects.create(id=alice_uri, name=alice_name, mboxes={alice_mail},
+                                           short_bio_en=alice_bio_en)
+        bob_friends = {alice}
+        bob.friends = bob_friends
+        bob.save()
+        alice_friends = {bob}
+        alice.friends = alice_friends
+        alice.save()
+
+        bob_jsonld = json.loads(bob.to_jsonld())
+        self.assertEquals([c["id"] for c in bob_jsonld["friends"]],
+                          [c.id for c in bob_friends])
+        self.assertEquals([c.has_key("@context") for c in bob_jsonld["friends"]],
+                          [False])
+        self.assertEquals(bob_jsonld["friends"][0]["friends"][0], bob_uri)
 
     def test_out_of_band_update(self):
         jason_uri = URIRef("https://example.com/jason#me")
@@ -457,4 +519,3 @@ class ModelTest(TestCase):
         jason = LocalPerson.objects.get(id=jason_uri)
         self.assertEquals(jason.mboxes, mboxes)
         self.assertTrue(jason.is_valid())
-
