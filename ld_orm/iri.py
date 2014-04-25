@@ -21,7 +21,7 @@ class RandomPrefixedIriGenerator(IriGenerator):
         return u"%s%s" % (self.prefix, uuid1().hex)
 
 
-class RandomIriGenerator(RandomPrefixedIriGenerator):
+class BlankNodeIriGenerator(RandomPrefixedIriGenerator):
 
     def __init__(self, **kwargs):
         hostname = kwargs.get("hostname", u"localhost")
@@ -88,5 +88,3 @@ class IncrementalIriGenerator(IriGenerator):
             raise DataStoreError(u"Multiple counter for class %s" % self._class_uri)
 
         return u"%s%d" % (self._prefix, numbers[0])
-
-

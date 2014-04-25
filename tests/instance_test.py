@@ -147,10 +147,8 @@ model_generator.add_method(disclaim2, "disclaim", EXAMPLE + "ParentClass")
 
 # ChildClass is generated before its ancestors!!
 child_prefix = "http://localhost/children/"
-child_uri_generator = IncrementalIriGenerator(prefix=child_prefix, graph=data_graph,
-                                              class_uri=EXAMPLE+"ChildClass")
 ChildClass = model_generator.generate("ChildClass", context, data_graph,
-                                      uri_generator=child_uri_generator)
+                                      uri_prefix=child_prefix, incremental_uri=True)
 GrandParentClass = model_generator.generate("GrandParentClass", context, data_graph,
                                             uri_prefix="http://localhost/ancestors/")
 ParentClass = model_generator.generate("ParentClass", context, data_graph,
@@ -162,7 +160,7 @@ class DatatypeTest(TestCase):
     def tearDown(self):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
-        child_uri_generator.reset_counter()
+        ChildClass.reset_counter()
         ChildClass.objects.clear_cache()
         ParentClass.objects.clear_cache()
         GrandParentClass.objects.clear_cache()

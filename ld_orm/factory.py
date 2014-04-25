@@ -4,7 +4,7 @@ from rdflib import Graph
 from .model import Model
 from .registry import ModelRegistry
 from .exceptions import UndeclaredClassNameError, ReservedAttributeNameError
-from .iri import RandomPrefixedIriGenerator
+from .iri import RandomPrefixedIriGenerator, IncrementalIriGenerator
 from .ancestry import Ancestry
 from ld_orm.parsing.schema.attribute import LDAttributeExtractor
 
@@ -37,14 +37,15 @@ class ModelFactory(object):
             self._methods[class_uri] = [(method, name)]
 
     def generate(self, class_name, context, storage_graph, uri_prefix=None,
-                 uri_generator=None):
+                 uri_generator=None, incremental_uri=False):
         """
             Generates a model class
         """
-        return self._generate(class_name, context, storage_graph, uri_prefix, uri_generator)
+        return self._generate(class_name, context, storage_graph, uri_prefix=uri_prefix,
+                              uri_generator=uri_generator, incremental_uri=incremental_uri)
 
     def _generate(self, class_name, context, storage_graph, uri_prefix=None,
-                  uri_generator=None, untyped=False):
+                  uri_generator=None, untyped=False, incremental_uri=False):
 
         # Only for the DefaultModel
         if untyped:
@@ -56,12 +57,17 @@ class ModelFactory(object):
             ancestry = Ancestry(class_uri, self._schema_graph)
             attributes = self._attr_manager.extract(class_uri, ancestry.bottom_up, context,
                                                     self._schema_graph)
-        if uri_generator:
+        if uri_generator is not None:
             id_generator = uri_generator
-        elif uri_prefix:
-            id_generator = RandomPrefixedIriGenerator(prefix=uri_prefix)
+        elif uri_prefix is not None:
+            if incremental_uri:
+                id_generator = IncrementalIriGenerator(prefix=uri_prefix,
+                                                       graph=storage_graph,
+                                                       class_uri=class_uri)
+            else:
+                id_generator = RandomPrefixedIriGenerator(prefix=uri_prefix)
         else:
-            raise TypeError(u"Please specify uri_prefix or uri_generator")
+            id_generator = BlankNodeIriGenerator()
 
         special_attributes = {"class_uri": class_uri,
                               "_ancestry": ancestry,

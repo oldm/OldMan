@@ -115,6 +115,15 @@ class Model(object):
         except KeyError:
             raise LDAttributeAccessError("%s has no supported attribute %s" % (cls, name))
 
+    @classmethod
+    def reset_counter(cls):
+        """
+            To be called after clearing the storage graph.
+            For unittest purposes.
+        """
+        if hasattr(cls._id_generator, "reset_counter"):
+            cls._id_generator.reset_counter()
+
     def is_valid(self):
         for attr in self._attributes.values():
             if not attr.is_valid(self):
