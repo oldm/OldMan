@@ -1,3 +1,4 @@
+from threading import Lock
 from uuid import uuid1
 from rdflib.plugins.sparql import prepareQuery
 from .exceptions import DataStoreError
@@ -33,9 +34,11 @@ class IncrementalIriGenerator(IriGenerator):
     """
         Generates IRIs with short numbers.
 
-        Warning: does not support concurrency!
-        The risk of collision is important.
+        Slow in concurrent settings: number generation implies a critical section
+        of two SPARQL requests. It is a significant bottleneck.
     """
+
+    mutex = Lock()
 
     def __init__(self, **kwargs):
         try:
@@ -80,11 +83,16 @@ class IncrementalIriGenerator(IriGenerator):
                 } WHERE {}""" % self._class_uri)
 
     def generate(self):
-        self._graph.update(self._counter_update_req)
-        numbers = [int(r) for r, in self._graph.query(self._counter_query_req)]
+        # Critical section
+        self.mutex.acquire()
+        try:
+            self._graph.update(self._counter_update_req)
+            numbers = [int(r) for r, in self._graph.query(self._counter_query_req)]
+        finally:
+            self.mutex.release()
+
         if len(numbers) == 0:
             raise DataStoreError(u"No counter for class %s (has disappeared)" % self._class_uri)
         elif len(numbers) > 1:
             raise DataStoreError(u"Multiple counter for class %s" % self._class_uri)
-
         return u"%s%d" % (self._prefix, numbers[0])
