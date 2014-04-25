@@ -15,12 +15,9 @@ class IriGenerator(object):
 
 class RandomPrefixedIriGenerator(IriGenerator):
 
-    def __init__(self, **kwargs):
-        try:
-            self._prefix = kwargs["prefix"]
-        except KeyError as e:
-            raise TypeError(u"Missing argument:%s" % e)
-        self._fragment = kwargs.get("fragment")
+    def __init__(self, prefix, fragment=None):
+        self._prefix = prefix
+        self._fragment = fragment
 
     def generate(self):
         partial_iri = u"%s%s" % (self._prefix, uuid1().hex)
@@ -31,8 +28,7 @@ class RandomPrefixedIriGenerator(IriGenerator):
 
 class BlankNodeIriGenerator(RandomPrefixedIriGenerator):
 
-    def __init__(self, **kwargs):
-        hostname = kwargs.get("hostname", u"localhost")
+    def __init__(self, hostname=u"localhost"):
         prefix = u"http://%s/.well-known/genid/" % hostname
         RandomPrefixedIriGenerator.__init__(self, prefix=prefix)
 
@@ -47,15 +43,11 @@ class IncrementalIriGenerator(IriGenerator):
 
     mutex = Lock()
 
-    def __init__(self, **kwargs):
-        try:
-            self._prefix = kwargs["prefix"]
-            self._graph = kwargs["graph"]
-            self._class_uri = kwargs["class_uri"]
-        except KeyError as e:
-            raise TypeError(u"Missing argument:%s" % e)
-
-        self._fragment = kwargs.get("fragment")
+    def __init__(self, prefix, graph, class_uri, fragment=None):
+        self._prefix = prefix
+        self._graph = graph
+        self._class_uri = class_uri
+        self._fragment = fragment
 
         self._counter_query_req = prepareQuery(u"""
             prefix ldorm: <http://localhost/ldorm#>

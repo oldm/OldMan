@@ -61,12 +61,12 @@ class ModelFactory(object):
             id_generator = uri_generator
         elif uri_prefix is not None:
             if incremental_uri:
-                id_generator = IncrementalIriGenerator(prefix=uri_prefix,
-                                                       graph=storage_graph,
-                                                       class_uri=class_uri,
+                id_generator = IncrementalIriGenerator(uri_prefix,
+                                                       storage_graph,
+                                                       class_uri,
                                                        fragment=uri_fragment)
             else:
-                id_generator = RandomPrefixedIriGenerator(prefix=uri_prefix,
+                id_generator = RandomPrefixedIriGenerator(uri_prefix,
                                                           fragment=uri_fragment)
         else:
             id_generator = BlankNodeIriGenerator()
