@@ -16,10 +16,17 @@ class IriGenerator(object):
 class RandomPrefixedIriGenerator(IriGenerator):
 
     def __init__(self, **kwargs):
-        self.prefix = kwargs["prefix"]
+        try:
+            self._prefix = kwargs["prefix"]
+        except KeyError as e:
+            raise TypeError(u"Missing argument:%s" % e)
+        self._fragment = kwargs.get("fragment")
 
     def generate(self):
-        return u"%s%s" % (self.prefix, uuid1().hex)
+        partial_iri = u"%s%s" % (self._prefix, uuid1().hex)
+        if self._fragment is not None:
+            return u"%s#%s" % (partial_iri, self._fragment)
+        return partial_iri
 
 
 class BlankNodeIriGenerator(RandomPrefixedIriGenerator):
@@ -47,6 +54,8 @@ class IncrementalIriGenerator(IriGenerator):
             self._class_uri = kwargs["class_uri"]
         except KeyError as e:
             raise TypeError(u"Missing argument:%s" % e)
+
+        self._fragment = kwargs.get("fragment")
 
         self._counter_query_req = prepareQuery(u"""
             prefix ldorm: <http://localhost/ldorm#>
@@ -95,4 +104,8 @@ class IncrementalIriGenerator(IriGenerator):
             raise DataStoreError(u"No counter for class %s (has disappeared)" % self._class_uri)
         elif len(numbers) > 1:
             raise DataStoreError(u"Multiple counter for class %s" % self._class_uri)
-        return u"%s%d" % (self._prefix, numbers[0])
+
+        partial_iri = u"%s%d" % (self._prefix, numbers[0])
+        if self._fragment is not None:
+            return u"%s#%s" % (partial_iri, self._fragment)
+        return partial_iri

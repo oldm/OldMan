@@ -147,10 +147,14 @@ model_generator.add_method(disclaim2, "disclaim", EXAMPLE + "ParentClass")
 
 # ChildClass is generated before its ancestors!!
 child_prefix = "http://localhost/children/"
+uri_fragment = "this"
+
 ChildClass = model_generator.generate("ChildClass", context, data_graph,
-                                      uri_prefix=child_prefix, incremental_uri=True)
+                                      uri_prefix=child_prefix, uri_fragment=uri_fragment,
+                                      incremental_uri=True)
 GrandParentClass = model_generator.generate("GrandParentClass", context, data_graph,
-                                            uri_prefix="http://localhost/ancestors/")
+                                            uri_prefix="http://localhost/ancestors/",
+                                            uri_fragment=uri_fragment)
 ParentClass = model_generator.generate("ParentClass", context, data_graph,
                                        uri_prefix="http://localhost/parents/")
 
@@ -341,5 +345,5 @@ class DatatypeTest(TestCase):
     def test_uris(self):
         for i in range(1,6):
             child = ChildClass()
-            self.assertEquals(child.id, "%s%d" % (child_prefix, i))
+            self.assertEquals(child.id, "%s%d#%s" % (child_prefix, i, uri_fragment))
             print child.id

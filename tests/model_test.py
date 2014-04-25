@@ -119,7 +119,8 @@ person_context = {
 model_generator = default_model_factory(schema_graph, default_graph)
 # Model class is generated here!
 LocalPerson = model_generator.generate("LocalPerson", person_context,
-                                       data_graph, uri_prefix="http://localhost/persons/")
+                                       data_graph, uri_prefix="http://localhost/persons/",
+                                       uri_fragment="me")
 
 bob_name = "Bob"
 bob_blog = "http://blog.example.com"

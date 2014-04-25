@@ -37,14 +37,14 @@ class ModelFactory(object):
             self._methods[class_uri] = [(method, name)]
 
     def generate(self, class_name, context, storage_graph, uri_prefix=None,
-                 uri_generator=None, incremental_uri=False):
+                 uri_fragment=None, uri_generator=None, incremental_uri=False):
         """
             Generates a model class
         """
-        return self._generate(class_name, context, storage_graph, uri_prefix=uri_prefix,
+        return self._generate(class_name, context, storage_graph, uri_prefix=uri_prefix, uri_fragment=uri_fragment,
                               uri_generator=uri_generator, incremental_uri=incremental_uri)
 
-    def _generate(self, class_name, context, storage_graph, uri_prefix=None,
+    def _generate(self, class_name, context, storage_graph, uri_prefix=None, uri_fragment=None,
                   uri_generator=None, untyped=False, incremental_uri=False):
 
         # Only for the DefaultModel
@@ -63,9 +63,11 @@ class ModelFactory(object):
             if incremental_uri:
                 id_generator = IncrementalIriGenerator(prefix=uri_prefix,
                                                        graph=storage_graph,
-                                                       class_uri=class_uri)
+                                                       class_uri=class_uri,
+                                                       fragment=uri_fragment)
             else:
-                id_generator = RandomPrefixedIriGenerator(prefix=uri_prefix)
+                id_generator = RandomPrefixedIriGenerator(prefix=uri_prefix,
+                                                          fragment=uri_fragment)
         else:
             id_generator = BlankNodeIriGenerator()
 
