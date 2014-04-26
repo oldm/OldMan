@@ -75,6 +75,7 @@ class ValueFormatSelector(object):
         if include_default_datatypes:
             #TODO: token, duration, gYearMonth, gYear, gMonthDay, gDay, gMonth (wait for rdflib support)
             #TODO: XMLLiteral and HTMLLiteral validation
+            #TODO: hexBinary
             xsd = u"http://www.w3.org/2001/XMLSchema#"
             self._datatypes.update({xsd + u"string": TypedValueFormat((str, unicode)),
                                     xsd + u"boolean": TypedValueFormat(bool),

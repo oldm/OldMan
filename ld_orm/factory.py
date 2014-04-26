@@ -4,7 +4,7 @@ from rdflib import Graph
 from .model import Model
 from .registry import ModelRegistry
 from .exceptions import UndeclaredClassNameError, ReservedAttributeNameError
-from .iri import RandomPrefixedIriGenerator, IncrementalIriGenerator
+from .iri import RandomPrefixedIriGenerator, IncrementalIriGenerator, BlankNodeIriGenerator
 from .ancestry import Ancestry
 from ld_orm.parsing.schema.attribute import LDAttributeExtractor
 

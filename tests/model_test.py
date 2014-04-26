@@ -14,6 +14,8 @@ data_graph = default_graph.get_context(URIRef("http://localhost/data"))
 FOAF = "http://xmlns.com/foaf/0.1/"
 BIO = "http://purl.org/vocab/bio/0.1/"
 REL = "http://purl.org/vocab/relationship/"
+CERT = "http://www.w3.org/ns/auth/cert#"
+RDFS =  "http://www.w3.org/2000/01/rdf-schema#"
 
 my_voc_prefix = "http://example.com/vocab#"
 local_person_def = {
@@ -22,7 +24,8 @@ local_person_def = {
             "myvoc": my_voc_prefix,
             "foaf": FOAF,
             "bio": BIO,
-            "rel": REL
+            "rel": REL,
+            "cert": CERT
         },
         "http://www.w3.org/ns/hydra/core"
     ],
@@ -65,22 +68,67 @@ local_person_def = {
             "required": False,
             "readonly": False,
             "writeonly": False
+        },
+        {
+            "property": "cert:key",
+            "required": False,
+            "readonly": False,
+            "writeonly": False
         }
     ]
 }
 schema_graph.parse(data=json.dumps(local_person_def), format="json-ld")
 
-person_context = {
+local_rsa_key_def = {
+    "@context": [
+        {
+            "myvoc": my_voc_prefix,
+            "rdfs": RDFS,
+            "cert": CERT
+        },
+        "http://www.w3.org/ns/hydra/core"
+    ],
+    "@id": "myvoc:LocalRSAPublicKey",
+    "@type": "hydra:Class",
+    "subClassOf": "cert:RSAPublicKey",
+    "supportedProperty": [
+        {
+            "property": "cert:exponent",
+            "required": True,
+            "readonly": False,
+            "writeonly": False
+        },
+        {
+            "property": "cert:modulus",
+            "required": True,
+            "readonly": False,
+            "writeonly": False
+        },
+        {
+            "property": "rdfs:label",
+            "required": False,
+            "readonly": False,
+            "writeonly": False
+        }
+    ]
+}
+schema_graph.parse(data=json.dumps(local_rsa_key_def), format="json-ld")
+
+context = {
     "@context": {
         "myvoc": my_voc_prefix,
+        "rdfs": RDFS,
         "foaf": "http://xmlns.com/foaf/0.1/",
         "bio": "http://purl.org/vocab/bio/0.1/",
         "xsd": "http://www.w3.org/2001/XMLSchema#",
         "rel": "http://purl.org/vocab/relationship/",
+        "cert": CERT,
         "id": "@id",
         "type": "@type",
         "LocalPerson": "myvoc:LocalPerson",
         "Person": "foaf:Person",
+        "LocalRSAPublicKey": "myvoc:LocalRSAPublicKey",
+        "RSAPublicKey": "cert:RSAPublicKey",
         "name": {
             "@id": "foaf:name",
             "@type": "xsd:string"
@@ -113,15 +161,35 @@ person_context = {
             "@id": "rel:parentOf",
             "@type": "@id",
             "@container": "@list"
+        },
+        "keys": {
+            "@id": "cert:key",
+            "@type": "@id",
+            "@container": "@set"
+        },
+        # For keys
+        "modulus": {
+            "@id": "cert:modulus",
+            "@type": "xsd:hexBinary"
+        },
+        "exponent": {
+            "@id": "cert:exponent",
+            "@type": "xsd:int"
+        },
+        "label": {
+            "@id": "rdfs:label",
+            "@type": "xsd:string"
         }
     }
 }
 
+
 model_generator = default_model_factory(schema_graph, default_graph)
 # Model class is generated here!
-LocalPerson = model_generator.generate("LocalPerson", person_context,
+LocalPerson = model_generator.generate("LocalPerson", context,
                                        data_graph, uri_prefix="http://localhost/persons/",
                                        uri_fragment="me")
+LocalRSAPublicKey = model_generator.generate("LocalRSAPublicKey", context, data_graph)
 
 bob_name = "Bob"
 bob_blog = "http://blog.example.com/"
@@ -136,6 +204,9 @@ alice_bio_en = "I am an expert on this and that"
 john_name = "John"
 john_mail = "john@example.com"
 john_bio_en = "Supporter of Linked Data"
+key_modulus = "b42dbf23ee820be938bee7298893e434f8f74d4be2bbe39408776d695168d09262da2a849962"
+key_exponent = 65537
+key_label = "Key 1"
 
 
 class ModelTest(TestCase):
@@ -154,6 +225,10 @@ class ModelTest(TestCase):
 
     def create_john(self):
         return LocalPerson.objects.create(name=john_name, mboxes={john_mail}, short_bio_en=john_bio_en)
+
+    def create_rsa_key(self):
+        return LocalRSAPublicKey.objects.create(exponent=key_exponent, modulus=key_modulus,
+                                                label=key_label)
 
     def test_bio_requirement(self):
         bob = LocalPerson()
@@ -301,6 +376,16 @@ class ModelTest(TestCase):
         self.assertEquals(bob.short_bio_en, bob_bio_en_2)
         self.assertEquals(bob.short_bio_fr, bob_bio_fr)
 
+    def test_rsa_key(self):
+        rsa_key = self.create_rsa_key()
+        self.assertEquals(rsa_key.modulus, key_modulus)
+        self.assertEquals(rsa_key.exponent, key_exponent)
+        self.assertEquals(rsa_key.label, key_label)
+        with self.assertRaises(LDAttributeTypeCheckError):
+            rsa_key.exponent = "String not a int"
+        with self.assertRaises(RequiredPropertyError):
+            LocalRSAPublicKey.objects.create(exponent=key_exponent)
+
     def test_filter_two_bobs(self):
         #Bob 1
         self.create_bob()
@@ -409,7 +494,7 @@ class ModelTest(TestCase):
         # No guarantee about the order
         self.assertEquals(set(children_found), set([c.id for c in bob_children]))
 
-    def test_json(self):
+    def test_bob_json(self):
         bob = self.create_bob()
         bob_json = json.loads(bob.to_json())
         self.assertEquals(bob_json["name"], bob_name)
@@ -418,7 +503,7 @@ class ModelTest(TestCase):
         self.assertEquals(bob_json["short_bio_en"], bob_bio_en)
         self.assertEquals(bob_json["short_bio_fr"], bob_bio_fr)
 
-    def test_jsonld(self):
+    def test_bob_jsonld(self):
         bob = self.create_bob()
         bob_jsonld = json.loads(bob.to_jsonld())
         self.assertEquals(bob_jsonld["name"], bob_name)
@@ -427,7 +512,16 @@ class ModelTest(TestCase):
         self.assertEquals(bob_jsonld["short_bio_en"], bob_bio_en)
         self.assertEquals(bob_jsonld["short_bio_fr"], bob_bio_fr)
         self.assertTrue("@context" in bob_jsonld)
-        self.assertEquals(bob_jsonld["@context"], person_context["@context"])
+        self.assertEquals(bob_jsonld["@context"], context["@context"])
+
+    def test_rsa_jsonld(self):
+        rsa_key = self.create_rsa_key()
+        key_jsonld = json.loads(rsa_key.to_jsonld())
+        self.assertEquals(key_jsonld["modulus"], key_modulus)
+        self.assertEquals(key_jsonld["exponent"], key_exponent)
+        self.assertEquals(key_jsonld["label"], key_label)
+        # Blank node so IRI must not appear
+        self.assertFalse("id" in key_jsonld)
 
     def test_rdf(self):
         bob = self.create_bob()
@@ -478,7 +572,7 @@ class ModelTest(TestCase):
         self.assertEquals(set(bob_jsonld["mboxes"]), bob_emails)
         self.assertEquals(bob_jsonld["short_bio_en"], bob_bio_en)
         self.assertEquals(bob_jsonld["short_bio_fr"], bob_bio_fr)
-        self.assertEquals(bob_jsonld["@context"], person_context["@context"])
+        self.assertEquals(bob_jsonld["@context"], context["@context"])
         self.assertEquals(bob_jsonld["children"], [c.id for c in bob_children])
 
     def test_friendship_jsonld(self):
@@ -524,6 +618,22 @@ class ModelTest(TestCase):
         self.assertEquals(g.value(URIRef(bob_uri), URIRef(FOAF + "name")).toPython(), bob_name)
         self.assertEquals(g.value(URIRef(alice_uri), URIRef(FOAF + "name")).toPython(), alice_name)
 
+    def test_key_jsonld(self):
+        bob = self.create_bob()
+        rsa_key = self.create_rsa_key()
+        bob.keys = {rsa_key}
+        bob.save()
+        bob_jsonld = json.loads(bob.to_jsonld())
+        self.assertEquals(bob_jsonld["name"], bob_name)
+        self.assertEquals(bob_jsonld["short_bio_en"], bob_bio_en)
+
+        key_jsonld = bob_jsonld["keys"][0]
+        self.assertEquals(key_jsonld["modulus"], key_modulus)
+        self.assertEquals(key_jsonld["exponent"], key_exponent)
+        self.assertEquals(key_jsonld["label"], key_label)
+        self.assertFalse("id" in key_jsonld)
+        self.assertFalse("@context" in key_jsonld)
+
     def test_out_of_band_update(self):
         jason_uri = URIRef("https://example.com/jason#me")
         data_graph.add((jason_uri, URIRef(FOAF + "name"), Literal("Jason")))
@@ -544,7 +654,7 @@ class ModelTest(TestCase):
                                           "@type": ["LocalPerson", "Person"],
                                           # Required
                                           "mboxes": list(mboxes)}),
-                         context=person_context,
+                         context=context,
                          format="json-ld")
 
         # Clear the cache (out-of-band update)

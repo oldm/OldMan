@@ -98,12 +98,11 @@ class Model(object):
         return self._id
 
     @classmethod
-    def from_graph(cls, id, subgraph):
+    def load_from_graph(cls, id, subgraph):
         """
             Loads a new instance from a subgraph
         """
         instance = cls(id=id)
-        uri = URIRef(id)
         for attr in instance._attributes.values():
             attr.update_from_graph(instance, subgraph, cls._storage_graph)
         return instance
@@ -183,7 +182,7 @@ class Model(object):
                for name in self._attributes}
         # filter None values
         if remove_none_values:
-            dct = {k: v for k,v in dct.iteritems() if v is not None}
+            dct = {k: v for k, v in dct.iteritems() if v is not None}
 
         if not self.is_blank_node():
             dct["id"] = self._id
