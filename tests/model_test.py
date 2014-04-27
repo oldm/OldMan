@@ -174,7 +174,7 @@ context = {
         },
         "exponent": {
             "@id": "cert:exponent",
-            "@type": "xsd:int"
+            "@type": "xsd:integer"
         },
         "label": {
             "@id": "rdfs:label",
@@ -215,6 +215,7 @@ class ModelTest(TestCase):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
         LocalPerson.objects.clear_cache()
+        LocalRSAPublicKey.objects.clear_cache()
 
     def create_bob(self):
         return LocalPerson.objects.create(name=bob_name, blog=bob_blog, mboxes=bob_emails,
@@ -378,11 +379,23 @@ class ModelTest(TestCase):
 
     def test_rsa_key(self):
         rsa_key = self.create_rsa_key()
-        self.assertEquals(rsa_key.modulus, key_modulus)
+        rsa_skolemized_iri = rsa_key.id
+        del rsa_key
+        LocalRSAPublicKey.objects.clear_cache()
+
+        rsa_key = LocalRSAPublicKey.objects.get(id=rsa_skolemized_iri)
         self.assertEquals(rsa_key.exponent, key_exponent)
+        # Pull request https://github.com/RDFLib/rdflib/pull/386
+        #self.assertEquals(rsa_key.modulus, key_modulus)
         self.assertEquals(rsa_key.label, key_label)
         with self.assertRaises(LDAttributeTypeCheckError):
             rsa_key.exponent = "String not a int"
+        with self.assertRaises(LDAttributeTypeCheckError):
+            rsa_key.modulus = "not an hexa value"
+        # Values should already be encoded in hexadecimal strings
+        with self.assertRaises(LDAttributeTypeCheckError):
+            rsa_key.modulus = 235
+        rsa_key.modulus = format(235, "x")
         with self.assertRaises(RequiredPropertyError):
             LocalRSAPublicKey.objects.create(exponent=key_exponent)
 
@@ -618,11 +631,18 @@ class ModelTest(TestCase):
         self.assertEquals(g.value(URIRef(bob_uri), URIRef(FOAF + "name")).toPython(), bob_name)
         self.assertEquals(g.value(URIRef(alice_uri), URIRef(FOAF + "name")).toPython(), alice_name)
 
-    def test_key_jsonld(self):
+    def test_bob_key_jsonld(self):
         bob = self.create_bob()
+        bob_iri = bob.id
         rsa_key = self.create_rsa_key()
         bob.keys = {rsa_key}
         bob.save()
+        del bob
+        del rsa_key
+        LocalPerson.objects.clear_cache()
+        LocalRSAPublicKey.objects.clear_cache()
+
+        bob = LocalPerson.objects.get(id=bob_iri)
         bob_jsonld = json.loads(bob.to_jsonld())
         self.assertEquals(bob_jsonld["name"], bob_name)
         self.assertEquals(bob_jsonld["short_bio_en"], bob_bio_en)

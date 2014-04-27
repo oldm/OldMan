@@ -74,6 +74,21 @@ class NonNegativeTypedValueFormat(TypedValueFormat):
         if value < 0:
             raise ValueFormatError(u"%s should not be negative" % value)
 
+class HexBinaryFormat(TypedValueFormat):
+    """
+        Numbers should ALREADY be encoded as hexadecimal strings
+    """
+
+    def __init__(self):
+        TypedValueFormat.__init__(self, (str, unicode))
+
+    def check_value(self, value):
+        TypedValueFormat.check_value(self, value)
+        try:
+            int(value, 16)
+        except ValueError:
+            raise ValueFormatError(u"%s is not a hexadecimal value" % value)
+
 
 class EmailValueFormat(TypedValueFormat):
 

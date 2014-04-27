@@ -5,6 +5,7 @@ from ld_orm.parsing.schema.context import JsonLdContextAttributeMdExtractor
 from ld_orm.value_format import AnyValueFormat, IRIValueFormat, TypedValueFormat, EmailValueFormat
 from ld_orm.value_format import PositiveTypedValueFormat, NegativeTypedValueFormat
 from ld_orm.value_format import NonPositiveTypedValueFormat, NonNegativeTypedValueFormat
+from ld_orm.value_format import HexBinaryFormat
 from ld_orm.property import PropertyType
 
 
@@ -75,7 +76,6 @@ class ValueFormatSelector(object):
         if include_default_datatypes:
             #TODO: token, duration, gYearMonth, gYear, gMonthDay, gDay, gMonth (wait for rdflib support)
             #TODO: XMLLiteral and HTMLLiteral validation
-            #TODO: hexBinary
             xsd = u"http://www.w3.org/2001/XMLSchema#"
             self._datatypes.update({xsd + u"string": TypedValueFormat((str, unicode)),
                                     xsd + u"boolean": TypedValueFormat(bool),
@@ -101,7 +101,8 @@ class ValueFormatSelector(object):
                                     xsd + u'unsignedShort': NonNegativeTypedValueFormat(int),
                                     xsd + u'unsignedByte': NonNegativeTypedValueFormat(int),
                                     xsd + u'float': TypedValueFormat((float, int, long, Decimal)),
-                                    xsd + u'double': TypedValueFormat((float, int, long, Decimal))})
+                                    xsd + u'double': TypedValueFormat((float, int, long, Decimal)),
+                                    xsd + u'hexBinary': HexBinaryFormat()})
             self._uri_format = IRIValueFormat()
             self._any_format = AnyValueFormat()
         if include_well_known_properties:
