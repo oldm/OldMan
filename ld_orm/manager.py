@@ -93,7 +93,7 @@ class InstanceManager(object):
         if len(instance_graph) == 0:
             instance = self._cls(id=id)
         else:
-            instance = self._cls.load_from_graph(id, instance_graph)
+            instance = self._cls.load_from_graph(id, instance_graph, create=False)
         self._cache[id] = instance
         return instance
 

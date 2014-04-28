@@ -5,7 +5,7 @@ from rdflib import ConjunctiveGraph, Graph, URIRef, Literal, RDF
 import json
 from ld_orm import default_model_factory
 from ld_orm.attribute import LDAttributeTypeCheckError, RequiredPropertyError
-from ld_orm.exceptions import ClassInstanceError, LDAttributeAccessError
+from ld_orm.exceptions import ClassInstanceError, LDAttributeAccessError, LDUniquenessError
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
@@ -682,3 +682,25 @@ class ModelTest(TestCase):
         jason = LocalPerson.objects.get(id=jason_uri)
         self.assertEquals(jason.mboxes, mboxes)
         self.assertTrue(jason.is_valid())
+
+    def test_iri_uniqueness(self):
+        bob = self.create_bob()
+        bob_iri = bob.id
+
+        with self.assertRaises(LDUniquenessError):
+            LocalPerson(id=bob_iri, name=bob_name, mboxes=bob_emails, short_bio_en=u"Will not exist")
+
+        with self.assertRaises(LDUniquenessError):
+            LocalPerson.objects.create(id=bob_iri, name=bob_name, mboxes = bob_emails,
+                                       short_bio_en=u"Will not exist")
+
+        with self.assertRaises(LDUniquenessError):
+            LocalPerson(id=bob_iri, name=bob_name, mboxes=bob_emails,
+                        short_bio_en=u"Will not exist", create=True)
+
+        # Forces the creation (by claiming your are not)
+        # Dangerous!
+        short_bio_en = u"Is forced to exist"
+        bob2 = LocalPerson(id=bob_iri, name=bob_name, mboxes=bob_emails,
+                           short_bio_en=short_bio_en, create=False)
+        self.assertEquals(bob2.short_bio_en, short_bio_en)

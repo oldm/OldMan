@@ -68,7 +68,7 @@ class LDUserError(LDError):
 
 class LDEditError(LDUserError):
     """
-        Runtime errors, occuring when editing an object.
+        Runtime errors, occuring when editing or creating an object.
     """
     pass
 
@@ -83,6 +83,15 @@ class LDAttributeTypeCheckError(LDEditError):
 class RequiredPropertyError(LDEditError):
     """
         A required property has no value.
+    """
+    pass
+
+
+class LDUniquenessError(LDEditError):
+    """
+        Attribute uniqueness violation.
+
+        Example: IRI illegal reusing.
     """
     pass
 

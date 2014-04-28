@@ -5,10 +5,11 @@ from urlparse import urlparse
 import json
 from rdflib import URIRef, Graph
 from rdflib.plugins.sparql.parser import ParseException
+from rdflib.plugins.sparql import prepareQuery
 from .attribute import LDAttribute
 from .manager import InstanceManager, build_update_query_part
 from .exceptions import MissingClassAttributeError, ReservedAttributeNameError, SPARQLParseError
-from .exceptions import LDAttributeAccessError
+from .exceptions import LDAttributeAccessError, LDUniquenessError
 
 
 class ModelBase(type):
@@ -70,11 +71,10 @@ class ModelBase(type):
 
 @add_metaclass(ModelBase)
 class Model(object):
-    """
-        TODO: support ids
-    """
 
-    def __init__(self, **kwargs):
+    existence_query = prepareQuery(u"ASK {?id ?p ?o .}")
+
+    def __init__(self, create=True, **kwargs):
         """
             Does not save (like Django)
         """
@@ -82,6 +82,12 @@ class Model(object):
         if "id" in kwargs:
             # Anticipated because used in __hash__
             self._id = kwargs.pop("id")
+            if create:
+                exist = bool(self._storage_graph.query(self.existence_query,
+                                                       initBindings={'id': URIRef(self._id)}))
+                if exist:
+                    raise LDUniquenessError("Object %s already exist" % self._id)
+
         else:
             self._id = self._id_generator.generate()
 
@@ -98,11 +104,11 @@ class Model(object):
         return self._id
 
     @classmethod
-    def load_from_graph(cls, id, subgraph):
+    def load_from_graph(cls, id, subgraph, create=True):
         """
             Loads a new instance from a subgraph
         """
-        instance = cls(id=id)
+        instance = cls(id=id, create=create)
         for attr in instance._attributes.values():
             attr.update_from_graph(instance, subgraph, cls._storage_graph)
         return instance
@@ -241,4 +247,3 @@ class Model(object):
 
     def in_same_document(self, other_obj):
         return self._id.split("#")[0] == other_obj.id.split("#")[0]
-
