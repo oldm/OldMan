@@ -55,7 +55,7 @@ class ModelBase(type):
             return True
         if not hasattr(subclass, "class_uri"):
             return False
-        if cls.__name__  == "Model":
+        if cls.__name__ == "Model":
             return True
         return cls.class_uri in subclass.types
 
@@ -91,7 +91,7 @@ class Model(object):
         else:
             self._id = self._id_generator.generate()
 
-        for k,v in kwargs.iteritems():
+        for k, v in kwargs.iteritems():
             setattr(self, k, v)
 
         # External skolemized blank nodes are not considered as blank nodes
@@ -213,10 +213,10 @@ class Model(object):
     # def __eq__(self, other):
     #     return self._id == other._id
 
-    def to_rdf(self, format):
+    def to_rdf(self, rdf_format):
         g = Graph()
         g.parse(data=self.to_jsonld(), format="json-ld")
-        return g.serialize(format=format)
+        return g.serialize(format=rdf_format)
 
     def __str__(self):
         return self._id

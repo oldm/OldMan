@@ -15,7 +15,7 @@ FOAF = "http://xmlns.com/foaf/0.1/"
 BIO = "http://purl.org/vocab/bio/0.1/"
 REL = "http://purl.org/vocab/relationship/"
 CERT = "http://www.w3.org/ns/auth/cert#"
-RDFS =  "http://www.w3.org/2000/01/rdf-schema#"
+RDFS = "http://www.w3.org/2000/01/rdf-schema#"
 
 my_voc_prefix = "http://example.com/vocab#"
 local_person_def = {
@@ -385,8 +385,7 @@ class ModelTest(TestCase):
 
         rsa_key = LocalRSAPublicKey.objects.get(id=rsa_skolemized_iri)
         self.assertEquals(rsa_key.exponent, key_exponent)
-        # Pull request https://github.com/RDFLib/rdflib/pull/386
-        #self.assertEquals(rsa_key.modulus, key_modulus)
+        self.assertEquals(rsa_key.modulus, key_modulus)
         self.assertEquals(rsa_key.label, key_label)
         with self.assertRaises(LDAttributeTypeCheckError):
             rsa_key.exponent = "String not a int"

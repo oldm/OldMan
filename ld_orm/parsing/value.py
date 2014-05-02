@@ -12,7 +12,7 @@ class AttributeValueExtractorFromGraph(object):
         self._property_uri = URIRef(attribute.ld_property.uri)
         self._container = attribute.container
         try:
-            self._extract_fct = AttributeValueExtractorFromGraph.EXTRACT_FCTS[self._container]
+            self._extract_fct = AttributeValueExtractorFromGraph.extract_fcts[self._container]
         except KeyError as e:
             raise NotImplementedError("Container %s is not supported" % e)
 
@@ -55,7 +55,7 @@ class AttributeValueExtractorFromGraph(object):
         return final_list
 
     def _extract_language_map_values(self, raw_rdf_values, useless_graph):
-        return {r.language: r.toPython() for r in raw_rdf_values}
+        return {r.language: self._value_format.to_python(r) for r in raw_rdf_values}
 
     def _filter_and_convert(self, rdf_values):
         """
@@ -65,10 +65,9 @@ class AttributeValueExtractorFromGraph(object):
             rdf_values = [r for r in rdf_values if isinstance(r, Literal)
                           and r.language == self._language]
 
-        #return [self._value_format.to_python(unicode(r)) for r in rdf_values]
-        return [r.toPython() for r in rdf_values]
+        return [self._value_format.to_python(r) for r in rdf_values]
 
-    EXTRACT_FCTS = {'@list': _extract_list_values,
+    extract_fcts = {'@list': _extract_list_values,
                     '@set': _extract_set_values,
                     '@language': _extract_language_map_values,
                     #TODO: support other type of containers

@@ -1,6 +1,7 @@
 from rdflib import Literal
 from validate_email import validate_email
 
+
 class ValueFormatError(Exception):
     pass
 
@@ -12,6 +13,12 @@ class ValueFormat(object):
             Raise a ValueFormatError if the value is wrongly formatted
         """
         raise NotImplementedError(u"check_value must be overwritten")
+
+    def to_python(self, rdf_term):
+        """
+            By default, use the RDFlib toPython function
+        """
+        return rdf_term.toPython()
 
 
 class AnyValueFormat(ValueFormat):
@@ -74,6 +81,7 @@ class NonNegativeTypedValueFormat(TypedValueFormat):
         if value < 0:
             raise ValueFormatError(u"%s should not be negative" % value)
 
+
 class HexBinaryFormat(TypedValueFormat):
     """
         Numbers should ALREADY be encoded as hexadecimal strings
@@ -88,6 +96,12 @@ class HexBinaryFormat(TypedValueFormat):
             int(value, 16)
         except ValueError:
             raise ValueFormatError(u"%s is not a hexadecimal value" % value)
+
+    def to_python(self, rdf_term):
+        """
+            Returns an hexstring (not unhexlified bytes)
+        """
+        return unicode(rdf_term)
 
 
 class EmailValueFormat(TypedValueFormat):
