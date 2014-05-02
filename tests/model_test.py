@@ -38,51 +38,30 @@ local_person_def = {
     "supportedProperty": [
         {
             "property": "foaf:name",
-            "required": True,
-            "readonly": False,
-            "writeonly": False
+            "required": True
         },
         {
             "property": "foaf:mbox",
-            "required": True,
-            "readonly": False,
-            "writeonly": False
+            "required": True
         },
         {
-            "property": "foaf:weblog",
-            "required": False,
-            "readonly": False,
-            "writeonly": False
+            "property": "foaf:weblog"
         },
         {
             "property": "bio:olb",
-            "required": True,
-            "readonly": False,
-            "writeonly": False
+            "required": True
         },
         {
-            "property": "foaf:knows",
-            "required": False,
-            "readonly": False,
-            "writeonly": False
+            "property": "foaf:knows"
         },
         {
-            "property": "rel:parentOf",
-            "required": False,
-            "readonly": False,
-            "writeonly": False
+            "property": "rel:parentOf"
         },
         {
-            "property": "cert:key",
-            "required": False,
-            "readonly": False,
-            "writeonly": False
+            "property": "cert:key"
         },
         {
-            "property": "wot:hasKey",
-            "required": False,
-            "readonly": False,
-            "writeonly": False
+            "property": "wot:hasKey"
         }
     ]
 }
@@ -103,21 +82,14 @@ local_rsa_key_def = {
     "supportedProperty": [
         {
             "property": "cert:exponent",
-            "required": True,
-            "readonly": False,
-            "writeonly": False
+            "required": True
         },
         {
             "property": "cert:modulus",
-            "required": True,
-            "readonly": False,
-            "writeonly": False
+            "required": True
         },
         {
-            "property": "rdfs:label",
-            "required": False,
-            "readonly": False,
-            "writeonly": False
+            "property": "rdfs:label"
         }
     ]
 }
@@ -138,8 +110,6 @@ local_gpg_key_def = {
         {
             "property": "wot:fingerprint",
             "required": True,
-            "readonly": False,
-            "writeonly": False
         },
         {
             "property": "wot:hex_id",

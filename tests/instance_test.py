@@ -23,8 +23,7 @@ schema_ttl = """
 
 ex:GrandParentClass a hydra:Class ;
     hydra:supportedProperty [
-        hydra:property ex:oldProperty ;
-        hydra:required false
+        hydra:property ex:oldProperty
     ] .
 
 ex:ParentClass a hydra:Class ;
