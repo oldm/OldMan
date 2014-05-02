@@ -87,6 +87,13 @@ class RequiredPropertyError(LDEditError):
     pass
 
 
+class ReadOnlyAttributeError(LDEditError):
+    """
+        End users are not allowed to edit this attribute.
+    """
+    pass
+
+
 class LDUniquenessError(LDEditError):
     """
         Attribute uniqueness violation.

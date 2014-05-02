@@ -30,15 +30,13 @@ ex:GrandParentClass a hydra:Class ;
 ex:ParentClass a hydra:Class ;
     rdfs:subClassOf ex:GrandParentClass ;
     hydra:supportedProperty [
-        hydra:property ex:mediumProperty ;
-        hydra:required false
+        hydra:property ex:mediumProperty
     ] .
 
 ex:ChildClass a hydra:Class ;
     rdfs:subClassOf ex:ParentClass, ex:GrandParentClass ;
     hydra:supportedProperty [
-        hydra:property ex:newProperty ;
-        hydra:required false
+        hydra:property ex:newProperty
     ] .
 """ % format(EXAMPLE)
 

@@ -18,7 +18,7 @@ data_graph = default_graph.get_context(URIRef("http://localhost/data"))
 
 EXAMPLE = "http://localhost/vocab#"
 
-local_person_def = {
+local_class_def = {
     "@context": [
         {
             "ex": EXAMPLE,
@@ -31,73 +31,41 @@ local_person_def = {
     "@type": "hydra:Class",
     "supportedProperty": [
         {
-            "property": "ex:singleBool",
-            "required": False
-        },
-        {
-            "property": "ex:date",
-            "required": False
-        },
-        {
-            "property": "ex:dateTime",
-            "required": False
-        },
-        {
-            "property": "ex:time",
-            "required": False
-        },
-        {
-            "property": "ex:int",
-            "required": False
-        },
-        {
-            "property": "ex:integer",
-            "required": False
-        },
-        {
-            "property": "ex:short",
-            "required": False
-        },
-        {
-            "property": "ex:positiveInt",
-            "required": False
-        },
-        {
-            "property": "ex:negativeInt",
-            "required": False
-        },
-        {
-            "property": "ex:nonPositiveInt",
-            "required": False
-        },
-        {
-            "property": "ex:nonNegativeInt",
-            "required": False
-        },
-        {
-            "property": "ex:decimal",
-            "required": False
-        },
-        {
-            "property": "ex:float",
-            "required": False
-        },
-        {
-            "property": "ex:double",
-            "required": False
-        },
-        {
-            "property": "foaf:mbox",
-            "required": False
-        },
-        {
-            "property": "schema:email",
-            "required": False
+            "property": "ex:singleBool"
+        }, {
+            "property": "ex:date"
+        }, {
+            "property": "ex:dateTime"
+        }, {
+            "property": "ex:time"
+        }, {
+            "property": "ex:int"
+        }, {
+            "property": "ex:integer"
+        }, {
+            "property": "ex:short"
+        }, {
+            "property": "ex:positiveInt"
+        }, {
+            "property": "ex:negativeInt"
+        }, {
+            "property": "ex:nonPositiveInt"
+        }, {
+            "property": "ex:nonNegativeInt"
+        }, {
+            "property": "ex:decimal"
+        }, {
+            "property": "ex:float"
+        }, {
+            "property": "ex:double"
+        }, {
+            "property": "foaf:mbox"
+        }, {
+            "property": "schema:email"
         }
-
     ]
 }
-schema_graph.parse(data=json.dumps(local_person_def), format="json-ld")
+schema_graph.parse(data=json.dumps(local_class_def), format="json-ld")
 
 context = {
     "@context": {
@@ -462,5 +430,3 @@ class DatatypeTest(TestCase):
         with self.assertRaises(LDAttributeTypeCheckError):
             obj.email = 5
         obj.email = "john+spam@example.org"
-
-

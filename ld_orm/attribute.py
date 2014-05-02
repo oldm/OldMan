@@ -1,7 +1,7 @@
 from collections import namedtuple
 from weakref import WeakKeyDictionary
 from rdflib import Literal
-from .exceptions import LDAttributeTypeCheckError, RequiredPropertyError
+from .exceptions import LDAttributeTypeCheckError, RequiredPropertyError, ReadOnlyAttributeError
 from ld_orm.parsing.value import AttributeValueExtractorFromGraph
 from .value_format import ValueFormatError
 
@@ -56,6 +56,14 @@ class LDAttribute(object):
         return self._metadata.property.is_required
 
     @property
+    def is_read_only(self):
+        return self._metadata.property.is_read_only
+
+    @property
+    def is_write_only(self):
+        return self._metadata.property.is_write_only
+
+    @property
     def ld_property(self):
         return self._metadata.property
 
@@ -82,9 +90,9 @@ class LDAttribute(object):
         """
         return self.ld_property.attributes.difference([self])
 
-    def is_valid(self, instance):
+    def is_valid(self, instance, is_end_user=True):
         try:
-            self.check_validity(instance)
+            self.check_validity(instance, is_end_user)
             return True
         except RequiredPropertyError:
             return False
@@ -97,16 +105,19 @@ class LDAttribute(object):
     def value_format(self):
         return self._value_format
 
-    def check_validity(self, instance):
-        if self.is_locally_satisfied(instance):
+    def check_validity(self, instance, is_end_user=True):
+        if self.is_locally_satisfied(instance, is_end_user):
             return
 
         for other in self.other_attributes:
-            if other.is_locally_satisfied(instance):
+            if other.is_locally_satisfied(instance, is_end_user):
                 return
         raise RequiredPropertyError(self.name)
 
-    def is_locally_satisfied(self, instance):
+    def is_locally_satisfied(self, instance, is_end_user):
+        if is_end_user:
+            if self.is_read_only and self.has_new_value(instance):
+                raise ReadOnlyAttributeError("Attribute %s is not editable by end users" % self.name)
         if not self.is_required:
             return True
         return self._data.get(instance) is not None

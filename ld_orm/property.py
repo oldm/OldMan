@@ -1,7 +1,7 @@
 from enum import Enum
 from .attribute import LDAttributeMetadata, LDAttribute, ObjectLDAttribute
 from .exceptions import AlreadyDeclaredDatatypeError, PropertyDefTypeError
-from .exceptions import AlreadyGeneratedAttributeError, LDInternalError
+from .exceptions import AlreadyGeneratedAttributeError, LDInternalError, LDPropertyDefError
 
 
 class PropertyType(Enum):
@@ -14,8 +14,9 @@ class LDProperty(object):
     """
         RDF property declared "supported by a RDF class"
     """
-    def __init__(self, property_uri, supporter_class_uri, is_required=False, cardinality=None,
-                 property_type=PropertyType.UnknownPropertyType, domains=set([]), ranges=set([])):
+    def __init__(self, property_uri, supporter_class_uri, is_required=False, read_only=False,
+                 write_only=False, cardinality=None, property_type=PropertyType.UnknownPropertyType,
+                 domains=None, ranges=None):
         self._uri = property_uri
         self._supporter_class_uri = supporter_class_uri
         self._is_required = is_required
@@ -24,8 +25,13 @@ class LDProperty(object):
         # 1, 42, "*", "+"
         self._cardinality = cardinality
         self._type = property_type
-        self._ranges = ranges
-        self._domains = domains
+        self._ranges = ranges if ranges is not None else set()
+        self._domains = domains if domains is not None else set()
+
+        if read_only and write_only:
+            raise LDPropertyDefError("Property %s cannot be read-only and write-only" % property_uri)
+        self._read_only = read_only
+        self._write_only = write_only
 
         # Temporary list, before creating attributes
         self._tmp_attr_mds = []
@@ -61,6 +67,14 @@ class LDProperty(object):
     @property
     def is_required(self):
         return self._is_required
+
+    @property
+    def is_read_only(self):
+        return self._read_only
+
+    @property
+    def is_write_only(self):
+        return self._write_only
 
     def declare_is_required(self):
         """

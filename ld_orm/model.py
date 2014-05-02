@@ -138,7 +138,7 @@ class Model(object):
     def is_blank_node(self):
         return self._is_blank_node
 
-    def save(self):
+    def save(self, is_end_user=True):
         """
             TODO:
                 - Warns if there is some non-descriptor ("Attribute") attributes (will not be saved)
@@ -147,7 +147,7 @@ class Model(object):
         # Checks
         for attr in self._attributes.values():
             # May raise an RequiredAttributeError
-            attr.check_validity(self)
+            attr.check_validity(self, is_end_user)
 
         #TODO: Warns
 
@@ -185,7 +185,9 @@ class Model(object):
 
         dct = {name: self._convert_value(getattr(self, name), ignored_iris, remove_none_values,
                                          include_different_contexts)
-               for name in self._attributes}
+               for name, attr in self._attributes.iteritems()
+               if not attr.is_write_only
+              }
         # filter None values
         if remove_none_values:
             dct = {k: v for k, v in dct.iteritems() if v is not None}
@@ -213,7 +215,7 @@ class Model(object):
     # def __eq__(self, other):
     #     return self._id == other._id
 
-    def to_rdf(self, rdf_format):
+    def to_rdf(self, rdf_format="turtle"):
         g = Graph()
         g.parse(data=self.to_jsonld(), format="json-ld")
         return g.serialize(format=rdf_format)

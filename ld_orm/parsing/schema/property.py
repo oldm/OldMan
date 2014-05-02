@@ -25,38 +25,52 @@ class HydraPropertyExtractor(LDPropertyExtractor):
 
         Currently supported:
            - hydra:required
-
-        TODO: support
            - hydra:readOnly
            - hydra:writeOnly
+
+        TODO: support
            - rdfs:range
     """
 
-    # TODO: make hydra:required optional
-    EXTRACT_HYDRA_PROPERTIES = prepareQuery(
+    extract_hydra_properties = prepareQuery(
         u"""
-        SELECT ?p ?required
+        SELECT ?p ?required ?readOnly ?writeOnly
         WHERE {
             ?class_uri hydra:supportedProperty ?sp.
-            ?sp hydra:property ?p;
-                hydra:required ?required.
+            ?sp hydra:property ?p.
+            OPTIONAL {
+                ?sp hydra:required ?required
+            } .
+            OPTIONAL {
+                ?sp hydra:readonly ?readOnly
+            } .
+            OPTIONAL {
+                ?sp hydra:writeonly ?writeOnly
+            }
         }
     """, initNs={u'hydra': Namespace(u"http://www.w3.org/ns/hydra/core#")})
 
     def update(self, properties, class_uri, type_uris, graph):
         """
-            TODO: support read-only and write-only
             TODO: Support rdfs:range (optional)
         """
-        prop_results = {}
-        for type_uri in type_uris:
-            results = graph.query(self.EXTRACT_HYDRA_PROPERTIES, initBindings={u'class_uri': URIRef(type_uri)})
-            for property_uri, is_req in results:
-                prop_uri = property_uri.toPython()
-                is_required = bool(is_req.toPython() or prop_results.get(prop_uri))
-                prop_results[prop_uri] = is_required
+        prop_params = {}
 
-        for property_uri, is_required in prop_results.iteritems():
+        for type_uri in type_uris:
+            results = graph.query(self.extract_hydra_properties, initBindings={u'class_uri': URIRef(type_uri)})
+            for property_uri, is_req, ro, wo in results:
+                prop_uri = property_uri.toPython()
+                # Booleans are false by default
+                is_required, read_only, write_only = prop_params.get(prop_uri, (False, False, False))
+
+                # Updates these booleans
+                is_required = is_required or (is_req is not None and bool(is_req.toPython()))
+                read_only = read_only or (ro is not None and bool(ro.toPython()))
+                write_only = write_only or (wo is not None and bool(wo.toPython()))
+                prop_params[prop_uri] = (is_required, read_only, write_only)
+
+        for property_uri, (is_required, read_only, write_only) in prop_params.iteritems():
             if not property_uri in properties:
-                properties[property_uri] = LDProperty(property_uri, class_uri, is_required)
+                properties[property_uri] = LDProperty(property_uri, class_uri, is_required=is_required,
+                                                      read_only=read_only, write_only=write_only)
         return properties
