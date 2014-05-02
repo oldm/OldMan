@@ -70,5 +70,5 @@ class AttributeValueExtractorFromGraph(object):
     extract_fcts = {'@list': _extract_list_values,
                     '@set': _extract_set_values,
                     '@language': _extract_language_map_values,
-                    #TODO: support other type of containers
+                    #TODO: support index maps
                     None: _extract_regular_values}

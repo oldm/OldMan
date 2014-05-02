@@ -690,7 +690,7 @@ class ModelTest(TestCase):
             LocalPerson(id=bob_iri, name=bob_name, mboxes=bob_emails, short_bio_en=u"Will not exist")
 
         with self.assertRaises(LDUniquenessError):
-            LocalPerson.objects.create(id=bob_iri, name=bob_name, mboxes = bob_emails,
+            LocalPerson.objects.create(id=bob_iri, name=bob_name, mboxes=bob_emails,
                                        short_bio_en=u"Will not exist")
 
         with self.assertRaises(LDUniquenessError):
