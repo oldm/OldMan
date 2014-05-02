@@ -16,6 +16,7 @@ BIO = "http://purl.org/vocab/bio/0.1/"
 REL = "http://purl.org/vocab/relationship/"
 CERT = "http://www.w3.org/ns/auth/cert#"
 RDFS = "http://www.w3.org/2000/01/rdf-schema#"
+WOT = "http://xmlns.com/wot/0.1/"
 
 my_voc_prefix = "http://example.com/vocab#"
 local_person_def = {
@@ -25,7 +26,8 @@ local_person_def = {
             "foaf": FOAF,
             "bio": BIO,
             "rel": REL,
-            "cert": CERT
+            "cert": CERT,
+            "wot": WOT
         },
         "http://www.w3.org/ns/hydra/core"
     ],
@@ -74,6 +76,12 @@ local_person_def = {
             "required": False,
             "readonly": False,
             "writeonly": False
+        },
+        {
+            "property": "wot:hasKey",
+            "required": False,
+            "readonly": False,
+            "writeonly": False
         }
     ]
 }
@@ -114,6 +122,32 @@ local_rsa_key_def = {
 }
 schema_graph.parse(data=json.dumps(local_rsa_key_def), format="json-ld")
 
+local_gpg_key_def = {
+    "@context": [
+        {
+            "myvoc": my_voc_prefix,
+            "wot": WOT
+        },
+        "http://www.w3.org/ns/hydra/core"
+    ],
+    "@id": "myvoc:LocalGPGPublicKey",
+    "@type": "hydra:Class",
+    "subClassOf": "wot:PubKey",
+    "supportedProperty": [
+        {
+            "property": "wot:fingerprint",
+            "required": True,
+            "readonly": False,
+            "writeonly": False
+        },
+        {
+            "property": "wot:hex_id",
+            "required": True
+        }
+    ]
+}
+schema_graph.parse(data=json.dumps(local_gpg_key_def), format="json-ld")
+
 context = {
     "@context": {
         "myvoc": my_voc_prefix,
@@ -123,12 +157,13 @@ context = {
         "xsd": "http://www.w3.org/2001/XMLSchema#",
         "rel": "http://purl.org/vocab/relationship/",
         "cert": CERT,
+        "wot": WOT,
         "id": "@id",
         "type": "@type",
         "LocalPerson": "myvoc:LocalPerson",
         "Person": "foaf:Person",
         "LocalRSAPublicKey": "myvoc:LocalRSAPublicKey",
-        "RSAPublicKey": "cert:RSAPublicKey",
+        "LocalGPGPublicKey": "myvoc:LocalGPGPublicKey",
         "name": {
             "@id": "foaf:name",
             "@type": "xsd:string"
@@ -162,6 +197,10 @@ context = {
             "@type": "@id",
             "@container": "@list"
         },
+        "gpg_key": {
+            "@id": "wot:hasKey",
+            "@type": "@id"
+        },
         "keys": {
             "@id": "cert:key",
             "@type": "@id",
@@ -179,6 +218,15 @@ context = {
         "label": {
             "@id": "rdfs:label",
             "@type": "xsd:string"
+        },
+        # For GPG
+        "fingerprint": {
+            "@id": "wot:fingerprint",
+            "@type": "xsd:hexBinary"
+        },
+        "hex_id": {
+            "@id": "wot:hex_id",
+            "@type": "xsd:hexBinary"
         }
     }
 }
@@ -190,6 +238,7 @@ LocalPerson = model_generator.generate("LocalPerson", context,
                                        data_graph, uri_prefix="http://localhost/persons/",
                                        uri_fragment="me")
 LocalRSAPublicKey = model_generator.generate("LocalRSAPublicKey", context, data_graph)
+LocalGPGKey = model_generator.generate("LocalGPGPublicKey", context, data_graph)
 
 bob_name = "Bob"
 bob_blog = "http://blog.example.com/"
@@ -207,6 +256,8 @@ john_bio_en = "Supporter of Linked Data"
 key_modulus = "b42dbf23ee820be938bee7298893e434f8f74d4be2bbe39408776d695168d09262da2a849962"
 key_exponent = 65537
 key_label = "Key 1"
+gpg_fingerprint = "1aef32b079fc3cabcfc26c5e54d0e38c002640d4"
+gpg_hex_id = "002640e2"
 
 
 class ModelTest(TestCase):
@@ -230,6 +281,9 @@ class ModelTest(TestCase):
     def create_rsa_key(self):
         return LocalRSAPublicKey.objects.create(exponent=key_exponent, modulus=key_modulus,
                                                 label=key_label)
+
+    def create_gpg_key(self):
+        return LocalGPGKey.objects.create(fingerprint=gpg_fingerprint, hex_id=gpg_hex_id)
 
     def test_bio_requirement(self):
         bob = LocalPerson()
@@ -703,3 +757,65 @@ class ModelTest(TestCase):
         bob2 = LocalPerson(id=bob_iri, name=bob_name, mboxes=bob_emails,
                            short_bio_en=short_bio_en, create=False)
         self.assertEquals(bob2.short_bio_en, short_bio_en)
+
+    def test_gpg_key(self):
+        bob = self.create_bob()
+        bob_id = bob.id
+        bob.gpg_key = self.create_gpg_key()
+        self.assertEquals(bob.gpg_key.fingerprint, gpg_fingerprint)
+        self.assertEquals(bob.gpg_key.hex_id, gpg_hex_id)
+
+        bob.save()
+        self.assertEquals(bob.gpg_key.fingerprint, gpg_fingerprint)
+        self.assertEquals(bob.gpg_key.hex_id, gpg_hex_id)
+
+        del bob
+        LocalPerson.objects.clear_cache()
+        bob = LocalPerson.objects.get(id=bob_id)
+        self.assertEquals(bob.gpg_key.fingerprint, gpg_fingerprint)
+        self.assertEquals(bob.gpg_key.hex_id, gpg_hex_id)
+
+
+    def test_delete_bob(self):
+        bob = self.create_bob()
+        request = """ASK {?x foaf:name "%s"^^xsd:string }""" % bob_name
+        self.assertTrue(bool(data_graph.query(request)))
+
+        bob.delete()
+        self.assertFalse(bool(data_graph.query(request)))
+
+    def test_delete_rsa_but_no_alice(self):
+        ask_modulus = """ASK {?x cert:modulus "%s"^^xsd:hexBinary }""" % key_modulus
+        ask_alice = """ASK {?x foaf:name "%s"^^xsd:string }""" % alice_name
+        self.assertFalse(bool(data_graph.query(ask_modulus)))
+        self.assertFalse(bool(data_graph.query(ask_alice)))
+
+        bob = self.create_bob()
+        alice = self.create_alice()
+        rsa_key = self.create_rsa_key()
+        bob.keys = {rsa_key}
+        bob.children = [alice]
+        bob.save()
+        self.assertTrue(bool(data_graph.query(ask_modulus)))
+        self.assertTrue(bool(data_graph.query(ask_alice)))
+
+        bob.delete()
+        # Blank node is deleted
+        self.assertFalse(bool(data_graph.query(ask_modulus)))
+        # Alice is not (non-blank)
+        self.assertTrue(bool(data_graph.query(ask_alice)))
+
+    def test_delete_gpg(self):
+        ask_fingerprint = """ASK {?x wot:fingerprint "%s"^^xsd:hexBinary }""" % gpg_fingerprint
+        self.assertFalse(bool(data_graph.query(ask_fingerprint)))
+
+        bob = self.create_bob()
+        gpg_key = self.create_gpg_key()
+        self.assertEquals(gpg_key.fingerprint, gpg_fingerprint)
+        bob.gpg_key = gpg_key
+        bob.save()
+        self.assertTrue(bool(data_graph.query(ask_fingerprint)))
+
+        bob.delete()
+        # Blank node is deleted
+        self.assertFalse(bool(data_graph.query(ask_fingerprint)))

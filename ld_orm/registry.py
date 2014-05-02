@@ -21,7 +21,7 @@ class ModelRegistry(object):
         return self._model_classes.get(class_uri)
 
     def find_instance_manager(self, object_uri):
-        types = {t.toPython() for t in self._default_graph.objects(URIRef(object_uri), RDF["type"])}
+        types = {t.toPython() for t in self._default_graph.objects(URIRef(object_uri), RDF.type)}
 
         models = set()
         for t in types:

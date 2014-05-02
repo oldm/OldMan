@@ -3,10 +3,12 @@ from types import GeneratorType
 from six import add_metaclass
 from urlparse import urlparse
 import json
+from types import GeneratorType
 from rdflib import URIRef, Graph
 from rdflib.plugins.sparql.parser import ParseException
 from rdflib.plugins.sparql import prepareQuery
 from .attribute import LDAttribute
+from .property import PropertyType
 from .manager import InstanceManager, build_update_query_part
 from .exceptions import MissingClassAttributeError, ReservedAttributeNameError, SPARQLParseError
 from .exceptions import LDAttributeAccessError, LDUniquenessError
@@ -139,18 +141,19 @@ class Model(object):
         return self._is_blank_node
 
     def save(self, is_end_user=True):
+        # Checks
+        for attr in self._attributes.values():
+            attr.check_validity(self, is_end_user)
+        self._save(is_end_user)
+
+    def _save(self, is_end_user=True):
         """
             TODO:
                 - Warns if there is some non-descriptor ("Attribute") attributes (will not be saved)
                 - Saves descriptor attributes
         """
-        # Checks
-        for attr in self._attributes.values():
-            # May raise an RequiredAttributeError
-            attr.check_validity(self, is_end_user)
 
         #TODO: Warns
-
         former_lines = u""
         new_lines = u""
         for attr in self._attributes.values():
@@ -249,3 +252,20 @@ class Model(object):
 
     def in_same_document(self, other_obj):
         return self._id.split("#")[0] == other_obj.id.split("#")[0]
+
+    def delete(self):
+        for attr_name, attr in self._attributes.iteritems():
+            # Delete blank nodes recursively
+            # TODO: make sure these blank nodes are not referenced somewhere else
+            if attr.ld_property.type == PropertyType.ObjectProperty:
+                objs = getattr(self, attr_name)
+                if objs is not None :
+                    if isinstance(objs, (list, set, GeneratorType)):
+                        for obj in objs:
+                            if obj.is_blank_node():
+                                obj.delete()
+                    elif objs.is_blank_node():
+                        objs.delete()
+
+            setattr(self, attr_name, None)
+        self._save()
