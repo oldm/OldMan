@@ -865,8 +865,13 @@ class ModelTest(TestCase):
         bob = self.create_bob()
         bob_iri = URIRef(bob.id)
         foaf_name = URIRef(FOAF + "name")
+        olb = URIRef(BIO + "olb")
         graph = Graph()
         graph.parse(data=bob.to_rdf("xml"), format="xml")
+
+        #Prevent a bug with JSON-LD -> RDF serializer
+        graph.remove((bob_iri, olb, Literal(bob_bio_fr, datatype=XSD.string)))
+        graph.add((bob_iri, olb, Literal(bob_bio_fr, "fr")))
 
         graph.remove((bob_iri, foaf_name, Literal(bob_name, datatype=XSD.string)))
         boby_name = "Boby"
@@ -874,8 +879,6 @@ class ModelTest(TestCase):
         bob.full_upgrade_from_graph(graph)
         self.assertEquals(bob.name, boby_name)
 
-        graph.remove((bob_iri, BIO + "olb", Literal(bob_bio_en, datatype=XSD.string)))
+        graph.remove((bob_iri, olb, Literal(bob_bio_en, "en")))
         bob.full_upgrade_from_graph(graph)
         self.assertEquals(bob.short_bio_en, None)
-
-

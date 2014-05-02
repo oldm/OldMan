@@ -4,7 +4,7 @@
 """
 
 from unittest import TestCase
-from rdflib import ConjunctiveGraph, URIRef
+from rdflib import ConjunctiveGraph, URIRef, Literal, Graph, XSD
 import json
 from ld_orm import default_model_factory
 from ld_orm.exceptions import LDPropertyDefError, ReadOnlyAttributeError
@@ -144,5 +144,28 @@ class PropertyTest(TestCase):
             obj.full_update(obj_dict)
         obj.full_update(obj_dict, is_end_user=False)
 
+    def test_read_only_graph_update(self):
+        obj = LocalClass()
+        obj_iri = URIRef(obj.id)
+        admin_str = "An admin is allowed to write it"
+        obj.ro_property = admin_str
+        obj.save(is_end_user=False)
 
+        graph = Graph()
+        graph.parse(data=obj.to_rdf("xml"), format="xml")
+        obj.full_upgrade_from_graph(graph)
+        self.assertEquals(obj.ro_property, admin_str)
+
+        ro_prop = URIRef(EXAMPLE + "roProperty")
+        graph.remove((obj_iri, ro_prop, Literal(admin_str, datatype=XSD.string)))
+        str2 = "Writing a read-only property"
+        graph.add((obj_iri, ro_prop, Literal(str2, datatype=XSD.string)))
+        print graph.serialize(format="turtle")
+        with self.assertRaises(ReadOnlyAttributeError):
+            obj.full_upgrade_from_graph(graph)
+        obj.full_upgrade_from_graph(graph, is_end_user=False)
+
+        graph.remove((obj_iri, ro_prop, Literal(str2, datatype=XSD.string)))
+        obj.full_upgrade_from_graph(graph, is_end_user=False)
+        self.assertEquals(obj.ro_property, None)
 

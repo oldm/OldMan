@@ -308,9 +308,10 @@ class Model(object):
 
         self.save(is_end_user)
 
-    def full_upgrade_from_graph(self, subgraph):
+    def full_upgrade_from_graph(self, subgraph, is_end_user=True):
         for attr in self._attributes.values():
             attr.update_from_graph(self, subgraph, self._storage_graph)
+        self.save(is_end_user)
 
 
 def should_delete_object(obj):
