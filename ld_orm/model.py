@@ -10,7 +10,7 @@ from .attribute import LDAttribute
 from .property import PropertyType
 from .manager import InstanceManager, build_update_query_part
 from .exceptions import MissingClassAttributeError, ReservedAttributeNameError, SPARQLParseError
-from .exceptions import LDAttributeAccessError, LDUniquenessError
+from .exceptions import LDAttributeAccessError, LDUniquenessError, WrongObjectError
 
 
 class ModelBase(type):
@@ -268,10 +268,9 @@ class Model(object):
     def delete(self):
         for attr_name, attr in self._attributes.iteritems():
             # Delete blank nodes recursively
-            # TODO: make sure these blank nodes are not referenced somewhere else
             if attr.ld_property.type == PropertyType.ObjectProperty:
                 objs = getattr(self, attr_name)
-                if objs is not None :
+                if objs is not None:
                     if isinstance(objs, (list, set, GeneratorType)):
                         for obj in objs:
                             if should_delete_object(obj):
@@ -282,6 +281,36 @@ class Model(object):
             setattr(self, attr_name, None)
         self._save()
 
+    def full_update(self, full_dict, is_end_user=True):
+        """
+            JSON-LD containers are supported.
+            Flat rather than deep: no nested object structure (only their IRI).
+
+            If some attributes are not found in the dict,
+             their values will be set to None.
+        """
+        #if not self.is_blank_node() and "id" not in full_dict:
+        if "id" not in full_dict:
+            raise WrongObjectError("Cannot update an object without IRI")
+        elif full_dict["id"] != self._id:
+            raise WrongObjectError("Wrong IRI %s (%s was expected)" % (full_dict["id"], self._id) )
+
+        for key in full_dict:
+            if key not in self._attributes and key not in ["@context", "id", "types"]:
+                raise LDAttributeAccessError("%s is not an attribute of %s" % (key, self.__class__.__name__))
+
+        for attr_name, attr in self._attributes.iteritems():
+            value = full_dict.get(attr_name)
+            # set is not a JSON structure (but a JSON-LD one)
+            if value is not None and attr.container == "@set":
+                value = set(value)
+            setattr(self, attr_name, value)
+
+        self.save(is_end_user)
+
 
 def should_delete_object(obj):
+    """
+        TODO: make sure these blank nodes are not referenced somewhere else
+    """
     return obj.is_blank_node()

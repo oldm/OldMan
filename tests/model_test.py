@@ -6,6 +6,7 @@ import json
 from ld_orm import default_model_factory
 from ld_orm.attribute import LDAttributeTypeCheckError, RequiredPropertyError
 from ld_orm.exceptions import ClassInstanceError, LDAttributeAccessError, LDUniquenessError
+from ld_orm.exceptions import WrongObjectError
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
@@ -844,3 +845,51 @@ class ModelTest(TestCase):
         bob.delete()
         # Blank node is deleted
         self.assertFalse(bool(data_graph.query(ask_fingerprint)))
+
+    def test_basic_bob_full_update(self):
+        bob = self.create_bob()
+        bob_dict = bob.to_dict()
+        boby_name = "Boby"
+        bob_dict["name"] = boby_name
+        bob.full_update(bob_dict)
+        self.assertEquals(bob.name, boby_name)
+
+        bob_dict.pop("short_bio_en")
+        bob.full_update(bob_dict)
+        self.assertEquals(bob.short_bio_en, None)
+
+    def test_bob_gpg_update(self):
+        bob = self.create_bob()
+        ask_fingerprint = """ASK {?x wot:fingerprint "%s"^^xsd:hexBinary }""" % gpg_fingerprint
+        self.assertFalse(bool(data_graph.query(ask_fingerprint)))
+        bob.gpg_key = self.create_gpg_key()
+        self.assertTrue(bool(data_graph.query(ask_fingerprint)))
+        bob_dict = bob.to_dict()
+
+        # GPG key blank-node is included as a dict
+        with self.assertRaises(LDAttributeTypeCheckError):
+            bob.full_update(bob_dict)
+
+        # Replace the dict by an IRI
+        bob_dict["gpg_key"] = bob.gpg_key.id
+        bob.full_update(bob_dict)
+        bob.gpg_key.fingerprint = gpg_fingerprint
+
+        bob_dict["gpg_key"] = None
+        bob.full_update(bob_dict)
+        self.assertFalse(bool(data_graph.query(ask_fingerprint)))
+
+    def test_wrong_update(self):
+        bob = self.create_bob()
+        alice = self.create_alice()
+        with self.assertRaises(WrongObjectError):
+            bob.full_update(alice.to_dict())
+
+        bob_dict = bob.to_dict()
+        #Missing IRI
+        bob_dict.pop("id")
+        with self.assertRaises(WrongObjectError):
+            bob.full_update(bob_dict)
+
+
+

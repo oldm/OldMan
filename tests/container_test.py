@@ -173,7 +173,7 @@ class ContainerTest(TestCase):
         uri = obj.id
         lst = ["Hello", "hi", "hi", "Hello"]
         # No declaration -> implicit set or unique value
-        # (lists are not accepted)
+        # (lists and dict are not accepted)
         with self.assertRaises(LDAttributeTypeCheckError):
             obj.undeclared_set = lst
         obj.undeclared_set = set(lst)

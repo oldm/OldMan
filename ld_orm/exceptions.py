@@ -103,6 +103,13 @@ class LDUniquenessError(LDEditError):
     pass
 
 
+class WrongObjectError(LDEditError):
+    """
+        Not updating the right object
+    """
+    pass
+
+
 class LDAccessError(LDUserError):
     """
         Error when accessing objects

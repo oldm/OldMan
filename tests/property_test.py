@@ -127,3 +127,22 @@ class PropertyTest(TestCase):
 
         with self.assertRaises(ReadOnlyAttributeError):
             LocalClass.objects.create(ro_property=end_user_str)
+
+    def test_read_only_update(self):
+        obj = LocalClass()
+        admin_str = "An admin is allowed to write it"
+        obj.ro_property = admin_str
+        obj.save(is_end_user=False)
+
+        obj_dict = obj.to_dict()
+        obj_dict["secret"] = "My secret again"
+        # No problem with ro_property because it is not changed
+        obj.full_update(obj_dict)
+
+        obj_dict["ro_property"] = "Writing a read-only property"
+        with self.assertRaises(ReadOnlyAttributeError):
+            obj.full_update(obj_dict)
+        obj.full_update(obj_dict, is_end_user=False)
+
+
+

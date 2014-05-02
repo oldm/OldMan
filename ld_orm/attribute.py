@@ -282,7 +282,11 @@ class ObjectLDAttribute(LDAttribute):
         elif isinstance(value, list):
             values = [f(v) for v in value]
         elif isinstance(value, dict):
-            raise NotImplementedError(u"Dict are not yet supported")
+            if self.container == "@index":
+                raise NotImplementedError(u"Index maps are not yet supported")
+            else:
+                raise LDAttributeTypeCheckError(u"Index maps must be declared. Other dict structures "
+                                                u"are not supported for objects.")
         else:
             values = f(value)
         LDAttribute.__set__(self, instance, values)
