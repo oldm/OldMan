@@ -111,7 +111,7 @@ class Model(object):
         """
         instance = cls(id=id, create=create)
         for attr in instance._attributes.values():
-            attr.update_from_graph(instance, subgraph, cls._storage_graph)
+            attr.update_from_graph(instance, subgraph, cls._storage_graph, initial=True)
         return instance
 
     @classmethod
@@ -307,6 +307,10 @@ class Model(object):
             setattr(self, attr_name, value)
 
         self.save(is_end_user)
+
+    def full_upgrade_from_graph(self, subgraph):
+        for attr in self._attributes.values():
+            attr.update_from_graph(self, subgraph, self._storage_graph)
 
 
 def should_delete_object(obj):

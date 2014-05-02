@@ -173,11 +173,11 @@ class LDAttribute(object):
 
         return lines
 
-    def update_from_graph(self, instance, sub_graph, storage_graph):
+    def update_from_graph(self, instance, sub_graph, storage_graph, initial=False):
         values = self._value_extractor.extract_values(instance, sub_graph, storage_graph)
 
-        if values is not None:
-            setattr(instance, self.name, values)
+        setattr(instance, self.name, values)
+        if initial:
             # Clears "None" former value
             self.pop_former_value(instance)
 

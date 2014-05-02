@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from unittest import TestCase
-from rdflib import ConjunctiveGraph, Graph, URIRef, Literal, RDF
+from rdflib import ConjunctiveGraph, Graph, URIRef, Literal, RDF, XSD
 import json
 from ld_orm import default_model_factory
 from ld_orm.attribute import LDAttributeTypeCheckError, RequiredPropertyError
@@ -861,5 +861,21 @@ class ModelTest(TestCase):
         with self.assertRaises(WrongObjectError):
             bob.full_update(bob_dict)
 
+    def test_basic_bob_graph_update(self):
+        bob = self.create_bob()
+        bob_iri = URIRef(bob.id)
+        foaf_name = URIRef(FOAF + "name")
+        graph = Graph()
+        graph.parse(data=bob.to_rdf("xml"), format="xml")
+
+        graph.remove((bob_iri, foaf_name, Literal(bob_name, datatype=XSD.string)))
+        boby_name = "Boby"
+        graph.add((bob_iri, foaf_name, Literal(boby_name, datatype=XSD.string)))
+        bob.full_upgrade_from_graph(graph)
+        self.assertEquals(bob.name, boby_name)
+
+        graph.remove((bob_iri, BIO + "olb", Literal(bob_bio_en, datatype=XSD.string)))
+        bob.full_upgrade_from_graph(graph)
+        self.assertEquals(bob.short_bio_en, None)
 
 
