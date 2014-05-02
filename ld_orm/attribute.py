@@ -292,5 +292,5 @@ class ObjectLDAttribute(LDAttribute):
         elif isinstance(value, dict):
             raise NotImplementedError(u"Dict are not yet supported")
         else:
-            values = value
+            values = f(value)
         LDAttribute.__set__(self, instance, values)
