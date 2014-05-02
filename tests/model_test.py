@@ -775,7 +775,6 @@ class ModelTest(TestCase):
         self.assertEquals(bob.gpg_key.fingerprint, gpg_fingerprint)
         self.assertEquals(bob.gpg_key.hex_id, gpg_hex_id)
 
-
     def test_delete_bob(self):
         bob = self.create_bob()
         request = """ASK {?x foaf:name "%s"^^xsd:string }""" % bob_name
@@ -804,6 +803,32 @@ class ModelTest(TestCase):
         self.assertFalse(bool(data_graph.query(ask_modulus)))
         # Alice is not (non-blank)
         self.assertTrue(bool(data_graph.query(ask_alice)))
+
+    def test_rsa_key_removal(self):
+        ask_modulus = """ASK {?x cert:modulus "%s"^^xsd:hexBinary }""" % key_modulus
+        self.assertFalse(bool(data_graph.query(ask_modulus)))
+
+        bob = self.create_bob()
+        rsa_key = self.create_rsa_key()
+        bob.keys = {rsa_key}
+        bob.save()
+        self.assertTrue(bool(data_graph.query(ask_modulus)))
+
+        bob.keys = None
+        bob.save()
+        self.assertFalse(bool(data_graph.query(ask_modulus)))
+
+    def test_gpg_key_removal(self):
+        ask_fingerprint = """ASK {?x wot:fingerprint "%s"^^xsd:hexBinary }""" % gpg_fingerprint
+        bob = self.create_bob()
+        self.assertFalse(bool(data_graph.query(ask_fingerprint)))
+        bob.gpg_key = self.create_gpg_key()
+        bob.save()
+        self.assertTrue(bool(data_graph.query(ask_fingerprint)))
+
+        bob.gpg_key = None
+        bob.save()
+        self.assertFalse(bool(data_graph.query(ask_fingerprint)))
 
     def test_delete_gpg(self):
         ask_fingerprint = """ASK {?x wot:fingerprint "%s"^^xsd:hexBinary }""" % gpg_fingerprint

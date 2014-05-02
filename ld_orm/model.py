@@ -1,5 +1,4 @@
 from copy import deepcopy
-from types import GeneratorType
 from six import add_metaclass
 from urlparse import urlparse
 import json
@@ -154,14 +153,24 @@ class Model(object):
         """
 
         #TODO: Warns
+        objects_to_delete = []
         former_lines = u""
         new_lines = u""
         for attr in self._attributes.values():
             if not attr.has_new_value(self):
                 continue
             # Beware: has a side effect!
-            former_lines += attr.pop_former_value_and_serialize_line(self)
+            former_values = attr.pop_former_value(self)
+            former_lines += attr.serialize_values_into_lines(former_values)
             new_lines += attr.serialize_current_value_into_line(self)
+
+            # Some former objects may be deleted
+            if attr.ld_property.type == PropertyType.ObjectProperty:
+                if isinstance(former_values, dict):
+                    raise NotImplementedError("Object dicts are not yet supported.")
+                former_values = former_values if isinstance(former_values, (set, list)) else [former_values]
+                former_objects = [self.__class__.objects.get_any(id=v) for v in former_values if v is not None]
+                objects_to_delete += [v for v in former_objects if should_delete_object(v)]
 
         #TODO: only execute once (first save())
         types = self.types
@@ -179,6 +188,9 @@ class Model(object):
             self._storage_graph.update(query)
         except ParseException as e:
             raise SPARQLParseError(u"%s\n %s" % (query, e))
+
+        for obj in objects_to_delete:
+            obj.delete()
 
     def to_dict(self, remove_none_values=True, include_different_contexts=False,
                 ignored_iris=None):
@@ -262,10 +274,14 @@ class Model(object):
                 if objs is not None :
                     if isinstance(objs, (list, set, GeneratorType)):
                         for obj in objs:
-                            if obj.is_blank_node():
+                            if should_delete_object(obj):
                                 obj.delete()
-                    elif objs.is_blank_node():
+                    elif should_delete_object(objs):
                         objs.delete()
 
             setattr(self, attr_name, None)
         self._save()
+
+
+def should_delete_object(obj):
+    return obj.is_blank_node()

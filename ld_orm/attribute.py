@@ -134,14 +134,6 @@ class LDAttribute(object):
             return self._former_values.pop(instance)
         return None
 
-    def pop_former_value_and_serialize_line(self, instance):
-        """
-            SPARQL-compatible version
-            of pop_former_value()
-        """
-        values = self.pop_former_value(instance)
-        return self.serialize_values_into_lines(values)
-
     def serialize_current_value_into_line(self, instance):
         """
             Serialized in a SPARQL-compatible way
