@@ -861,6 +861,12 @@ class ModelTest(TestCase):
         with self.assertRaises(WrongObjectError):
             bob.full_update(bob_dict)
 
+        bob_dict = bob.to_dict()
+        bob_dict["unknown_attribute"] = "Will cause a problem"
+        with self.assertRaises(LDAttributeAccessError):
+            bob.full_update(bob_dict)
+
+
     def test_basic_bob_graph_update(self):
         bob = self.create_bob()
         bob_iri = URIRef(bob.id)
@@ -870,6 +876,7 @@ class ModelTest(TestCase):
         graph.parse(data=bob.to_rdf("xml"), format="xml")
 
         #Prevent a bug with JSON-LD -> RDF serializer
+        #TODO: remove these lines when the bug will be fixed
         graph.remove((bob_iri, olb, Literal(bob_bio_fr, datatype=XSD.string)))
         graph.add((bob_iri, olb, Literal(bob_bio_fr, "fr")))
 

@@ -52,4 +52,3 @@ class ModelRegistry(object):
                 return untyped_model.objects
 
         raise LDInternalError("No model found, no untyped model registered")
-
