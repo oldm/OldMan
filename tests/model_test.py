@@ -922,7 +922,31 @@ class ModelTest(TestCase):
         doc = json.loads(crud_controller.get(doc_iri, "json"))
         self.assertEquals(doc["id"], doc_iri)
 
-        obj_iris = model_generator.registry.find_objects_from_base_uri(doc_iri)
+        obj_iris = model_generator.registry.find_object_iris(doc_iri)
         self.assertEquals({bob_iri, doc_iri}, obj_iris)
 
+    def test_bob_controller_delete(self):
+        ask_bob = """ASK {?x foaf:name "%s"^^xsd:string }""" % bob_name
+        self.assertFalse(bool(data_graph.query(ask_bob)))
+        bob = self.create_bob()
+        self.assertTrue(bool(data_graph.query(ask_bob)))
+        bob_iri = bob.id
+        doc_iri = bob_iri.split("#")[0]
 
+        ask_alice = """ASK {?x foaf:name "%s"^^xsd:string }""" % alice_name
+        self.assertFalse(bool(data_graph.query(ask_alice)))
+        alice = LocalPerson.objects.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
+                                           short_bio_en=alice_bio_en)
+        self.assertTrue(bool(data_graph.query(ask_alice)))
+
+        #John is the base uri (bad practise, only for test convenience)
+        ask_john = """ASK {?x foaf:name "%s"^^xsd:string }""" % john_name
+        self.assertFalse(bool(data_graph.query(ask_john)))
+        john = LocalPerson.objects.create(id=(doc_iri), name=john_name, mboxes={john_mail},
+                                          short_bio_en=john_bio_en)
+        self.assertTrue(bool(data_graph.query(ask_john)))
+
+        crud_controller.delete(doc_iri)
+        self.assertFalse(bool(data_graph.query(ask_bob)))
+        self.assertFalse(bool(data_graph.query(ask_alice)))
+        self.assertFalse(bool(data_graph.query(ask_john)))

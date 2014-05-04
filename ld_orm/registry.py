@@ -32,12 +32,19 @@ class ModelRegistry(object):
         cls = self.find_model_class(object_uri)
         return cls.objects.get(id=object_uri)
 
+    def find_object_iris(self, base_uri):
+        if "#" in base_uri:
+            raise HashIriError("%s is not a base IRI" % base_uri)
+        #TODO: use initBindings instead (need a bugfix of rdflib)
+        query = self.base_uri_raw_query.replace("?base", '"%s"' % base_uri)
+        return {unicode(u) for u, in self._default_graph.query(query)}
+
     def find_model_class(self, object_uri):
         types = {t.toPython() for t in self._default_graph.objects(URIRef(object_uri), RDF.type)}
         return self._select_model_class(types)
 
     def find_object_from_base_uri(self, base_uri):
-        obj_uris = self.find_objects_from_base_uri(base_uri)
+        obj_uris = self.find_object_iris(base_uri)
         if len(obj_uris) == 0:
             raise ObjectNotFoundError("No object with base uri %s" % base_uri)
         elif len(obj_uris) > 1:
@@ -49,13 +56,6 @@ class ModelRegistry(object):
                              "The first one is selected." % obj_uris)
             # TODO: avoid such arbitrary selection
         return list(obj_uris)[0]
-
-    def find_objects_from_base_uri(self, base_uri):
-        if "#" in base_uri:
-            raise HashIriError("%s is not a base IRI" % base_uri)
-        #TODO: use initBindings instead (need a bugfix of rdflib)
-        query = self.base_uri_raw_query.replace("?base", '"%s"' % base_uri)
-        return {unicode(u) for u, in self._default_graph.query(query)}
 
     def _select_model_class(self, types):
         models = set()
