@@ -131,6 +131,13 @@ class ClassInstanceError(LDAccessError):
     pass
 
 
+class ObjectNotFoundError(LDAccessError):
+    """
+        When the object is not found
+    """
+    pass
+
+
 class LDInternalError(LDError):
     """ Do not expect it """
     pass
@@ -153,7 +160,7 @@ class AlreadyGeneratedAttributeError(LDInternalError):
 
 class MissingClassAttributeError(LDInternalError):
     """
-        Some attributes required  for generating a model class
+        Some attributes required for generating a model class
         are missing.
     """
     pass

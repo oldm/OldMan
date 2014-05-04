@@ -6,7 +6,9 @@ import json
 from ld_orm import default_model_factory
 from ld_orm.attribute import LDAttributeTypeCheckError, RequiredPropertyError
 from ld_orm.exceptions import ClassInstanceError, LDAttributeAccessError, LDUniquenessError
-from ld_orm.exceptions import WrongObjectError
+from ld_orm.exceptions import WrongObjectError, ObjectNotFoundError
+from ld_orm.crud import CRUDController
+
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
@@ -204,12 +206,15 @@ context = {
 
 
 model_generator = default_model_factory(schema_graph, default_graph)
-# Model class is generated here!
+# Model classes are generated here!
 LocalPerson = model_generator.generate("LocalPerson", context,
                                        data_graph, uri_prefix="http://localhost/persons/",
                                        uri_fragment="me")
 LocalRSAPublicKey = model_generator.generate("LocalRSAPublicKey", context, data_graph)
 LocalGPGKey = model_generator.generate("LocalGPGPublicKey", context, data_graph)
+
+# GET, POST, PUT, DELETE
+crud_controller = CRUDController(model_generator.registry)
 
 bob_name = "Bob"
 bob_blog = "http://blog.example.com/"
@@ -866,7 +871,6 @@ class ModelTest(TestCase):
         with self.assertRaises(LDAttributeAccessError):
             bob.full_update(bob_dict)
 
-
     def test_basic_bob_graph_update(self):
         bob = self.create_bob()
         bob_iri = URIRef(bob.id)
@@ -889,3 +893,24 @@ class ModelTest(TestCase):
         graph.remove((bob_iri, olb, Literal(bob_bio_en, "en")))
         bob.full_upgrade_from_graph(graph)
         self.assertEquals(bob.short_bio_en, None)
+
+    def test_controller_get(self):
+        bob = self.create_bob()
+        bob_iri = bob.id
+        bob_base_iri = bob_iri.split("#")[0]
+        bob2 = crud_controller.get(bob_base_iri)
+
+        self.assertEquals(bob.to_rdf("turtle"), bob2)
+        self.assertEquals(bob.to_json(), crud_controller.get(bob_base_iri, "application/json"))
+        self.assertEquals(bob.to_json(), crud_controller.get(bob_base_iri, "json"))
+        self.assertEquals(bob.to_jsonld(), crud_controller.get(bob_base_iri, "application/ld+json"))
+        self.assertEquals(bob.to_jsonld(), crud_controller.get(bob_base_iri, "json-ld"))
+        self.assertEquals(bob.to_rdf("turtle"), crud_controller.get(bob_base_iri, "text/turtle"))
+        self.assertEquals(bob.to_rdf("turtle"), crud_controller.get(bob_base_iri))
+
+        if "#" in bob_iri:
+            with self.assertRaises(ObjectNotFoundError):
+                # Hash URI
+                crud_controller.get(bob_base_iri + "#no-one")
+        with self.assertRaises(ObjectNotFoundError):
+            crud_controller.get("http://nowhere/no-one", "text/turtle")
