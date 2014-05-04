@@ -2,11 +2,12 @@
 
 from unittest import TestCase
 from rdflib import ConjunctiveGraph, Graph, URIRef, Literal, RDF, XSD
+from rdflib.namespace import FOAF
 import json
 from ld_orm import default_model_factory
 from ld_orm.attribute import LDAttributeTypeCheckError, RequiredPropertyError
 from ld_orm.exceptions import ClassInstanceError, LDAttributeAccessError, LDUniquenessError
-from ld_orm.exceptions import WrongObjectError, ObjectNotFoundError
+from ld_orm.exceptions import WrongObjectError, ObjectNotFoundError, HashIriError
 from ld_orm.crud import CRUDController
 
 
@@ -14,7 +15,6 @@ default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
 data_graph = default_graph.get_context(URIRef("http://localhost/data"))
 
-FOAF = "http://xmlns.com/foaf/0.1/"
 BIO = "http://purl.org/vocab/bio/0.1/"
 REL = "http://purl.org/vocab/relationship/"
 CERT = "http://www.w3.org/ns/auth/cert#"
@@ -894,7 +894,7 @@ class ModelTest(TestCase):
         bob.full_upgrade_from_graph(graph)
         self.assertEquals(bob.short_bio_en, None)
 
-    def test_controller_get(self):
+    def test_bob_controller_get(self):
         bob = self.create_bob()
         bob_iri = bob.id
         bob_base_iri = bob_iri.split("#")[0]
@@ -908,9 +908,21 @@ class ModelTest(TestCase):
         self.assertEquals(bob.to_rdf("turtle"), crud_controller.get(bob_base_iri, "text/turtle"))
         self.assertEquals(bob.to_rdf("turtle"), crud_controller.get(bob_base_iri))
 
-        if "#" in bob_iri:
-            with self.assertRaises(ObjectNotFoundError):
-                # Hash URI
-                crud_controller.get(bob_base_iri + "#no-one")
+        with self.assertRaises(HashIriError):
+            # Hash URI
+            crud_controller.get(bob_base_iri + "#hashed")
         with self.assertRaises(ObjectNotFoundError):
             crud_controller.get("http://nowhere/no-one", "text/turtle")
+
+    def test_document_controller_get(self):
+        bob = self.create_bob()
+        bob_iri = bob.id
+        doc_iri = bob_iri.split("#")[0]
+        data_graph.add((URIRef(doc_iri), RDF.type, FOAF.Document))
+        doc = json.loads(crud_controller.get(doc_iri, "json"))
+        self.assertEquals(doc["id"], doc_iri)
+
+        obj_iris = model_generator.registry.find_objects_from_base_uri(doc_iri)
+        self.assertEquals({bob_iri, doc_iri}, obj_iris)
+
+

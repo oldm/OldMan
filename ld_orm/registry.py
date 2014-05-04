@@ -1,6 +1,5 @@
-from rdflib import RDF, URIRef, Literal
-from rdflib.plugins.sparql import prepareQuery
-from .exceptions import SchemaError, LDInternalError, ObjectNotFoundError
+from rdflib import RDF, URIRef
+from .exceptions import SchemaError, LDInternalError, ObjectNotFoundError, HashIriError
 
 
 class ModelRegistry(object):
@@ -9,7 +8,6 @@ class ModelRegistry(object):
     """
 
     #TODO: replace by a prepareQuery
-
     base_uri_raw_query = """
         SELECT DISTINCT ?uri
         WHERE {
@@ -39,22 +37,25 @@ class ModelRegistry(object):
         return self._select_model_class(types)
 
     def find_object_from_base_uri(self, base_uri):
-        #TODO: use initBindings instead (need a bugfix)
-        #obj_uris = [u for u, in self._default_graph.query(self.base_uri_raw_query,
-        #                                                  initBindings={'base': Literal(base_uri)})]
-        query = self.base_uri_raw_query.replace("?base", '"%s"' % base_uri)
-        obj_uris = [u for u, in self._default_graph.query(query)]
-
-
+        obj_uris = self.find_objects_from_base_uri(base_uri)
         if len(obj_uris) == 0:
             raise ObjectNotFoundError("No object with base uri %s" % base_uri)
         elif len(obj_uris) > 1:
+            if base_uri in obj_uris:
+                return base_uri
             # Warning
             import sys
             sys.stderr.write("Multiple objects have the same base_uri: %s\n. "
                              "The first one is selected." % obj_uris)
             # TODO: avoid such arbitrary selection
-        return obj_uris[0]
+        return list(obj_uris)[0]
+
+    def find_objects_from_base_uri(self, base_uri):
+        if "#" in base_uri:
+            raise HashIriError("%s is not a base IRI" % base_uri)
+        #TODO: use initBindings instead (need a bugfix of rdflib)
+        query = self.base_uri_raw_query.replace("?base", '"%s"' % base_uri)
+        return {unicode(u) for u, in self._default_graph.query(query)}
 
     def _select_model_class(self, types):
         models = set()

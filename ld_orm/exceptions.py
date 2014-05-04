@@ -138,6 +138,13 @@ class ObjectNotFoundError(LDAccessError):
     pass
 
 
+class HashIriError(LDAccessError):
+    """
+        A hash IRI has been given instead of a base IRI
+    """
+    pass
+
+
 class LDInternalError(LDError):
     """ Do not expect it """
     pass
