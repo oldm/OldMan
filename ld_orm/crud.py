@@ -67,7 +67,6 @@ class CRUDController(object):
             types = {unicode(t) for t in g.objects(bnode, RDF.type)}
             model_class = self._registry.select_model_class(types)
             obj = model_class()
-            #TODO: manage dependencies
             alter_bnode_triples(g, bnode, obj.id)
             obj.full_update_from_graph(g, save=False)
             objs.append(obj)

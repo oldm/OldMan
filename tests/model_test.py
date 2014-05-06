@@ -7,7 +7,7 @@ import json
 from ld_orm import default_model_factory
 from ld_orm.attribute import LDAttributeTypeCheckError, RequiredPropertyError
 from ld_orm.exceptions import ClassInstanceError, LDAttributeAccessError, LDUniquenessError
-from ld_orm.exceptions import WrongObjectError, ObjectNotFoundError, HashIriError
+from ld_orm.exceptions import WrongObjectError, ObjectNotFoundError, HashIriError, LDEditError
 from ld_orm.crud import CRUDController
 
 
@@ -949,7 +949,13 @@ class ModelTest(TestCase):
         self.assertFalse(bool(data_graph.query(ask_alice)))
         self.assertFalse(bool(data_graph.query(ask_john)))
 
-    def test_controller_put(self):
+    def test_controller_put_implicit_removal(self):
+        """
+            Please mind that putting two resources that have the same base IRI
+            and letting them alone is a BAD practise.
+
+            For test ONLY!
+        """
         ask_bob = """ASK {?x foaf:name "%s"^^xsd:string }""" % bob_name
         self.assertFalse(bool(data_graph.query(ask_bob)))
         bob = self.create_bob()
@@ -963,12 +969,41 @@ class ModelTest(TestCase):
                                    short_bio_en=alice_bio_en)
         self.assertTrue(bool(data_graph.query(ask_alice)))
 
-        graph = Graph()
+        g = Graph()
         bob_rdf = bob.to_rdf("turtle")
-        graph.parse(data=bob_rdf, format="turtle")
+        g.parse(data=bob_rdf, format="turtle")
         #No Alice
-        crud_controller.put(doc_iri, graph.serialize(format="turtle"), "turtle")
+        crud_controller.put(doc_iri, g.serialize(format="turtle"), "turtle")
 
         self.assertTrue(bool(data_graph.query(ask_bob)))
         # Should disappear because not in graph
         self.assertFalse(bool(data_graph.query(ask_alice)))
+
+    def test_controller_put_change_name(self):
+        bob = self.create_bob()
+        bob_iri = bob.id
+        doc_iri = bob_iri.split("#")[0]
+        alice = LocalPerson.objects.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
+                                   short_bio_en=alice_bio_en)
+        alice_ref = URIRef(alice.id)
+        bob_ref = URIRef(bob.id)
+        new_alice_name = alice_name + " A."
+        new_bob_name = bob_name + " B."
+
+        g1 = Graph()
+        g1.parse(data=data_graph.serialize())
+        g1.remove((alice_ref, FOAF.name, Literal(alice_name, datatype=XSD.string)))
+        g1.add((alice_ref, FOAF.name, Literal(new_alice_name, datatype=XSD.string)))
+        g1.remove((bob_ref, FOAF.name, Literal(bob_name, datatype=XSD.string)))
+        g1.add((bob_ref, FOAF.name, Literal(new_bob_name, datatype=XSD.string)))
+
+        crud_controller.put(doc_iri, g1.serialize(format="turtle"), "turtle")
+        self.assertEquals({unicode(o) for o in data_graph.objects(alice_ref, FOAF.name)}, {new_alice_name})
+        self.assertEquals({unicode(o) for o in data_graph.objects(bob_ref, FOAF.name)}, {new_bob_name})
+
+        g2 = Graph()
+        g2.parse(data=data_graph.serialize())
+        g2.remove((alice_ref, FOAF.name, Literal(new_alice_name, datatype=XSD.string)))
+        # Alice name is required
+        with self.assertRaises(LDEditError):
+            crud_controller.put(doc_iri, g2.serialize(format="turtle"), "turtle")
