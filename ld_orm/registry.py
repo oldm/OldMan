@@ -41,7 +41,7 @@ class ModelRegistry(object):
 
     def find_model_class(self, object_uri):
         types = {t.toPython() for t in self._default_graph.objects(URIRef(object_uri), RDF.type)}
-        return self._select_model_class(types)
+        return self.select_model_class(types)
 
     def find_object_from_base_uri(self, base_uri):
         obj_uris = self.find_object_iris(base_uri)
@@ -57,7 +57,7 @@ class ModelRegistry(object):
             # TODO: avoid such arbitrary selection
         return list(obj_uris)[0]
 
-    def _select_model_class(self, types):
+    def select_model_class(self, types):
         models = set()
         for t in types:
             model = self._model_classes.get(t)

@@ -110,6 +110,21 @@ class WrongObjectError(LDEditError):
     pass
 
 
+class DifferentBaseIRIError(LDEditError):
+    """
+        When creating or updating an object with a different base IRI is forbidden.
+        Blank nodes are not concerned.
+    """
+    pass
+
+
+class ForbiddenSkolemizedIRIError(LDEditError):
+    """
+        When updating a skolemized IRI from the local domain is forbidden.
+    """
+    pass
+
+
 class LDAccessError(LDUserError):
     """
         Error when accessing objects

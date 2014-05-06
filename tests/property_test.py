@@ -153,7 +153,7 @@ class PropertyTest(TestCase):
 
         graph = Graph()
         graph.parse(data=obj.to_rdf("xml"), format="xml")
-        obj.full_upgrade_from_graph(graph)
+        obj.full_update_from_graph(graph)
         self.assertEquals(obj.ro_property, admin_str)
 
         ro_prop = URIRef(EXAMPLE + "roProperty")
@@ -162,10 +162,10 @@ class PropertyTest(TestCase):
         graph.add((obj_iri, ro_prop, Literal(str2, datatype=XSD.string)))
         print graph.serialize(format="turtle")
         with self.assertRaises(ReadOnlyAttributeError):
-            obj.full_upgrade_from_graph(graph)
-        obj.full_upgrade_from_graph(graph, is_end_user=False)
+            obj.full_update_from_graph(graph)
+        obj.full_update_from_graph(graph, is_end_user=False)
 
         graph.remove((obj_iri, ro_prop, Literal(str2, datatype=XSD.string)))
-        obj.full_upgrade_from_graph(graph, is_end_user=False)
+        obj.full_update_from_graph(graph, is_end_user=False)
         self.assertEquals(obj.ro_property, None)
 

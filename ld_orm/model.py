@@ -79,7 +79,6 @@ class Model(object):
         """
             Does not save (like Django)
         """
-
         if "id" in kwargs:
             # Anticipated because used in __hash__
             self._id = kwargs.pop("id")
@@ -88,21 +87,20 @@ class Model(object):
                                                        initBindings={'id': URIRef(self._id)}))
                 if exist:
                     raise LDUniquenessError("Object %s already exist" % self._id)
-
         else:
             self._id = self._id_generator.generate()
 
         for k, v in kwargs.iteritems():
             setattr(self, k, v)
-
-        # External skolemized blank nodes are not considered as blank nodes
-        id_result = urlparse(self._id)
-        self._is_blank_node = (u"/.well-known/genid/" in id_result.path) \
-            and (id_result.hostname == u"localhost")
+        self._is_blank_node = is_blank_node(self._id)
 
     @property
     def id(self):
         return self._id
+
+    @property
+    def base_iri(self):
+        return self._id.split('#')[0]
 
     @classmethod
     def load_from_graph(cls, id, subgraph, create=True):
@@ -110,7 +108,7 @@ class Model(object):
             Loads a new instance from a subgraph
         """
         instance = cls(id=id, create=create)
-        for attr in instance._attributes.values():
+        for attr in cls._attributes.values():
             attr.update_from_graph(instance, subgraph, cls._storage_graph, initial=True)
         return instance
 
@@ -308,11 +306,17 @@ class Model(object):
 
         self.save(is_end_user)
 
-    def full_upgrade_from_graph(self, subgraph, is_end_user=True):
+    def full_update_from_graph(self, subgraph, is_end_user=True, save=True):
         for attr in self._attributes.values():
             attr.update_from_graph(self, subgraph, self._storage_graph)
-        self.save(is_end_user)
+        if save:
+            self.save(is_end_user)
 
+
+def is_blank_node(uri):
+    # External skolemized blank nodes are not considered as blank nodes
+    id_result = urlparse(uri)
+    return (u"/.well-known/genid/" in id_result.path) and (id_result.hostname == u"localhost")
 
 def should_delete_object(obj):
     """
