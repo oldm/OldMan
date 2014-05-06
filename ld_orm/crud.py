@@ -9,6 +9,8 @@ _JSON_LD_TYPES = ["application/ld+json", "json-ld"]
 class CRUDController(object):
     """
         TODO: add a PATCH method
+
+        Generic (does not support the Collection pattern so there is no append method)
     """
 
     def __init__(self, registry):
@@ -37,10 +39,13 @@ class CRUDController(object):
                 obj.delete()
 
     def put(self, base_uri, new_document, content_type):
+        """
+            A little bit more than an usual HTTP PUT: is able to give to some blank nodes of this representation.
+        """
         if content_type in _JSON_TYPES:
             raise NotImplementedError("TODO: convert to JSON-LD??")
         elif content_type in _JSON_LD_TYPES:
-            raise NotImplementedError("TODO: 'reshape' the JSON-LD if necessary, decompose it into objects ")
+            raise NotImplementedError("TODO: 'reshape' the JSON-LD if necessary, decompose it into objects")
 
         # Presume a RDF graph
         else:
@@ -117,9 +122,6 @@ class CRUDController(object):
             obj = self._registry.find_object(obj_iri)
             if obj is not None:
                 obj.delete()
-
-    def append(self, base_uri, new_document, content_type):
-        raise NotImplementedError("TODO: implement it")
 
 
 def alter_bnode_triples(graph, bnode, new_uri_ref):

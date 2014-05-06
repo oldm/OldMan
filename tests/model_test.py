@@ -8,6 +8,7 @@ from ld_orm import default_model_factory
 from ld_orm.attribute import LDAttributeTypeCheckError, RequiredPropertyError
 from ld_orm.exceptions import ClassInstanceError, LDAttributeAccessError, LDUniquenessError
 from ld_orm.exceptions import WrongObjectError, ObjectNotFoundError, HashIriError, LDEditError
+from ld_orm.exceptions import DifferentBaseIRIError, ForbiddenSkolemizedIRIError
 from ld_orm.crud import CRUDController
 
 
@@ -895,7 +896,7 @@ class ModelTest(TestCase):
     def test_bob_controller_get(self):
         bob = self.create_bob()
         bob_iri = bob.id
-        bob_base_iri = bob_iri.split("#")[0]
+        bob_base_iri = bob.base_iri
         bob2 = crud_controller.get(bob_base_iri)
 
         self.assertEquals(bob.to_rdf("turtle"), bob2)
@@ -982,7 +983,7 @@ class ModelTest(TestCase):
     def test_controller_put_change_name(self):
         bob = self.create_bob()
         bob_iri = bob.id
-        doc_iri = bob_iri.split("#")[0]
+        doc_iri = bob.base_iri
         alice = LocalPerson.objects.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
                                    short_bio_en=alice_bio_en)
         alice_ref = URIRef(alice.id)
@@ -1007,3 +1008,38 @@ class ModelTest(TestCase):
         # Alice name is required
         with self.assertRaises(LDEditError):
             crud_controller.put(doc_iri, g2.serialize(format="turtle"), "turtle")
+
+    def test_controller_put_scope(self):
+        alice = self.create_alice()
+        alice_ref = URIRef(alice.id)
+        bob = self.create_bob()
+        bob_base_iri = bob.base_iri
+
+        bob_graph = Graph().parse(data=bob.to_rdf("xml"), format="xml")
+        # No problem
+        crud_controller.put(bob_base_iri, bob_graph.serialize(format="turtle"), "turtle")
+
+        new_alice_name = alice_name + " A."
+        bob_graph.add((alice_ref, FOAF.name, Literal(new_alice_name, datatype=XSD.string)))
+        with self.assertRaises(DifferentBaseIRIError):
+            crud_controller.put(bob_base_iri, bob_graph.serialize(format="xml"), "xml")
+
+    def test_controller_put_skolemized_iris(self):
+        alice = self.create_alice()
+        alice.gpg_key = self.create_gpg_key()
+        alice.save()
+        gpg_skolem_ref = URIRef(alice.gpg_key.id)
+        self.assertTrue(alice.gpg_key.is_blank_node())
+
+        bob = self.create_bob()
+        bob_graph = Graph().parse(data=bob.to_rdf("xml"), format="xml")
+        crud_controller.put(bob.base_iri, bob_graph.serialize(format="turtle"), "turtle")
+
+        wot_fingerprint = URIRef(WOT + "fingerprint")
+        bob_graph.add((gpg_skolem_ref, wot_fingerprint, Literal("DEADBEEF", datatype=XSD.hexBinary)))
+        with self.assertRaises(ForbiddenSkolemizedIRIError):
+            crud_controller.put(bob.base_iri, bob_graph.serialize(format="turtle"), "turtle")
+
+        # No modification
+        self.assertEquals({unicode(r) for r in data_graph.objects(gpg_skolem_ref, wot_fingerprint)},
+                          {gpg_fingerprint})
