@@ -107,7 +107,7 @@ class RandomFragmentIriGenerator(IriGenerator):
 
     def generate(self, base_iri):
         if base_iri is None:
-            raise RequiredBaseIRIError("Base IRI is required to generate an IRI")
+            raise RequiredBaseIRIError(u"Base IRI is required to generate an IRI")
         if '#' in base_iri:
-            raise RequiredBaseIRIError("%s is not a valid base IRI" % base_iri)
+            raise RequiredBaseIRIError(u"%s is not a valid base IRI" % base_iri)
         return u"%s#%s" % (base_iri, uuid1().hex)

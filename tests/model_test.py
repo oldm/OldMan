@@ -23,11 +23,11 @@ CERT = "http://www.w3.org/ns/auth/cert#"
 RDFS = "http://www.w3.org/2000/01/rdf-schema#"
 WOT = "http://xmlns.com/wot/0.1/"
 
-my_voc_prefix = "http://example.com/vocab#"
+MY_VOC = "http://example.com/vocab#"
 local_person_def = {
     "@context": [
         {
-            "myvoc": my_voc_prefix,
+            "myvoc": MY_VOC,
             "foaf": FOAF,
             "bio": BIO,
             "rel": REL,
@@ -75,7 +75,7 @@ schema_graph.parse(data=json.dumps(local_person_def), format="json-ld")
 local_rsa_key_def = {
     "@context": [
         {
-            "myvoc": my_voc_prefix,
+            "myvoc": MY_VOC,
             "rdfs": RDFS,
             "cert": CERT
         },
@@ -104,7 +104,7 @@ schema_graph.parse(data=json.dumps(local_rsa_key_def), format="json-ld")
 local_gpg_key_def = {
     "@context": [
         {
-            "myvoc": my_voc_prefix,
+            "myvoc": MY_VOC,
             "wot": WOT
         },
         #"http://www.w3.org/ns/hydra/core"
@@ -128,7 +128,7 @@ schema_graph.parse(data=json.dumps(local_gpg_key_def), format="json-ld")
 
 context = {
     "@context": {
-        "myvoc": my_voc_prefix,
+        "myvoc": MY_VOC,
         "rdfs": RDFS,
         "foaf": "http://xmlns.com/foaf/0.1/",
         "bio": "http://purl.org/vocab/bio/0.1/",
@@ -238,6 +238,9 @@ key_label = "Key 1"
 gpg_fingerprint = "1aef32b079fc3cabcfc26c5e54d0e38c002640d4"
 gpg_hex_id = "002640e2"
 
+prof_type = MY_VOC + "Professor"
+researcher_type = MY_VOC + "Researcher"
+
 
 class ModelTest(TestCase):
 
@@ -341,7 +344,7 @@ class ModelTest(TestCase):
     def test_dict_attributes(self):
         bob = self.create_bob()
         # Because of descriptors, these attributes should not appear in __dict__ except id and _is_blank_node
-        self.assertEquals(vars(bob).keys(), ["_id", "_is_blank_node"])
+        self.assertEquals(set(vars(bob).keys()), {"_id", "_is_blank_node", "_types"})
 
     def test_multiple_mboxes(self):
         bob = self.create_bob()
@@ -1047,3 +1050,37 @@ class ModelTest(TestCase):
         # No modification
         self.assertEquals({unicode(r) for r in data_graph.objects(gpg_skolem_ref, wot_fingerprint)},
                           {gpg_fingerprint})
+
+    def test_bob_additional_types(self):
+        additional_types = [prof_type]
+        bob = LocalPerson(name=bob_name, blog=bob_blog, mboxes=bob_emails, short_bio_en=bob_bio_en,
+                          short_bio_fr=bob_bio_fr, types=additional_types)
+        bob.save()
+        self.assertEquals(set(bob.types), set(bob.class_types + additional_types))
+        self.assertTrue(prof_type not in bob.class_types)
+
+        additional_types += [researcher_type]
+        bob.add_type(researcher_type)
+        self.assertEquals(set(bob.types), set(bob.class_types + additional_types))
+        self.assertTrue(researcher_type not in bob.class_types)
+
+    def test_alice_json_additional_types(self):
+        alice = self.create_alice()
+        dct = alice.to_dict()
+        additional_types = [prof_type, researcher_type]
+        dct["types"] += additional_types
+        alice.full_update(dct)
+        self.assertEquals(set(alice.types), set(alice.class_types + additional_types))
+        alice.full_update(dct)
+        self.assertEquals(len(alice.types), len(set(alice.types)))
+
+    def test_alice_rdf_additional_types(self):
+        alice = self.create_alice()
+        alice_ref = URIRef(alice.id)
+
+        graph = Graph().parse(data=alice.to_rdf("turtle"), format="turtle")
+        additional_types = [prof_type, researcher_type]
+        for t in additional_types:
+            graph.add((alice_ref, RDF.type, URIRef(t)))
+        alice.full_update_from_graph(graph)
+        self.assertEquals(set(alice.types), set(alice.class_types + additional_types))

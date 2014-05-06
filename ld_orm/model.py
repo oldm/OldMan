@@ -3,14 +3,14 @@ from six import add_metaclass
 from urlparse import urlparse
 import json
 from types import GeneratorType
-from rdflib import URIRef, Graph
+from rdflib import URIRef, Graph, RDF
 from rdflib.plugins.sparql.parser import ParseException
 from rdflib.plugins.sparql import prepareQuery
 from .attribute import LDAttribute
 from .property import PropertyType
 from .manager import InstanceManager, build_update_query_part
 from .exceptions import MissingClassAttributeError, ReservedAttributeNameError, SPARQLParseError
-from .exceptions import LDAttributeAccessError, LDUniquenessError, WrongObjectError
+from .exceptions import LDAttributeAccessError, LDUniquenessError, WrongObjectError, LDEditError
 
 
 class ModelBase(type):
@@ -20,7 +20,7 @@ class ModelBase(type):
     def __new__(mcs, name, bases, attributes):
         if name != "Model":
             required_fields = ["class_uri", "_storage_graph", "_context_dict", "_id_generator",
-                               "_ancestry", "types", "registry"]
+                               "_ancestry", "class_types", "registry"]
             for field in required_fields:
                 if field not in attributes:
                     raise MissingClassAttributeError("%s is required for class %s" % (field, name))
@@ -30,7 +30,8 @@ class ModelBase(type):
             # only used by the manager
             registry = attributes.pop("registry")
 
-            reserved_names = ["id", "_attributes", "objects", "base_iri"]
+            reserved_names = ["id", "_attributes", "objects", "base_iri", "_types",
+                              "types"]
             for field in reserved_names:
                 if field in attributes:
                     raise ReservedAttributeNameError("%s is reserved" % field)
@@ -58,7 +59,7 @@ class ModelBase(type):
             return False
         if cls.__name__ == "Model":
             return True
-        return cls.class_uri in subclass.types
+        return cls.class_uri in subclass.class_types
 
     @classmethod
     def clean_context(mcs, context):
@@ -90,9 +91,20 @@ class Model(object):
         else:
             self._id = self._id_generator.generate(base_iri=base_iri)
 
+        self._types = list(self.class_types)
+        if "types" in kwargs:
+            new_types = kwargs.pop("types")
+            if isinstance(new_types, str):
+                new_types = [new_types]
+            self._types += [t for t in new_types if t not in self._types]
+
         for k, v in kwargs.iteritems():
             setattr(self, k, v)
         self._is_blank_node = is_blank_node(self._id)
+
+    @property
+    def types(self):
+        return self._types
 
     @property
     def id(self):
@@ -101,6 +113,10 @@ class Model(object):
     @property
     def base_iri(self):
         return self._id.split('#')[0]
+
+    def add_type(self, additional_type):
+        if additional_type not in self._types:
+            self._types.append(additional_type)
 
     @classmethod
     def load_from_graph(cls, id, subgraph, create=True):
@@ -140,7 +156,6 @@ class Model(object):
         """
         for attr in self._attributes.values():
             attr.check_validity(self)
-
 
     def is_blank_node(self):
         return self._is_blank_node
@@ -208,8 +223,7 @@ class Model(object):
         dct = {name: self._convert_value(getattr(self, name), ignored_iris, remove_none_values,
                                          include_different_contexts)
                for name, attr in self._attributes.iteritems()
-               if not attr.is_write_only
-              }
+               if not attr.is_write_only}
         # filter None values
         if remove_none_values:
             dct = {k: v for k, v in dct.iteritems() if v is not None}
@@ -300,7 +314,7 @@ class Model(object):
         if "id" not in full_dict:
             raise WrongObjectError("Cannot update an object without IRI")
         elif full_dict["id"] != self._id:
-            raise WrongObjectError("Wrong IRI %s (%s was expected)" % (full_dict["id"], self._id) )
+            raise WrongObjectError("Wrong IRI %s (%s was expected)" % (full_dict["id"], self._id))
 
         for key in full_dict:
             if key not in self._attributes and key not in ["@context", "id", "types"]:
@@ -313,11 +327,26 @@ class Model(object):
                 value = set(value)
             setattr(self, attr_name, value)
 
+        if "types" in full_dict:
+            new_types = full_dict["types"]
+            if isinstance(new_types, (list, str)):
+                self._types += [t for t in new_types if t not in self._types]
+            elif isinstance(new_types, str):
+                new_type = new_types
+                if not new_type in self._types:
+                    self._types.append(new_type)
+            else:
+                raise LDEditError("'types' attribute is not a list, a set or a string but is %s " % new_types)
+
         self.save(is_end_user)
 
     def full_update_from_graph(self, subgraph, is_end_user=True, save=True):
         for attr in self._attributes.values():
             attr.update_from_graph(self, subgraph, self._storage_graph)
+        #Types
+        new_types = {unicode(t) for t in subgraph.objects(URIRef(self._id), RDF.type)}
+        self._types += [t for t in new_types if t not in self._types]
+
         if save:
             self.save(is_end_user)
 
@@ -326,6 +355,7 @@ def is_blank_node(uri):
     # External skolemized blank nodes are not considered as blank nodes
     id_result = urlparse(uri)
     return (u"/.well-known/genid/" in id_result.path) and (id_result.hostname == u"localhost")
+
 
 def should_delete_object(obj):
     """

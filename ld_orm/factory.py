@@ -73,7 +73,7 @@ class ModelFactory(object):
 
         special_attributes = {"class_uri": class_uri,
                               "_ancestry": ancestry,
-                              "types": ancestry.bottom_up,
+                              "class_types": ancestry.bottom_up,
                               "_context_dict": context,
                               "_id_generator": id_generator,
                               "_storage_graph": storage_graph,
