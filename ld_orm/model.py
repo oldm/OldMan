@@ -188,12 +188,13 @@ class Model(object):
 
         query = build_update_query_part(u"DELETE", self._id, former_lines)
         query += build_update_query_part(u"INSERT", self._id, new_lines)
-        query += u"WHERE {}"
-        #print query
-        try:
-            self._storage_graph.update(query)
-        except ParseException as e:
-            raise SPARQLParseError(u"%s\n %s" % (query, e))
+        if len(query) > 0:
+            query += u"WHERE {}"
+            #print query
+            try:
+                self._storage_graph.update(query)
+            except ParseException as e:
+                raise SPARQLParseError(u"%s\n %s" % (query, e))
 
         for obj in objects_to_delete:
             obj.delete()

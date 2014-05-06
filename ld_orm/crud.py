@@ -1,6 +1,7 @@
 from rdflib import BNode, Graph, RDF
 from .exceptions import LDEditError, DifferentBaseIRIError, ForbiddenSkolemizedIRIError
 from .model import is_blank_node
+from .registry import extract_types
 
 _JSON_TYPES = ["application/json", "json"]
 _JSON_LD_TYPES = ["application/ld+json", "json-ld"]
@@ -97,13 +98,15 @@ class CRUDController(object):
             elif obj_iri.split("#")[0] != base_uri:
                 raise DifferentBaseIRIError("%s is not the base IRI of %s" % (base_uri, obj_iri))
 
-            model_class = self._registry.find_model_class(obj_iri)
-            obj = model_class.objects.get(id=obj_iri)
-            # If new
-            if obj is None:
-                obj = model_class.load_from_graph(obj_iri, g, create=True)
-            else:
+            types = extract_types(obj_iri, g)
+            model_class = self._registry.select_model_class(types)
+            try:
+                obj = model_class.objects.get(id=obj_iri)
                 obj.full_update_from_graph(g, save=False)
+            except ClassInstanceError:
+                # New object
+                obj = model_class.load_from_graph(obj_iri, g, create=True)
+
             objs.append(obj)
 
         #Check validity before saving
@@ -125,12 +128,12 @@ class CRUDController(object):
 
 
 def alter_bnode_triples(graph, bnode, new_uri_ref):
-    subject_triples = list(graph.triples(bnode, None, None))
+    subject_triples = list(graph.triples((bnode, None, None)))
     for _, p, o in subject_triples:
         graph.remove((bnode, p, o))
         graph.add((new_uri_ref, p, o))
 
-    object_triples = list(graph.triples(None, None, bnode))
+    object_triples = list(graph.triples((None, None, bnode)))
     for s, p, _ in object_triples:
         graph.remove((s, p, bnode))
         graph.add((s, p, new_uri_ref))

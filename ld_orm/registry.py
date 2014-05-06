@@ -40,7 +40,7 @@ class ModelRegistry(object):
         return {unicode(u) for u, in self._default_graph.query(query)}
 
     def find_model_class(self, object_uri):
-        types = {t.toPython() for t in self._default_graph.objects(URIRef(object_uri), RDF.type)}
+        types = extract_types(object_uri, self._default_graph)
         return self.select_model_class(types)
 
     def find_object_from_base_uri(self, base_uri):
@@ -86,3 +86,7 @@ class ModelRegistry(object):
                 return untyped_model
 
         raise LDInternalError("No model found, no untyped model registered")
+
+
+def extract_types(object_uri, graph):
+    return {t.toPython() for t in graph.objects(URIRef(object_uri), RDF.type)}
