@@ -4,6 +4,7 @@
 """
 
 from unittest import TestCase
+from os import path
 from rdflib import ConjunctiveGraph, URIRef
 import json
 from copy import copy
@@ -21,7 +22,8 @@ local_person_def = {
         {
             "ex": EXAMPLE
         },
-        "http://www.w3.org/ns/hydra/core"
+        #"http://www.w3.org/ns/hydra/core"
+        json.load(open(path.join(path.dirname(__file__), "hydra_core.jsonld")))["@context"]
     ],
     "@id": "ex:LocalClass",
     "@type": "hydra:Class",

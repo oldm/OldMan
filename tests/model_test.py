@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from unittest import TestCase
+from os import path
 from rdflib import ConjunctiveGraph, Graph, URIRef, Literal, RDF, XSD
 from rdflib.namespace import FOAF
 import json
@@ -33,7 +34,8 @@ local_person_def = {
             "cert": CERT,
             "wot": WOT
         },
-        "http://www.w3.org/ns/hydra/core"
+        #"http://www.w3.org/ns/hydra/core"
+        json.load(open(path.join(path.dirname(__file__), "hydra_core.jsonld")))["@context"]
     ],
     "@id": "myvoc:LocalPerson",
     "@type": "hydra:Class",
@@ -77,7 +79,8 @@ local_rsa_key_def = {
             "rdfs": RDFS,
             "cert": CERT
         },
-        "http://www.w3.org/ns/hydra/core"
+        #"http://www.w3.org/ns/hydra/core"
+        json.load(open(path.join(path.dirname(__file__), "hydra_core.jsonld")))["@context"]
     ],
     "@id": "myvoc:LocalRSAPublicKey",
     "@type": "hydra:Class",
@@ -104,7 +107,8 @@ local_gpg_key_def = {
             "myvoc": my_voc_prefix,
             "wot": WOT
         },
-        "http://www.w3.org/ns/hydra/core"
+        #"http://www.w3.org/ns/hydra/core"
+        json.load(open(path.join(path.dirname(__file__), "hydra_core.jsonld")))["@context"]
     ],
     "@id": "myvoc:LocalGPGPublicKey",
     "@type": "hydra:Class",
