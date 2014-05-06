@@ -1,5 +1,5 @@
-from rdflib import BNode, Graph, RDF
-from .exceptions import LDEditError, DifferentBaseIRIError, ForbiddenSkolemizedIRIError
+from rdflib import BNode, Graph, RDF, URIRef
+from .exceptions import DifferentBaseIRIError, ForbiddenSkolemizedIRIError, ClassInstanceError
 from .model import is_blank_node
 from .registry import extract_types
 
@@ -72,12 +72,12 @@ class CRUDController(object):
         for bnode in bnode_subjects:
             types = {unicode(t) for t in g.objects(bnode, RDF.type)}
             model_class = self._registry.select_model_class(types)
-            obj = model_class()
-            alter_bnode_triples(g, bnode, obj.id)
+            obj = model_class(base_iri=base_uri)
+            alter_bnode_triples(g, bnode, URIRef(obj.id))
             obj.full_update_from_graph(g, save=False)
             objs.append(obj)
 
-            deps = {o for _, p, o in g.triples(bnode, None, None)
+            deps = {o for _, p, o in g.triples((bnode, None, None))
                     if isinstance(o, BNode)}
             if len(deps) > 0:
                 dependent_objs.append(obj)

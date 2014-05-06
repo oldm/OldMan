@@ -125,6 +125,13 @@ class ForbiddenSkolemizedIRIError(LDEditError):
     pass
 
 
+class RequiredBaseIRIError(LDEditError):
+    """
+        No base IRI or an invalid IRI has been given
+    """
+    pass
+
+
 class LDAccessError(LDUserError):
     """
         Error when accessing objects

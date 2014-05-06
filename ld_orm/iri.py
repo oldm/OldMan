@@ -1,7 +1,7 @@
 from threading import Lock
 from uuid import uuid1
 from rdflib.plugins.sparql import prepareQuery
-from .exceptions import DataStoreError
+from .exceptions import DataStoreError, RequiredBaseIRIError
 
 
 class IriGenerator(object):
@@ -19,7 +19,7 @@ class RandomPrefixedIriGenerator(IriGenerator):
         self._prefix = prefix
         self._fragment = fragment
 
-    def generate(self):
+    def generate(self, **kwargs):
         partial_iri = u"%s%s" % (self._prefix, uuid1().hex)
         if self._fragment is not None:
             return u"%s#%s" % (partial_iri, self._fragment)
@@ -83,7 +83,7 @@ class IncrementalIriGenerator(IriGenerator):
                 <%s> ldorm:nextNumber 0 .
                 } WHERE {}""" % self._class_uri)
 
-    def generate(self):
+    def generate(self, **kwargs):
         # Critical section
         self.mutex.acquire()
         try:
@@ -101,3 +101,13 @@ class IncrementalIriGenerator(IriGenerator):
         if self._fragment is not None:
             return u"%s#%s" % (partial_iri, self._fragment)
         return partial_iri
+
+
+class RandomFragmentIriGenerator(IriGenerator):
+
+    def generate(self, base_iri):
+        if base_iri is None:
+            raise RequiredBaseIRIError("Base IRI is required to generate an IRI")
+        if '#' in base_iri:
+            raise RequiredBaseIRIError("%s is not a valid base IRI" % base_iri)
+        return u"%s#%s" % (base_iri, uuid1().hex)

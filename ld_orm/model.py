@@ -30,8 +30,8 @@ class ModelBase(type):
             # only used by the manager
             registry = attributes.pop("registry")
 
-            reserved_attributes = ["id", "_attributes", "objects"]
-            for field in reserved_attributes:
+            reserved_names = ["id", "_attributes", "objects", "base_iri"]
+            for field in reserved_names:
                 if field in attributes:
                     raise ReservedAttributeNameError("%s is reserved" % field)
 
@@ -75,7 +75,7 @@ class Model(object):
 
     existence_query = prepareQuery(u"ASK {?id ?p ?o .}")
 
-    def __init__(self, create=True, **kwargs):
+    def __init__(self, create=True, base_iri=None, **kwargs):
         """
             Does not save (like Django)
         """
@@ -88,7 +88,7 @@ class Model(object):
                 if exist:
                     raise LDUniquenessError("Object %s already exist" % self._id)
         else:
-            self._id = self._id_generator.generate()
+            self._id = self._id_generator.generate(base_iri=base_iri)
 
         for k, v in kwargs.iteritems():
             setattr(self, k, v)
