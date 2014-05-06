@@ -134,6 +134,14 @@ class Model(object):
                 return False
         return True
 
+    def check_validity(self):
+        """
+            May raise a LDEditError
+        """
+        for attr in self._attributes.values():
+            attr.check_validity(self)
+
+
     def is_blank_node(self):
         return self._is_blank_node
 

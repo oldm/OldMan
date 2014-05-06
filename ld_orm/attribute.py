@@ -1,7 +1,7 @@
 from collections import namedtuple
 from weakref import WeakKeyDictionary
 from rdflib import Literal
-from .exceptions import LDAttributeTypeCheckError, RequiredPropertyError, ReadOnlyAttributeError
+from .exceptions import LDAttributeTypeCheckError, RequiredPropertyError, ReadOnlyAttributeError, LDEditError
 from ld_orm.parsing.value import AttributeValueExtractorFromGraph
 from .value_format import ValueFormatError
 
@@ -94,7 +94,7 @@ class LDAttribute(object):
         try:
             self.check_validity(instance, is_end_user)
             return True
-        except RequiredPropertyError:
+        except LDEditError:
             return False
 
     @property
@@ -106,20 +106,23 @@ class LDAttribute(object):
         return self._value_format
 
     def check_validity(self, instance, is_end_user=True):
-        if self.is_locally_satisfied(instance, is_end_user):
-            return
+        self._check_local_constraints(instance, is_end_user)
+        self._check_requirement(instance)
 
+    def _check_local_constraints(self, instance, is_end_user):
+        #Read-only constraint
+        if is_end_user and self.is_read_only and self.has_new_value(instance):
+            raise ReadOnlyAttributeError("Attribute %s is not editable by end users" % self.name)
+
+    def _check_requirement(self, instance):
+        if (not self.ld_property.is_required) or self.has_value(instance):
+            return
         for other in self.other_attributes:
-            if other.is_locally_satisfied(instance, is_end_user):
+            if other.has_value(instance):
                 return
         raise RequiredPropertyError(self.name)
 
-    def is_locally_satisfied(self, instance, is_end_user):
-        if is_end_user:
-            if self.is_read_only and self.has_new_value(instance):
-                raise ReadOnlyAttributeError("Attribute %s is not editable by end users" % self.name)
-        if not self.is_required:
-            return True
+    def has_value(self, instance):
         return self._data.get(instance) is not None
 
     def has_new_value(self, instance):

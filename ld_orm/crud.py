@@ -102,13 +102,11 @@ class CRUDController(object):
             objs.append(obj)
 
         #Check validity before saving
+        #May raise a LDEditError
         for obj in objs:
-            if not obj.is_valid():
-                #TODO: improve the report
-                raise LDEditError("Obj %s is invalid. %s" % (obj.id, obj.to_json()))
+            obj.check_validity()
 
-        #Should not throw some exceptions
-        #TODO: improve it as a transaction
+        #TODO: improve it as a transaction (really necessary?)
         for obj in objs:
             obj.save()
 
