@@ -152,12 +152,10 @@ context = {
         },
         "short_bio_fr": {
             "@id": "bio:olb",
-            "@type": "xsd:string",
             "@language": "fr"
         },
         "short_bio_en": {
             "@id": "bio:olb",
-            "@type": "xsd:string",
             "@language": "en"
         },
         "friends": {

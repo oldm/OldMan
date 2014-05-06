@@ -150,9 +150,9 @@ class LDProperty(object):
                 jsonld_type = "@id"
             elif self.type == PropertyType.DatatypeProperty:
                 jsonld_type = self.default_datatype
-            else:
+            elif language is None:
                 #TODO: find a better Exception type
-                raise NotImplementedError("Untyped JSON-LD value are not (yet?) supported")
+                raise NotImplementedError("Untyped JSON-LD value (with no language) are not (yet?) supported")
 
         if len([md for md in self._tmp_attr_mds
                     if md.name == name]) > 0:
