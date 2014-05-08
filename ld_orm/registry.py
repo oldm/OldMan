@@ -28,7 +28,7 @@ class ModelRegistry(object):
     def get_model_class(self, class_uri):
         return self._model_classes.get(class_uri)
 
-    def find_object(self, object_uri):
+    def get_object(self, object_uri):
         cls = self.find_model_class(object_uri)
         return cls.objects.get(id=object_uri)
 

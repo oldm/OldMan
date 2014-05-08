@@ -84,7 +84,7 @@ class InstanceManager(object):
 
     def get_any(self, id):
         """ Finds a object from any model class """
-        return self.registry.find_object(id)
+        return self.registry.get_object(id)
 
     def _new_instance(self, id, instance_graph):
         #print "Instance graph: %s" % instance_graph.serialize(format="turtle")

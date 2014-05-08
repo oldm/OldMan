@@ -2,15 +2,17 @@
 
 from unittest import TestCase
 from os import path
+import json
+
 from rdflib import ConjunctiveGraph, Graph, URIRef, Literal, RDF, XSD
 from rdflib.namespace import FOAF
-import json
+
 from ld_orm import default_model_factory
 from ld_orm.attribute import LDAttributeTypeCheckError, RequiredPropertyError
 from ld_orm.exceptions import ClassInstanceError, LDAttributeAccessError, LDUniquenessError
 from ld_orm.exceptions import WrongObjectError, ObjectNotFoundError, HashIriError, LDEditError
 from ld_orm.exceptions import DifferentBaseIRIError, ForbiddenSkolemizedIRIError
-from ld_orm.crud import CRUDController
+from ld_orm.rest.crud import CRUDController
 
 
 default_graph = ConjunctiveGraph()
@@ -137,7 +139,7 @@ context = {
         "cert": CERT,
         "wot": WOT,
         "id": "@id",
-        "type": "@type",
+        "types": "@type",
         "LocalPerson": "myvoc:LocalPerson",
         "Person": "foaf:Person",
         "LocalRSAPublicKey": "myvoc:LocalRSAPublicKey",
@@ -550,6 +552,7 @@ class ModelTest(TestCase):
         self.assertEquals(set(bob_json["mboxes"]), bob_emails)
         self.assertEquals(bob_json["short_bio_en"], bob_bio_en)
         self.assertEquals(bob_json["short_bio_fr"], bob_bio_fr)
+        self.assertEquals(bob_json["types"], LocalPerson.class_types)
 
     def test_bob_jsonld(self):
         bob = self.create_bob()
@@ -561,6 +564,7 @@ class ModelTest(TestCase):
         self.assertEquals(bob_jsonld["short_bio_fr"], bob_bio_fr)
         self.assertTrue("@context" in bob_jsonld)
         self.assertEquals(bob_jsonld["@context"], context["@context"])
+        self.assertEquals(bob_jsonld["types"], LocalPerson.class_types)
 
     def test_rsa_jsonld(self):
         rsa_key = self.create_rsa_key()
@@ -981,7 +985,7 @@ class ModelTest(TestCase):
         bob_rdf = bob.to_rdf("turtle")
         g.parse(data=bob_rdf, format="turtle")
         #No Alice
-        crud_controller.put(doc_iri, g.serialize(format="turtle"), "turtle")
+        crud_controller.update(doc_iri, g.serialize(format="turtle"), "turtle")
 
         self.assertTrue(bool(data_graph.query(ask_bob)))
         # Should disappear because not in graph
@@ -989,10 +993,9 @@ class ModelTest(TestCase):
 
     def test_controller_put_change_name(self):
         bob = self.create_bob()
-        bob_iri = bob.id
         doc_iri = bob.base_iri
         alice = LocalPerson.objects.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
-                                   short_bio_en=alice_bio_en)
+                                           short_bio_en=alice_bio_en)
         alice_ref = URIRef(alice.id)
         bob_ref = URIRef(bob.id)
         new_alice_name = alice_name + " A."
@@ -1005,7 +1008,7 @@ class ModelTest(TestCase):
         g1.remove((bob_ref, FOAF.name, Literal(bob_name, datatype=XSD.string)))
         g1.add((bob_ref, FOAF.name, Literal(new_bob_name, datatype=XSD.string)))
 
-        crud_controller.put(doc_iri, g1.serialize(format="turtle"), "turtle")
+        crud_controller.update(doc_iri, g1.serialize(format="turtle"), "turtle")
         self.assertEquals({unicode(o) for o in data_graph.objects(alice_ref, FOAF.name)}, {new_alice_name})
         self.assertEquals({unicode(o) for o in data_graph.objects(bob_ref, FOAF.name)}, {new_bob_name})
 
@@ -1014,7 +1017,32 @@ class ModelTest(TestCase):
         g2.remove((alice_ref, FOAF.name, Literal(new_alice_name, datatype=XSD.string)))
         # Alice name is required
         with self.assertRaises(LDEditError):
-            crud_controller.put(doc_iri, g2.serialize(format="turtle"), "turtle")
+            crud_controller.update(doc_iri, g2.serialize(format="turtle"), "turtle")
+
+    def test_controller_put_json(self):
+        alice = self.create_alice()
+        alice_iri = alice.id
+        alice_base_iri = alice.base_iri
+        alice_ref = URIRef(alice_iri)
+
+        new_alice_name = "New alice"
+        alice.name = new_alice_name
+        js_dump = alice.to_json()
+        new_new_alice_name = "New new alice"
+        alice.name = new_new_alice_name
+        jsld_dump = alice.to_jsonld()
+
+        del alice
+        LocalPerson.objects.clear_cache()
+        self.assertEquals(unicode(data_graph.value(alice_ref, FOAF.name)), alice_name)
+
+        crud_controller.update(alice_base_iri, jsld_dump, "application/ld+json")
+        self.assertEquals(unicode(data_graph.value(alice_ref, FOAF.name)), new_new_alice_name)
+
+        crud_controller.update(alice_base_iri, js_dump, "application/json")
+        self.assertEquals(unicode(data_graph.value(alice_ref, FOAF.name)), new_alice_name)
+
+
 
     def test_controller_put_scope(self):
         alice = self.create_alice()
@@ -1024,12 +1052,12 @@ class ModelTest(TestCase):
 
         bob_graph = Graph().parse(data=bob.to_rdf("xml"), format="xml")
         # No problem
-        crud_controller.put(bob_base_iri, bob_graph.serialize(format="turtle"), "turtle")
+        crud_controller.update(bob_base_iri, bob_graph.serialize(format="turtle"), "turtle")
 
         new_alice_name = alice_name + " A."
         bob_graph.add((alice_ref, FOAF.name, Literal(new_alice_name, datatype=XSD.string)))
         with self.assertRaises(DifferentBaseIRIError):
-            crud_controller.put(bob_base_iri, bob_graph.serialize(format="xml"), "xml")
+            crud_controller.update(bob_base_iri, bob_graph.serialize(format="xml"), "xml")
 
     def test_controller_put_skolemized_iris(self):
         alice = self.create_alice()
@@ -1040,12 +1068,12 @@ class ModelTest(TestCase):
 
         bob = self.create_bob()
         bob_graph = Graph().parse(data=bob.to_rdf("xml"), format="xml")
-        crud_controller.put(bob.base_iri, bob_graph.serialize(format="turtle"), "turtle")
+        crud_controller.update(bob.base_iri, bob_graph.serialize(format="turtle"), "turtle")
 
         wot_fingerprint = URIRef(WOT + "fingerprint")
         bob_graph.add((gpg_skolem_ref, wot_fingerprint, Literal("DEADBEEF", datatype=XSD.hexBinary)))
         with self.assertRaises(ForbiddenSkolemizedIRIError):
-            crud_controller.put(bob.base_iri, bob_graph.serialize(format="turtle"), "turtle")
+            crud_controller.update(bob.base_iri, bob_graph.serialize(format="turtle"), "turtle")
 
         # No modification
         self.assertEquals({unicode(r) for r in data_graph.objects(gpg_skolem_ref, wot_fingerprint)},

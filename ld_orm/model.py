@@ -114,6 +114,10 @@ class Model(object):
     def base_iri(self):
         return self._id.split('#')[0]
 
+    @property
+    def context_dict(self):
+        return self._context_dict
+
     def add_type(self, additional_type):
         if additional_type not in self._types:
             self._types.append(additional_type)

@@ -1,10 +1,11 @@
 from unittest import TestCase
+
 from rdflib import ConjunctiveGraph, URIRef, RDF, BNode, Graph
+
 from ld_orm import default_model_factory
-from ld_orm.model import Model
 from ld_orm.iri import RandomFragmentIriGenerator
 from ld_orm.exceptions import RequiredBaseIRIError
-from ld_orm.crud import CRUDController
+from ld_orm.rest.crud import CRUDController
 
 
 EXAMPLE = "http://localhost/vocab#"
@@ -59,7 +60,7 @@ class DatatypeTest(TestCase):
         base_iri = "http://example.org/doc2"
         g = Graph()
         g.add((BNode(), RDF.type, URIRef(EXAMPLE + "MyClass")))
-        crud_controller.put(base_iri, g.serialize(format="turtle"), "turtle")
+        crud_controller.update(base_iri, g.serialize(format="turtle"), "turtle")
 
         obj_iri = model_generator.registry.find_object_from_base_uri(base_iri)
         self.assertTrue(obj_iri is not None)
@@ -76,6 +77,6 @@ class DatatypeTest(TestCase):
         <#this> rdf:type <http://localhost/vocab#MyClass> .
         """
         base_iri = "http://example.org/doc3"
-        crud_controller.put(base_iri, ttl, "turtle")
+        crud_controller.update(base_iri, ttl, "turtle")
         obj_iri = model_generator.registry.find_object_from_base_uri(base_iri)
         self.assertEquals(obj_iri, base_iri + "#this")
