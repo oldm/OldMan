@@ -1,7 +1,7 @@
 from threading import Lock
 from uuid import uuid1
 from rdflib.plugins.sparql import prepareQuery
-from .exceptions import DataStoreError, RequiredBaseIRIError
+from .exception import OMDataStoreError, OMRequiredBaseIRIError
 
 
 class IriGenerator(object):
@@ -74,7 +74,7 @@ class IncrementalIriGenerator(IriGenerator):
         if len(numbers) == 0:
             self.reset_counter()
         elif len(numbers) > 1:
-            raise DataStoreError(u"Multiple counter for class %s" % self._class_uri)
+            raise OMDataStoreError(u"Multiple counter for class %s" % self._class_uri)
 
     def reset_counter(self):
         self._graph.update(u"""
@@ -93,9 +93,9 @@ class IncrementalIriGenerator(IriGenerator):
             self.mutex.release()
 
         if len(numbers) == 0:
-            raise DataStoreError(u"No counter for class %s (has disappeared)" % self._class_uri)
+            raise OMDataStoreError(u"No counter for class %s (has disappeared)" % self._class_uri)
         elif len(numbers) > 1:
-            raise DataStoreError(u"Multiple counter for class %s" % self._class_uri)
+            raise OMDataStoreError(u"Multiple counter for class %s" % self._class_uri)
 
         partial_iri = u"%s%d" % (self._prefix, numbers[0])
         if self._fragment is not None:
@@ -107,7 +107,7 @@ class RandomFragmentIriGenerator(IriGenerator):
 
     def generate(self, base_iri):
         if base_iri is None:
-            raise RequiredBaseIRIError(u"Base IRI is required to generate an IRI")
+            raise OMRequiredBaseIRIError(u"Base IRI is required to generate an IRI")
         if '#' in base_iri:
-            raise RequiredBaseIRIError(u"%s is not a valid base IRI" % base_iri)
+            raise OMRequiredBaseIRIError(u"%s is not a valid base IRI" % base_iri)
         return u"%s#%s" % (base_iri, uuid1().hex)

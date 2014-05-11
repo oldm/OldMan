@@ -1,9 +1,9 @@
 from rdflib import Namespace, URIRef
 from rdflib.plugins.sparql import prepareQuery
-from ld_orm.property import LDProperty
+from oldman.property import OMProperty
 
 
-class LDPropertyExtractor(object):
+class OMPropertyExtractor(object):
     """
         Supported Property Extractor
     """
@@ -17,7 +17,7 @@ class LDPropertyExtractor(object):
         raise NotImplementedError()
 
 
-class HydraPropertyExtractor(LDPropertyExtractor):
+class HydraPropertyExtractor(OMPropertyExtractor):
     """
         Extracts supported properties from Hydra RDF descriptions
 
@@ -71,6 +71,6 @@ class HydraPropertyExtractor(LDPropertyExtractor):
 
         for property_uri, (is_required, read_only, write_only) in prop_params.iteritems():
             if not property_uri in properties:
-                properties[property_uri] = LDProperty(property_uri, class_uri, is_required=is_required,
+                properties[property_uri] = OMProperty(property_uri, class_uri, is_required=is_required,
                                                       read_only=read_only, write_only=write_only)
         return properties

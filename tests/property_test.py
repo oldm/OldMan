@@ -7,8 +7,8 @@ from unittest import TestCase
 from os import path
 from rdflib import ConjunctiveGraph, URIRef, Literal, Graph, XSD
 import json
-from ld_orm import default_model_factory
-from ld_orm.exceptions import LDPropertyDefError, ReadOnlyAttributeError
+from oldman import default_model_factory
+from oldman.exception import OMPropertyDefError, OMReadOnlyAttributeError
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
@@ -101,7 +101,7 @@ class PropertyTest(TestCase):
         LocalClass.objects.clear_cache()
 
     def test_read_and_write_only(self):
-        with self.assertRaises(LDPropertyDefError):
+        with self.assertRaises(OMPropertyDefError):
             model_generator.generate("BadClass", context, data_graph)
 
     def test_write_only(self):
@@ -120,7 +120,7 @@ class PropertyTest(TestCase):
         # End-user
         end_user_str = "A user is not allowed to write this"
         obj.ro_property = end_user_str
-        with self.assertRaises(ReadOnlyAttributeError):
+        with self.assertRaises(OMReadOnlyAttributeError):
             obj.save()
         #Admin
         admin_str = "An admin is allowed to write it"
@@ -128,7 +128,7 @@ class PropertyTest(TestCase):
         obj.save(is_end_user=False)
         self.assertEquals(admin_str, obj.ro_property)
 
-        with self.assertRaises(ReadOnlyAttributeError):
+        with self.assertRaises(OMReadOnlyAttributeError):
             LocalClass.objects.create(ro_property=end_user_str)
 
     def test_read_only_update(self):
@@ -143,7 +143,7 @@ class PropertyTest(TestCase):
         obj.full_update(obj_dict)
 
         obj_dict["ro_property"] = "Writing a read-only property"
-        with self.assertRaises(ReadOnlyAttributeError):
+        with self.assertRaises(OMReadOnlyAttributeError):
             obj.full_update(obj_dict)
         obj.full_update(obj_dict, is_end_user=False)
 
@@ -164,7 +164,7 @@ class PropertyTest(TestCase):
         str2 = "Writing a read-only property"
         graph.add((obj_iri, ro_prop, Literal(str2, datatype=XSD.string)))
         print graph.serialize(format="turtle")
-        with self.assertRaises(ReadOnlyAttributeError):
+        with self.assertRaises(OMReadOnlyAttributeError):
             obj.full_update_from_graph(graph)
         obj.full_update_from_graph(graph, is_end_user=False)
 

@@ -1,18 +1,20 @@
 from collections import namedtuple
 from weakref import WeakKeyDictionary
+
 from rdflib import Literal
-from .exceptions import LDAttributeTypeCheckError, RequiredPropertyError, ReadOnlyAttributeError, LDEditError
-from ld_orm.parsing.value import AttributeValueExtractorFromGraph
-from .value_format import ValueFormatError
+
+from .exception import OMAttributeTypeCheckError, OMRequiredPropertyError, OMReadOnlyAttributeError, OMEditError
+from oldman.parsing.value import AttributeValueExtractorFromGraph
+from oldman.validation.value_format import ValueFormatError
 
 
-LDAttributeMetadata = namedtuple("DataAttributeMetadata", ["name", "property", "language", "jsonld_type",
+OMAttributeMetadata = namedtuple("DataAttributeMetadata", ["name", "property", "language", "jsonld_type",
                                                            "container", "reversed"])
 
 
-class LDAttribute(object):
+class OMAttribute(object):
     """
-        A LD attribute is a key-value pair.
+        An OMAttribute is a key-value pair.
 
         The key is the name of the attribute. Technically, the key is a JSON-LD term,
         namely "a short-hand string that expands to an IRI or a blank node identifier"
@@ -64,7 +66,7 @@ class LDAttribute(object):
         return self._metadata.property.is_write_only
 
     @property
-    def ld_property(self):
+    def om_property(self):
         return self._metadata.property
 
     @property
@@ -88,13 +90,13 @@ class LDAttribute(object):
         """
             Attributes of the same property
         """
-        return self.ld_property.attributes.difference([self])
+        return self.om_property.attributes.difference([self])
 
     def is_valid(self, instance, is_end_user=True):
         try:
             self.check_validity(instance, is_end_user)
             return True
-        except LDEditError:
+        except OMEditError:
             return False
 
     @property
@@ -112,15 +114,15 @@ class LDAttribute(object):
     def _check_local_constraints(self, instance, is_end_user):
         #Read-only constraint
         if is_end_user and self.is_read_only and self.has_new_value(instance):
-            raise ReadOnlyAttributeError("Attribute %s is not editable by end users" % self.name)
+            raise OMReadOnlyAttributeError("Attribute %s is not editable by end users" % self.name)
 
     def _check_requirement(self, instance):
-        if (not self.ld_property.is_required) or self.has_value(instance):
+        if (not self.om_property.is_required) or self.has_value(instance):
             return
         for other in self.other_attributes:
             if other.has_value(instance):
                 return
-        raise RequiredPropertyError(self.name)
+        raise OMRequiredPropertyError(self.name)
 
     def has_value(self, instance):
         return self._data.get(instance) is not None
@@ -157,7 +159,7 @@ class LDAttribute(object):
         else:
             converted_values = [self._encode_value(v) for v in vs]
 
-        property_uri = self.ld_property.uri
+        property_uri = self.om_property.uri
         lines = ""
 
         if self.container == "@list":
@@ -229,9 +231,9 @@ class LDAttribute(object):
         if value is None:
             return
 
-        required_container_type = LDAttribute.CONTAINER_REQUIREMENTS[self.container]
+        required_container_type = OMAttribute.CONTAINER_REQUIREMENTS[self.container]
         if not isinstance(value, required_container_type):
-            raise LDAttributeTypeCheckError(u"A container (%s) was expected instead of %s"
+            raise OMAttributeTypeCheckError(u"A container (%s) was expected instead of %s"
                                             % (required_container_type, type(value)))
         try:
             if isinstance(value, (list, set, dict)):
@@ -239,7 +241,7 @@ class LDAttribute(object):
             else:
                 self._value_format.check_value(value)
         except ValueFormatError as e:
-            raise LDAttributeTypeCheckError(unicode(e))
+            raise OMAttributeTypeCheckError(unicode(e))
 
     def _check_container(self, value):
         if not self.container:
@@ -249,7 +251,7 @@ class LDAttribute(object):
             # List declaration is required (default: set)
             # TODO: what about dict?
             if isinstance(value, list):
-                raise LDAttributeTypeCheckError(u"Undeclared list %s assigned to %s ."
+                raise OMAttributeTypeCheckError(u"Undeclared list %s assigned to %s ."
                                                 u"For using a list, '@container': '@list' must be declared"
                                                 u"in the JSON-LD context." % (value, self.name))
 
@@ -258,13 +260,13 @@ class LDAttribute(object):
             self._value_format.check_value(v)
 
 
-class ObjectLDAttribute(LDAttribute):
+class ObjectOMAttribute(OMAttribute):
 
     def __init__(self, metadata, value_format):
-        LDAttribute.__init__(self, metadata, value_format)
+        OMAttribute.__init__(self, metadata, value_format)
 
     def __get__(self, instance, owner):
-        uris = LDAttribute.__get__(self, instance, None)
+        uris = OMAttribute.__get__(self, instance, None)
         if isinstance(uris, (list, set)):
             # Returns a generator
             return (type(instance).objects.get_any(uri)
@@ -288,8 +290,8 @@ class ObjectLDAttribute(LDAttribute):
             if self.container == "@index":
                 raise NotImplementedError(u"Index maps are not yet supported")
             else:
-                raise LDAttributeTypeCheckError(u"Index maps must be declared. Other dict structures "
+                raise OMAttributeTypeCheckError(u"Index maps must be declared. Other dict structures "
                                                 u"are not supported for objects.")
         else:
             values = f(value)
-        LDAttribute.__set__(self, instance, values)
+        OMAttribute.__set__(self, instance, values)

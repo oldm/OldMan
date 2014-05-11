@@ -1,7 +1,7 @@
 from rdflib import BNode, Graph, RDF, URIRef
-from ld_orm.exceptions import DifferentBaseIRIError, ForbiddenSkolemizedIRIError, ClassInstanceError
-from ld_orm.model import is_blank_node
-from ld_orm.registry import extract_types
+from oldman.exception import OMDifferentBaseIRIError, OMForbiddenSkolemizedIRIError, OMClassInstanceError
+from oldman.model import is_blank_node
+from oldman.registry import extract_types
 
 _JSON_TYPES = ["application/json", "json"]
 _JSON_LD_TYPES = ["application/ld+json", "json-ld"]
@@ -107,7 +107,7 @@ class CRUDController(object):
                 dependent_objs.append(obj)
 
             if (not obj.is_blank_node()) and obj.base_iri != base_iri:
-                raise DifferentBaseIRIError("%s is not the base IRI of %s" % (base_iri, obj.id))
+                raise OMDifferentBaseIRIError("%s is not the base IRI of %s" % (base_iri, obj.id))
 
         #When some Bnodes are interconnected
         for obj in dependent_objs:
@@ -120,17 +120,17 @@ class CRUDController(object):
         objs = []
         for obj_iri in [unicode(s) for s in other_subjects]:
             if is_blank_node(obj_iri):
-                raise ForbiddenSkolemizedIRIError("Skolemized IRI like %s are not allowed when updating a resource."
+                raise OMForbiddenSkolemizedIRIError("Skolemized IRI like %s are not allowed when updating a resource."
                                                   % obj_iri)
             elif obj_iri.split("#")[0] != base_iri:
-                raise DifferentBaseIRIError("%s is not the base IRI of %s" % (base_iri, obj_iri))
+                raise OMDifferentBaseIRIError("%s is not the base IRI of %s" % (base_iri, obj_iri))
 
             types = extract_types(obj_iri, graph)
             model_class = self._registry.select_model_class(types)
             try:
                 obj = model_class.objects.get(id=obj_iri)
                 obj.full_update_from_graph(graph, save=False)
-            except ClassInstanceError:
+            except OMClassInstanceError:
                 # New object
                 obj = model_class.load_from_graph(obj_iri, graph, create=True)
 

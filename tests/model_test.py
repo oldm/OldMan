@@ -7,12 +7,12 @@ import json
 from rdflib import ConjunctiveGraph, Graph, URIRef, Literal, RDF, XSD
 from rdflib.namespace import FOAF
 
-from ld_orm import default_model_factory
-from ld_orm.attribute import LDAttributeTypeCheckError, RequiredPropertyError
-from ld_orm.exceptions import ClassInstanceError, LDAttributeAccessError, LDUniquenessError
-from ld_orm.exceptions import WrongObjectError, ObjectNotFoundError, HashIriError, LDEditError
-from ld_orm.exceptions import DifferentBaseIRIError, ForbiddenSkolemizedIRIError
-from ld_orm.rest.crud import CRUDController
+from oldman import default_model_factory
+from oldman.attribute import OMAttributeTypeCheckError, OMRequiredPropertyError
+from oldman.exception import OMClassInstanceError, OMAttributeAccessError, OMUniquenessError
+from oldman.exception import OMWrongObjectError, OMObjectNotFoundError, OMHashIriError, OMEditError
+from oldman.exception import OMDifferentBaseIRIError, OMForbiddenSkolemizedIRIError
+from oldman.rest.crud import CRUDController
 
 
 default_graph = ConjunctiveGraph()
@@ -276,7 +276,7 @@ class ModelTest(TestCase):
         bob.mboxes = {bob_email1}
 
         self.assertFalse(bob.is_valid())
-        self.assertRaises(RequiredPropertyError, bob.save)
+        self.assertRaises(OMRequiredPropertyError, bob.save)
 
         # Bio is required
         bob.short_bio_en = bob_bio_en
@@ -328,7 +328,7 @@ class ModelTest(TestCase):
 
     def test_string_validation(self):
         bob = self.create_bob()
-        with self.assertRaises(LDAttributeTypeCheckError):
+        with self.assertRaises(OMAttributeTypeCheckError):
             bob.name = 2
 
     def test_not_saved(self):
@@ -366,7 +366,7 @@ class ModelTest(TestCase):
         bob.short_bio_en = bob_bio_en
 
         # List assignment instead of a set
-        with self.assertRaises(LDAttributeTypeCheckError):
+        with self.assertRaises(OMAttributeTypeCheckError):
             bob.mboxes = [bob_email1, bob_email2]
 
     def test_reset(self):
@@ -425,15 +425,15 @@ class ModelTest(TestCase):
         self.assertEquals(rsa_key.exponent, key_exponent)
         self.assertEquals(rsa_key.modulus, key_modulus)
         self.assertEquals(rsa_key.label, key_label)
-        with self.assertRaises(LDAttributeTypeCheckError):
+        with self.assertRaises(OMAttributeTypeCheckError):
             rsa_key.exponent = "String not a int"
-        with self.assertRaises(LDAttributeTypeCheckError):
+        with self.assertRaises(OMAttributeTypeCheckError):
             rsa_key.modulus = "not an hexa value"
         # Values should already be encoded in hexadecimal strings
-        with self.assertRaises(LDAttributeTypeCheckError):
+        with self.assertRaises(OMAttributeTypeCheckError):
             rsa_key.modulus = 235
         rsa_key.modulus = format(235, "x")
-        with self.assertRaises(RequiredPropertyError):
+        with self.assertRaises(OMRequiredPropertyError):
             LocalRSAPublicKey.objects.create(exponent=key_exponent)
 
     def test_filter_two_bobs(self):
@@ -465,15 +465,15 @@ class ModelTest(TestCase):
         self.assertEquals(len(bobs4), 0)
 
     def test_wrong_filter(self):
-        with self.assertRaises(LDAttributeAccessError):
+        with self.assertRaises(OMAttributeAccessError):
             LocalPerson.objects.filter(undeclared_attr="not in datastore")
 
     def test_set_validation(self):
-        with self.assertRaises(LDAttributeTypeCheckError):
+        with self.assertRaises(OMAttributeTypeCheckError):
             # Mboxes should be a set
             LocalPerson.objects.create(name="Lola", mboxes="lola@example.org",
                                        short_bio_en="Will not exist.")
-        with self.assertRaises(LDAttributeTypeCheckError):
+        with self.assertRaises(OMAttributeTypeCheckError):
             # Mboxes should be a set not a list
             LocalPerson.objects.create(name="Lola", mboxes=["lola@example.org"],
                                        short_bio_en="Will not exist.")
@@ -521,7 +521,7 @@ class ModelTest(TestCase):
         john = self.create_john()
 
         #Set assignment instead of a list
-        with self.assertRaises(LDAttributeTypeCheckError):
+        with self.assertRaises(OMAttributeTypeCheckError):
             bob.children = {alice.id, john.id}
 
     def test_children_list(self):
@@ -699,7 +699,7 @@ class ModelTest(TestCase):
         data_graph.add((jason_uri, URIRef(BIO + "olb"), Literal("Jason was a warrior", lang="en")))
 
         # LocalPerson type is missing
-        with self.assertRaises(ClassInstanceError):
+        with self.assertRaises(OMClassInstanceError):
             LocalPerson.objects.get(id=str(jason_uri))
 
         data_graph.add((jason_uri, RDF["type"], URIRef(LocalPerson.class_uri)))
@@ -726,14 +726,14 @@ class ModelTest(TestCase):
         bob = self.create_bob()
         bob_iri = bob.id
 
-        with self.assertRaises(LDUniquenessError):
+        with self.assertRaises(OMUniquenessError):
             LocalPerson(id=bob_iri, name=bob_name, mboxes=bob_emails, short_bio_en=u"Will not exist")
 
-        with self.assertRaises(LDUniquenessError):
+        with self.assertRaises(OMUniquenessError):
             LocalPerson.objects.create(id=bob_iri, name=bob_name, mboxes=bob_emails,
                                        short_bio_en=u"Will not exist")
 
-        with self.assertRaises(LDUniquenessError):
+        with self.assertRaises(OMUniquenessError):
             LocalPerson(id=bob_iri, name=bob_name, mboxes=bob_emails,
                         short_bio_en=u"Will not exist", create=True)
 
@@ -852,7 +852,7 @@ class ModelTest(TestCase):
         bob_dict = bob.to_dict()
 
         # GPG key blank-node is included as a dict
-        with self.assertRaises(LDAttributeTypeCheckError):
+        with self.assertRaises(OMAttributeTypeCheckError):
             bob.full_update(bob_dict)
 
         # Replace the dict by an IRI
@@ -867,18 +867,18 @@ class ModelTest(TestCase):
     def test_wrong_update(self):
         bob = self.create_bob()
         alice = self.create_alice()
-        with self.assertRaises(WrongObjectError):
+        with self.assertRaises(OMWrongObjectError):
             bob.full_update(alice.to_dict())
 
         bob_dict = bob.to_dict()
         #Missing IRI
         bob_dict.pop("id")
-        with self.assertRaises(WrongObjectError):
+        with self.assertRaises(OMWrongObjectError):
             bob.full_update(bob_dict)
 
         bob_dict = bob.to_dict()
         bob_dict["unknown_attribute"] = "Will cause a problem"
-        with self.assertRaises(LDAttributeAccessError):
+        with self.assertRaises(OMAttributeAccessError):
             bob.full_update(bob_dict)
 
     def test_basic_bob_graph_update(self):
@@ -918,10 +918,10 @@ class ModelTest(TestCase):
         self.assertEquals(bob.to_rdf("turtle"), crud_controller.get(bob_base_iri, "text/turtle"))
         self.assertEquals(bob.to_rdf("turtle"), crud_controller.get(bob_base_iri))
 
-        with self.assertRaises(HashIriError):
+        with self.assertRaises(OMHashIriError):
             # Hash URI
             crud_controller.get(bob_base_iri + "#hashed")
-        with self.assertRaises(ObjectNotFoundError):
+        with self.assertRaises(OMObjectNotFoundError):
             crud_controller.get("http://nowhere/no-one", "text/turtle")
 
     def test_document_controller_get(self):
@@ -1016,7 +1016,7 @@ class ModelTest(TestCase):
         g2.parse(data=data_graph.serialize())
         g2.remove((alice_ref, FOAF.name, Literal(new_alice_name, datatype=XSD.string)))
         # Alice name is required
-        with self.assertRaises(LDEditError):
+        with self.assertRaises(OMEditError):
             crud_controller.update(doc_iri, g2.serialize(format="turtle"), "turtle")
 
     def test_controller_put_json(self):
@@ -1056,7 +1056,7 @@ class ModelTest(TestCase):
 
         new_alice_name = alice_name + " A."
         bob_graph.add((alice_ref, FOAF.name, Literal(new_alice_name, datatype=XSD.string)))
-        with self.assertRaises(DifferentBaseIRIError):
+        with self.assertRaises(OMDifferentBaseIRIError):
             crud_controller.update(bob_base_iri, bob_graph.serialize(format="xml"), "xml")
 
     def test_controller_put_skolemized_iris(self):
@@ -1072,7 +1072,7 @@ class ModelTest(TestCase):
 
         wot_fingerprint = URIRef(WOT + "fingerprint")
         bob_graph.add((gpg_skolem_ref, wot_fingerprint, Literal("DEADBEEF", datatype=XSD.hexBinary)))
-        with self.assertRaises(ForbiddenSkolemizedIRIError):
+        with self.assertRaises(OMForbiddenSkolemizedIRIError):
             crud_controller.update(bob.base_iri, bob_graph.serialize(format="turtle"), "turtle")
 
         # No modification

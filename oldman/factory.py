@@ -2,15 +2,14 @@ import json
 from urlparse import urlparse
 from rdflib import Graph
 from .model import Model
-from .registry import ModelRegistry
-from .exceptions import UndeclaredClassNameError, ReservedAttributeNameError
+from .registry import ModelRegistry, ClassAncestry
+from .exception import OMUndeclaredClassNameError, OMReservedAttributeNameError
 from .iri import RandomPrefixedIriGenerator, IncrementalIriGenerator, BlankNodeIriGenerator
-from .ancestry import Ancestry
-from ld_orm.parsing.schema.attribute import LDAttributeExtractor
+from oldman.parsing.schema.attribute import OMAttributeExtractor
 
 
 def default_model_factory(schema_graph, default_graph):
-    attr_extractor = LDAttributeExtractor()
+    attr_extractor = OMAttributeExtractor()
     return ModelFactory(attr_extractor, schema_graph, default_graph)
 
 
@@ -50,11 +49,11 @@ class ModelFactory(object):
         # Only for the DefaultModel
         if untyped:
             class_uri = None
-            ancestry = Ancestry(class_uri, self._schema_graph)
+            ancestry = ClassAncestry(class_uri, self._schema_graph)
             attributes = {}
         else:
             class_uri = extract_class_uri(class_name, context)
-            ancestry = Ancestry(class_uri, self._schema_graph)
+            ancestry = ClassAncestry(class_uri, self._schema_graph)
             attributes = self._attr_manager.extract(class_uri, ancestry.bottom_up, context,
                                                     self._schema_graph)
         if uri_generator is not None:
@@ -83,7 +82,7 @@ class ModelFactory(object):
         # First reserved attribute check
         for name in special_attributes:
             if name in attributes:
-                raise ReservedAttributeNameError(u"%s is reserved" % name)
+                raise OMReservedAttributeNameError(u"%s is reserved" % name)
         attributes.update(special_attributes)
 
         model_cls = type(class_name, (Model,), attributes)
@@ -106,5 +105,5 @@ def extract_class_uri(class_name, context):
     # Check the URI
     result = urlparse(class_uri)
     if result.scheme == u"file":
-        raise UndeclaredClassNameError(u"Deduced URI %s is not a valid HTTP URL" % class_uri)
+        raise OMUndeclaredClassNameError(u"Deduced URI %s is not a valid HTTP URL" % class_uri)
     return class_uri

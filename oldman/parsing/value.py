@@ -1,6 +1,6 @@
 from rdflib import URIRef, Literal
 from rdflib.collection import Collection
-from ld_orm.exceptions import DataStoreError
+from oldman.exception import OMDataStoreError
 
 
 class AttributeValueExtractorFromGraph(object):
@@ -9,7 +9,7 @@ class AttributeValueExtractorFromGraph(object):
         self._attribute = attribute
         self._language = attribute.language
         self._value_format = attribute.value_format
-        self._property_uri = URIRef(attribute.ld_property.uri)
+        self._property_uri = URIRef(attribute.om_property.uri)
         self._container = attribute.container
         try:
             self._extract_fct = AttributeValueExtractorFromGraph.extract_fcts[self._container]
@@ -40,7 +40,7 @@ class AttributeValueExtractorFromGraph(object):
             Filters by language (unique way to discriminate)
         """
         if not self._language and len(raw_rdf_values) > 1:
-            raise DataStoreError(u"Multiple list found for the property %s"
+            raise OMDataStoreError(u"Multiple list found for the property %s"
                                  % self._property_uri)
         final_list = None
         for vlist in raw_rdf_values:
@@ -48,7 +48,7 @@ class AttributeValueExtractorFromGraph(object):
             values = self._filter_and_convert(rdf_values)
             if len(values) > 0:
                 if final_list is not None:
-                    raise DataStoreError(u"Same language in multiple list for the property %s"
+                    raise OMDataStoreError(u"Same language in multiple list for the property %s"
                                          % self._property_uri)
                 final_list = values
 

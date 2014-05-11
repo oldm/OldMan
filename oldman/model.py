@@ -6,11 +6,11 @@ from types import GeneratorType
 from rdflib import URIRef, Graph, RDF
 from rdflib.plugins.sparql.parser import ParseException
 from rdflib.plugins.sparql import prepareQuery
-from .attribute import LDAttribute
+from .attribute import OMAttribute
 from .property import PropertyType
 from .manager import InstanceManager, build_update_query_part
-from .exceptions import MissingClassAttributeError, ReservedAttributeNameError, SPARQLParseError
-from .exceptions import LDAttributeAccessError, LDUniquenessError, WrongObjectError, LDEditError
+from .exception import OMMissingClassAttributeError, OMReservedAttributeNameError, OMSPARQLParseError
+from .exception import OMAttributeAccessError, OMUniquenessError, OMWrongObjectError, OMEditError
 
 
 class ModelBase(type):
@@ -23,7 +23,7 @@ class ModelBase(type):
                                "_ancestry", "class_types", "registry"]
             for field in required_fields:
                 if field not in attributes:
-                    raise MissingClassAttributeError("%s is required for class %s" % (field, name))
+                    raise OMMissingClassAttributeError("%s is required for class %s" % (field, name))
             attributes["_context_dict"] = mcs.clean_context(attributes["_context_dict"])
 
             # Removes some "attributes"
@@ -34,11 +34,11 @@ class ModelBase(type):
                               "types"]
             for field in reserved_names:
                 if field in attributes:
-                    raise ReservedAttributeNameError("%s is reserved" % field)
+                    raise OMReservedAttributeNameError("%s is reserved" % field)
 
         # Descriptors
         attributes["_attributes"] = {k: v for k, v in attributes.iteritems()
-                                     if isinstance(v, LDAttribute)}
+                                     if isinstance(v, OMAttribute)}
 
         cls = type.__new__(mcs, name, bases, attributes)
 
@@ -87,7 +87,7 @@ class Model(object):
                 exist = bool(self._storage_graph.query(self.existence_query,
                                                        initBindings={'id': URIRef(self._id)}))
                 if exist:
-                    raise LDUniquenessError("Object %s already exist" % self._id)
+                    raise OMUniquenessError("Object %s already exist" % self._id)
         else:
             self._id = self._id_generator.generate(base_iri=base_iri)
 
@@ -137,7 +137,7 @@ class Model(object):
         try:
             return cls._attributes[name]
         except KeyError:
-            raise LDAttributeAccessError("%s has no supported attribute %s" % (cls, name))
+            raise OMAttributeAccessError("%s has no supported attribute %s" % (cls, name))
 
     @classmethod
     def reset_counter(cls):
@@ -190,7 +190,7 @@ class Model(object):
             new_lines += attr.serialize_current_value_into_line(self)
 
             # Some former objects may be deleted
-            if attr.ld_property.type == PropertyType.ObjectProperty:
+            if attr.om_property.type == PropertyType.ObjectProperty:
                 if isinstance(former_values, dict):
                     raise NotImplementedError("Object dicts are not yet supported.")
                 former_values = former_values if isinstance(former_values, (set, list)) else [former_values]
@@ -213,7 +213,7 @@ class Model(object):
             try:
                 self._storage_graph.update(query)
             except ParseException as e:
-                raise SPARQLParseError(u"%s\n %s" % (query, e))
+                raise OMSPARQLParseError(u"%s\n %s" % (query, e))
 
         for obj in objects_to_delete:
             obj.delete()
@@ -293,7 +293,7 @@ class Model(object):
     def delete(self):
         for attr_name, attr in self._attributes.iteritems():
             # Delete blank nodes recursively
-            if attr.ld_property.type == PropertyType.ObjectProperty:
+            if attr.om_property.type == PropertyType.ObjectProperty:
                 objs = getattr(self, attr_name)
                 if objs is not None:
                     if isinstance(objs, (list, set, GeneratorType)):
@@ -316,13 +316,13 @@ class Model(object):
         """
         #if not self.is_blank_node() and "id" not in full_dict:
         if "id" not in full_dict:
-            raise WrongObjectError("Cannot update an object without IRI")
+            raise OMWrongObjectError("Cannot update an object without IRI")
         elif full_dict["id"] != self._id:
-            raise WrongObjectError("Wrong IRI %s (%s was expected)" % (full_dict["id"], self._id))
+            raise OMWrongObjectError("Wrong IRI %s (%s was expected)" % (full_dict["id"], self._id))
 
         for key in full_dict:
             if key not in self._attributes and key not in ["@context", "id", "types"]:
-                raise LDAttributeAccessError("%s is not an attribute of %s" % (key, self.__class__.__name__))
+                raise OMAttributeAccessError("%s is not an attribute of %s" % (key, self.__class__.__name__))
 
         for attr_name, attr in self._attributes.iteritems():
             value = full_dict.get(attr_name)
@@ -340,7 +340,7 @@ class Model(object):
                 if not new_type in self._types:
                     self._types.append(new_type)
             else:
-                raise LDEditError("'types' attribute is not a list, a set or a string but is %s " % new_types)
+                raise OMEditError("'types' attribute is not a list, a set or a string but is %s " % new_types)
 
         self.save(is_end_user)
 

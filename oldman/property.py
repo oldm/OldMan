@@ -1,7 +1,7 @@
 from enum import Enum
-from .attribute import LDAttributeMetadata, LDAttribute, ObjectLDAttribute
-from .exceptions import AlreadyDeclaredDatatypeError, PropertyDefTypeError
-from .exceptions import AlreadyGeneratedAttributeError, LDInternalError, LDPropertyDefError
+from .attribute import OMAttributeMetadata, OMAttribute, ObjectOMAttribute
+from .exception import OMAlreadyDeclaredDatatypeError, OMPropertyDefTypeError
+from .exception import OMAlreadyGeneratedAttributeError, OMInternalError, OMPropertyDefError
 
 
 class PropertyType(Enum):
@@ -10,7 +10,7 @@ class PropertyType(Enum):
     ObjectProperty = 3
 
 
-class LDProperty(object):
+class OMProperty(object):
     """
         RDF property declared "supported by a RDF class"
     """
@@ -29,7 +29,7 @@ class LDProperty(object):
         self._domains = domains if domains is not None else set()
 
         if read_only and write_only:
-            raise LDPropertyDefError("Property %s cannot be read-only and write-only" % property_uri)
+            raise OMPropertyDefError("Property %s cannot be read-only and write-only" % property_uri)
         self._read_only = read_only
         self._write_only = write_only
 
@@ -54,7 +54,7 @@ class LDProperty(object):
     def type(self, property_type):
         if self._type != PropertyType.UnknownPropertyType:
             if self._type != property_type:
-                raise PropertyDefTypeError("Already declared as %s so cannot also be a %s "
+                raise OMPropertyDefTypeError("Already declared as %s so cannot also be a %s "
                                                         %(self._type,  property_type))
             return
         self._type = property_type
@@ -93,7 +93,7 @@ class LDProperty(object):
 
         if self.type == PropertyType.DatatypeProperty and (not p_range in self._ranges) \
                 and len(self._ranges) >=1:
-            raise AlreadyDeclaredDatatypeError("Property datatype can only be specified once")
+            raise OMAlreadyDeclaredDatatypeError("Property datatype can only be specified once")
 
         self._ranges.add(p_range)
 
@@ -121,7 +121,7 @@ class LDProperty(object):
     @property
     def attributes(self):
         if self._attributes is None:
-            raise LDInternalError("Please generate them before accessing this attribute")
+            raise OMInternalError("Please generate them before accessing this attribute")
         return self._attributes
 
     def add_attribute_metadata(self, name, jsonld_type=None, language=None, container=None,
@@ -132,14 +132,14 @@ class LDProperty(object):
                 - reverse property
         """
         if self._attributes:
-            raise AlreadyGeneratedAttributeError("It is too late to add attribute metadata")
+            raise OMAlreadyGeneratedAttributeError("It is too late to add attribute metadata")
         if jsonld_type:
             if jsonld_type == "@id":
                 self.type = PropertyType.ObjectProperty
             else:
                 self.type = PropertyType.DatatypeProperty
                 if (not jsonld_type in self._ranges) and len(self._ranges) >=1:
-                    raise AlreadyDeclaredDatatypeError("Attribute %s cannot have a different datatype"
+                    raise OMAlreadyDeclaredDatatypeError("Attribute %s cannot have a different datatype"
                                                        "(%s) than the property's one (%s)" % (name, jsonld_type,
                                                        list(self._ranges)[0]))
         # If no datatype defined, use the property one
@@ -156,9 +156,9 @@ class LDProperty(object):
 
         if len([md for md in self._tmp_attr_mds
                     if md.name == name]) > 0:
-            raise LDInternalError("Multiple attribute named %s" % name)
+            raise OMInternalError("Multiple attribute named %s" % name)
 
-        self._tmp_attr_mds.append(LDAttributeMetadata(name, self, language, jsonld_type, container,
+        self._tmp_attr_mds.append(OMAttributeMetadata(name, self, language, jsonld_type, container,
                                                       bool(reverse)))
 
     def generate_attributes(self, attr_format_selector):
@@ -166,12 +166,12 @@ class LDProperty(object):
             Can be called only once
         """
         if self._attributes:
-            raise AlreadyGeneratedAttributeError()
+            raise OMAlreadyGeneratedAttributeError()
 
         self._attributes = set()
         for md in self._tmp_attr_mds:
             value_format = attr_format_selector.find_value_format(md)
-            attr_cls = ObjectLDAttribute if self._type == PropertyType.ObjectProperty else LDAttribute
+            attr_cls = ObjectOMAttribute if self._type == PropertyType.ObjectProperty else OMAttribute
             self._attributes.add(attr_cls(md, value_format))
 
         # Clears mds

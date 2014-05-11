@@ -1,15 +1,16 @@
 from datetime import date, datetime, time
 from decimal import Decimal
-from ld_orm.parsing.schema.property import HydraPropertyExtractor
-from ld_orm.parsing.schema.context import JsonLdContextAttributeMdExtractor
-from ld_orm.value_format import AnyValueFormat, IRIValueFormat, TypedValueFormat, EmailValueFormat
-from ld_orm.value_format import PositiveTypedValueFormat, NegativeTypedValueFormat
-from ld_orm.value_format import NonPositiveTypedValueFormat, NonNegativeTypedValueFormat
-from ld_orm.value_format import HexBinaryFormat
-from ld_orm.property import PropertyType
+
+from oldman.parsing.schema.property import HydraPropertyExtractor
+from oldman.parsing.schema.context import JsonLdContextAttributeMdExtractor
+from oldman.validation.value_format import AnyValueFormat, IRIValueFormat, TypedValueFormat, EmailValueFormat
+from oldman.validation.value_format import PositiveTypedValueFormat, NegativeTypedValueFormat
+from oldman.validation.value_format import NonPositiveTypedValueFormat, NonNegativeTypedValueFormat
+from oldman.validation.value_format import HexBinaryFormat
+from oldman.property import PropertyType
 
 
-class LDAttributeExtractor(object):
+class OMAttributeExtractor(object):
     """ Extracts LDAttribute objects for a given class.
 
         Extensible in two ways:

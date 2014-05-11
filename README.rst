@@ -1,5 +1,6 @@
-Linked data ORM (ld-orm)
-========================
+====================
+OldMan:  Python OLDM
+====================
 
 Python Object RDF mapper based on JSON-LD contexts and the `Hydra RDF vocabulary
 <http://www.markus-lanthaler.com/hydra/spec/latest/core/>`_.

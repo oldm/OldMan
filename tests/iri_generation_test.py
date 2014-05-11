@@ -2,10 +2,10 @@ from unittest import TestCase
 
 from rdflib import ConjunctiveGraph, URIRef, RDF, BNode, Graph
 
-from ld_orm import default_model_factory
-from ld_orm.iri import RandomFragmentIriGenerator
-from ld_orm.exceptions import RequiredBaseIRIError
-from ld_orm.rest.crud import CRUDController
+from oldman import default_model_factory
+from oldman.iri import RandomFragmentIriGenerator
+from oldman.exception import OMRequiredBaseIRIError
+from oldman.rest.crud import CRUDController
 
 
 EXAMPLE = "http://localhost/vocab#"
@@ -51,9 +51,9 @@ class DatatypeTest(TestCase):
         self.assertTrue(base_iri in obj2.id)
         self.assertNotEquals(obj1.id, obj2.id)
 
-        with self.assertRaises(RequiredBaseIRIError):
+        with self.assertRaises(OMRequiredBaseIRIError):
             MyClass()
-        with self.assertRaises(RequiredBaseIRIError):
+        with self.assertRaises(OMRequiredBaseIRIError):
             MyClass(base_iri="http://localhost/not#a-base-iri")
 
     def test_controller_put(self):

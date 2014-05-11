@@ -8,8 +8,8 @@ from os import path
 from rdflib import ConjunctiveGraph, URIRef
 import json
 from copy import copy
-from ld_orm import default_model_factory
-from ld_orm.exceptions import RequiredPropertyError, LDAttributeTypeCheckError
+from oldman import default_model_factory
+from oldman.exception import OMRequiredPropertyError, OMAttributeTypeCheckError
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
@@ -164,10 +164,10 @@ class ContainerTest(TestCase):
 
     def test_required_list(self):
         obj = LocalClass()
-        with self.assertRaises(RequiredPropertyError):
+        with self.assertRaises(OMRequiredPropertyError):
             obj.save()
         obj.list_fr = []
-        with self.assertRaises(RequiredPropertyError):
+        with self.assertRaises(OMRequiredPropertyError):
             obj.save()
 
     def test_undeclared_set(self):
@@ -176,7 +176,7 @@ class ContainerTest(TestCase):
         lst = ["Hello", "hi", "hi", "Hello"]
         # No declaration -> implicit set or unique value
         # (lists and dict are not accepted)
-        with self.assertRaises(LDAttributeTypeCheckError):
+        with self.assertRaises(OMAttributeTypeCheckError):
             obj.undeclared_set = lst
         obj.undeclared_set = set(lst)
         obj.save()
@@ -208,9 +208,9 @@ class ContainerTest(TestCase):
         self.assertEquals(obj.bool_list, lst)
         obj.bool_list = [True]
         obj.save()
-        with self.assertRaises(LDAttributeTypeCheckError):
+        with self.assertRaises(OMAttributeTypeCheckError):
             obj.bool_list = ["Wrong"]
-        with self.assertRaises(LDAttributeTypeCheckError):
+        with self.assertRaises(OMAttributeTypeCheckError):
             obj.bool_list = [True, None, False]
 
     def test_bool_set(self):
@@ -223,9 +223,9 @@ class ContainerTest(TestCase):
         LocalClass.objects.clear_cache()
         obj = LocalClass.objects.get(id=uri)
         self.assertEquals(obj.bool_set, bools)
-        with self.assertRaises(LDAttributeTypeCheckError):
+        with self.assertRaises(OMAttributeTypeCheckError):
             obj.bool_set = [True]
-        with self.assertRaises(LDAttributeTypeCheckError):
+        with self.assertRaises(OMAttributeTypeCheckError):
             obj.bool_set = {True, "Should not be there"}
 
     def test_lang_map(self):
@@ -240,15 +240,15 @@ class ContainerTest(TestCase):
         obj = LocalClass.objects.get(id=uri)
         self.assertEquals(obj.lang_map, values)
 
-        with self.assertRaises(LDAttributeTypeCheckError):
+        with self.assertRaises(OMAttributeTypeCheckError):
             obj.lang_map = ["Not a map"]
-        with self.assertRaises(LDAttributeTypeCheckError):
+        with self.assertRaises(OMAttributeTypeCheckError):
             obj.lang_map = {"Not a map"}
-        with self.assertRaises(LDAttributeTypeCheckError):
+        with self.assertRaises(OMAttributeTypeCheckError):
             obj.lang_map = "Not a map"
-        with self.assertRaises(LDAttributeTypeCheckError):
+        with self.assertRaises(OMAttributeTypeCheckError):
             obj.lang_map = {"en": {"key": "should not support level-2 map"}}
-        with self.assertRaises(LDAttributeTypeCheckError):
+        with self.assertRaises(OMAttributeTypeCheckError):
             obj.lang_map = {"en": 2}
         obj.lang_map = {"en": "ok",
                         "fr": "ok aussi"}

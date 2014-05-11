@@ -5,9 +5,9 @@
 
 from unittest import TestCase
 from rdflib import ConjunctiveGraph, URIRef
-from ld_orm import default_model_factory
-from ld_orm.model import Model
-from ld_orm.iri import IncrementalIriGenerator
+from oldman import default_model_factory
+from oldman.model import Model
+from oldman.iri import IncrementalIriGenerator
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))

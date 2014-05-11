@@ -2,7 +2,7 @@ from weakref import WeakValueDictionary
 from rdflib import URIRef, Graph
 from rdflib.plugins.sparql import prepareQuery
 from rdflib.plugins.sparql.parser import ParseException
-from .exceptions import ClassInstanceError, SPARQLParseError
+from .exception import OMClassInstanceError, OMSPARQLParseError
 
 
 class InstanceManager(object):
@@ -54,7 +54,7 @@ class InstanceManager(object):
         try:
             results = self._storage_graph.query(query)
         except ParseException as e:
-            raise SPARQLParseError(u"%s\n %s" % (query, e))
+            raise OMSPARQLParseError(u"%s\n %s" % (query, e))
 
         # Generator expression
         return (self.get(id=str(r)) for r, in results)
@@ -79,7 +79,7 @@ class InstanceManager(object):
         instance_graph += self._storage_graph.triples((uri, None, None))
         if self._check_type_request and not self._storage_graph.query(self._check_type_request,
                                                                       initBindings={'s': uri}):
-            raise ClassInstanceError(u"%s is not an instance of %s" % (id, self._cls.__name__))
+            raise OMClassInstanceError(u"%s is not an instance of %s" % (id, self._cls.__name__))
         return self._new_instance(id, instance_graph)
 
     def get_any(self, id):

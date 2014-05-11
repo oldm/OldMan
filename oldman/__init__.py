@@ -1,3 +1,7 @@
+"""
+    OldMan: Python OLDM
+"""
+
 from rdflib.plugin import register, Parser, Serializer
 from .factory import default_model_factory
 

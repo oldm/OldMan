@@ -1,7 +1,7 @@
 from rdflib_jsonld.context import Context, UNDEF
 
 
-class LDAttributeMdExtractor(object):
+class OMAttributeMdExtractor(object):
     def update(self, properties, context_js, graph):
         """
             No property added, only attribute metadata
@@ -9,7 +9,7 @@ class LDAttributeMdExtractor(object):
         raise NotImplementedError()
 
 
-class JsonLdContextAttributeMdExtractor(LDAttributeMdExtractor):
+class JsonLdContextAttributeMdExtractor(OMAttributeMdExtractor):
     """
         Extracts name and basic type (if available) from the context
     """
