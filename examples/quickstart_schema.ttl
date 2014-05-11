@@ -1,0 +1,21 @@
+@prefix bio: <http://purl.org/vocab/bio/0.1/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix hydra: <http://www.w3.org/ns/hydra/core#> .
+@prefix myvoc: <http://example.org/myvoc#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+# Properties that may be given to a foaf:Person (no requirement)
+foaf:Person a hydra:Class ;
+    hydra:supportedProperty [ hydra:property foaf:mbox ],
+        [ hydra:property foaf:weblog ],
+        [ hydra:property foaf:name ],
+        [ hydra:property bio:olb ],
+        [ hydra:property foaf:knows ].
+
+# Local version of a Person with requirements
+myvoc:LocalPerson a hydra:Class ;
+    rdfs:subClassOf foaf:Person ;
+    hydra:supportedProperty [ hydra:property foaf:mbox ;
+            hydra:required true ],
+        [ hydra:property foaf:name ;
+            hydra:required true ].

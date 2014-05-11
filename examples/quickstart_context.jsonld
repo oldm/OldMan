@@ -1,0 +1,38 @@
+{
+  "@context": {
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "foaf": "http://xmlns.com/foaf/0.1/", 
+    "bio": "http://purl.org/vocab/bio/0.1/", 
+    "myvoc": "http://example.org/myvoc#",
+    "Person": "foaf:Person",
+    "LocalPerson": "myvoc:LocalPerson",
+    "id": "@id",
+    "types": "@type",
+    "friends": {
+      "@id": "foaf:knows", 
+      "@type": "@id", 
+      "@container": "@set"
+    },
+    "short_bio_fr": {
+      "@id": "bio:olb", 
+      "@language": "fr"
+    }, 
+    "name": {
+      "@id": "foaf:name", 
+      "@type": "xsd:string"
+    },
+    "emails": {
+      "@id": "foaf:mbox", 
+      "@type": "xsd:string", 
+      "@container": "@set"
+    }, 
+    "blog": {
+      "@id": "foaf:weblog", 
+      "@type": "@id"
+    }, 
+    "short_bio_en": {
+      "@id": "bio:olb", 
+      "@language": "en"
+    }
+  }
+}
