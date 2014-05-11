@@ -30,7 +30,7 @@ context = {
 model_generator = default_model_factory(schema_graph, default_graph)
 crud_controller = CRUDController(model_generator.registry)
 MyClass = model_generator.generate("MyClass", context, data_graph,
-                                   uri_generator=RandomFragmentIriGenerator())
+                                   iri_generator=RandomFragmentIriGenerator())
 
 
 class DatatypeTest(TestCase):

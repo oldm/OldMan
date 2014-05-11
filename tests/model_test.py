@@ -210,16 +210,16 @@ context = {
 }
 
 
-model_generator = default_model_factory(schema_graph, default_graph)
+model_factory = default_model_factory(schema_graph, default_graph)
 # Model classes are generated here!
-LocalPerson = model_generator.generate("LocalPerson", context,
-                                       data_graph, uri_prefix="http://localhost/persons/",
-                                       uri_fragment="me")
-LocalRSAPublicKey = model_generator.generate("LocalRSAPublicKey", context, data_graph)
-LocalGPGKey = model_generator.generate("LocalGPGPublicKey", context, data_graph)
+LocalPerson = model_factory.generate("LocalPerson", context,
+                                       data_graph, iri_prefix="http://localhost/persons/",
+                                       iri_fragment="me")
+LocalRSAPublicKey = model_factory.generate("LocalRSAPublicKey", context, data_graph)
+LocalGPGKey = model_factory.generate("LocalGPGPublicKey", context, data_graph)
 
 # GET, POST, PUT, DELETE
-crud_controller = CRUDController(model_generator.registry)
+crud_controller = CRUDController(model_factory.registry)
 
 bob_name = "Bob"
 bob_blog = "http://blog.example.com/"
@@ -932,7 +932,7 @@ class ModelTest(TestCase):
         doc = json.loads(crud_controller.get(doc_iri, "json"))
         self.assertEquals(doc["id"], doc_iri)
 
-        obj_iris = model_generator.registry.find_object_iris(doc_iri)
+        obj_iris = model_factory.registry.find_object_iris(doc_iri)
         self.assertEquals({bob_iri, doc_iri}, obj_iris)
 
     def test_bob_controller_delete(self):

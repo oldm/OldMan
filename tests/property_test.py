@@ -90,7 +90,7 @@ context = {
 model_generator = default_model_factory(schema_graph, default_graph)
 # Model class is generated here!
 LocalClass = model_generator.generate("LocalClass", context, data_graph,
-                                      uri_prefix="http://localhost/objects/")
+                                      iri_prefix="http://localhost/objects/")
 
 
 class PropertyTest(TestCase):

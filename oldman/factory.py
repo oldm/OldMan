@@ -23,7 +23,7 @@ class ModelFactory(object):
         self._methods = {}
         # Registered with the "None" key
         self._generate("DefaultModel", {u"@context": {}}, default_graph, untyped=True,
-                       uri_prefix=u"http://localhost/.well-known/genid/default/")
+                       iri_prefix=u"http://localhost/.well-known/genid/default/")
 
     @property
     def registry(self):
@@ -35,16 +35,16 @@ class ModelFactory(object):
         else:
             self._methods[class_uri] = [(method, name)]
 
-    def generate(self, class_name, context, storage_graph, uri_prefix=None,
-                 uri_fragment=None, uri_generator=None, incremental_uri=False):
+    def generate(self, class_name, context, storage_graph, iri_prefix=None,
+                 iri_fragment=None, iri_generator=None, incremental_iri=False):
         """
             Generates a model class
         """
-        return self._generate(class_name, context, storage_graph, uri_prefix=uri_prefix, uri_fragment=uri_fragment,
-                              uri_generator=uri_generator, incremental_uri=incremental_uri)
+        return self._generate(class_name, context, storage_graph, iri_prefix=iri_prefix, iri_fragment=iri_fragment,
+                              iri_generator=iri_generator, incremental_uri=incremental_iri)
 
-    def _generate(self, class_name, context, storage_graph, uri_prefix=None, uri_fragment=None,
-                  uri_generator=None, untyped=False, incremental_uri=False):
+    def _generate(self, class_name, context, storage_graph, iri_prefix=None, iri_fragment=None,
+                  iri_generator=None, untyped=False, incremental_uri=False):
 
         # Only for the DefaultModel
         if untyped:
@@ -56,24 +56,24 @@ class ModelFactory(object):
             ancestry = ClassAncestry(class_uri, self._schema_graph)
             attributes = self._attr_manager.extract(class_uri, ancestry.bottom_up, context,
                                                     self._schema_graph)
-        if uri_generator is not None:
-            id_generator = uri_generator
-        elif uri_prefix is not None:
+        if iri_generator is not None:
+            id_generator = iri_generator
+        elif iri_prefix is not None:
             if incremental_uri:
-                id_generator = IncrementalIriGenerator(uri_prefix,
+                id_generator = IncrementalIriGenerator(iri_prefix,
                                                        storage_graph,
                                                        class_uri,
-                                                       fragment=uri_fragment)
+                                                       fragment=iri_fragment)
             else:
-                id_generator = RandomPrefixedIriGenerator(uri_prefix,
-                                                          fragment=uri_fragment)
+                id_generator = RandomPrefixedIriGenerator(iri_prefix,
+                                                          fragment=iri_fragment)
         else:
             id_generator = BlankNodeIriGenerator()
 
         special_attributes = {"class_uri": class_uri,
                               "_ancestry": ancestry,
                               "class_types": ancestry.bottom_up,
-                              "_context_dict": context,
+                              "_context": context,
                               "_id_generator": id_generator,
                               "_storage_graph": storage_graph,
                               # Non-attributes (will be popped)

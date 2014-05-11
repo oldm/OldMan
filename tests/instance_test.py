@@ -147,13 +147,13 @@ child_prefix = "http://localhost/children/"
 uri_fragment = "this"
 
 ChildClass = model_generator.generate("ChildClass", context, data_graph,
-                                      uri_prefix=child_prefix, uri_fragment=uri_fragment,
-                                      incremental_uri=True)
+                                      iri_prefix=child_prefix, iri_fragment=uri_fragment,
+                                      incremental_iri=True)
 GrandParentClass = model_generator.generate("GrandParentClass", context, data_graph,
-                                            uri_prefix="http://localhost/ancestors/",
-                                            uri_fragment=uri_fragment)
+                                            iri_prefix="http://localhost/ancestors/",
+                                            iri_fragment=uri_fragment)
 ParentClass = model_generator.generate("ParentClass", context, data_graph,
-                                       uri_prefix="http://localhost/parents/")
+                                       iri_prefix="http://localhost/parents/")
 
 
 class DatatypeTest(TestCase):

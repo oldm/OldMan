@@ -19,12 +19,12 @@ class ModelBase(type):
     """
     def __new__(mcs, name, bases, attributes):
         if name != "Model":
-            required_fields = ["class_uri", "_storage_graph", "_context_dict", "_id_generator",
+            required_fields = ["class_uri", "_storage_graph", "_context", "_id_generator",
                                "_ancestry", "class_types", "registry"]
             for field in required_fields:
                 if field not in attributes:
                     raise OMMissingClassAttributeError("%s is required for class %s" % (field, name))
-            attributes["_context_dict"] = mcs.clean_context(attributes["_context_dict"])
+            attributes["_context"] = mcs.clean_context(attributes["_context"])
 
             # Removes some "attributes"
             # only used by the manager
@@ -64,10 +64,11 @@ class ModelBase(type):
     @classmethod
     def clean_context(mcs, context):
         """
-            TODO: - make sure context is structured like this:
-                {"@context": ...}
-                 - make sure "id": "@id" and "type": "@type" are in
+            Context can be an IRI, a list or a dict
+            TODO: - make sure "id": "@id" and "type": "@type" are in
         """
+        if isinstance(context, dict) and "@context" in context.keys():
+            context = context["@context"]
         return context
 
 
@@ -115,8 +116,8 @@ class Model(object):
         return self._id.split('#')[0]
 
     @property
-    def context_dict(self):
-        return self._context_dict
+    def context(self):
+        return self._context
 
     def add_type(self, additional_type):
         if additional_type not in self._types:
@@ -245,8 +246,8 @@ class Model(object):
         return json.dumps(self.to_dict(remove_none_values), sort_keys=True, indent=2)
 
     def to_jsonld(self, remove_none_values=True):
-        dct = deepcopy(self._context_dict)
-        dct.update(self.to_dict(remove_none_values))
+        dct = self.to_dict(remove_none_values)
+        dct['@context'] = self._context
         return json.dumps(dct, sort_keys=True, indent=2)
 
     # def __hash__(self):
@@ -278,8 +279,8 @@ class Model(object):
                     (value.is_blank_node() or self.in_same_document(value)):
                 value_dict = dict(value.to_dict(remove_none_values, include_different_contexts, ignored_iris))
                 # TODO: should we improve this test?
-                if include_different_contexts and value._context_dict != self._context_dict:
-                    value_dict.update(value._context_dict)
+                if include_different_contexts and value._context != self._context:
+                    value_dict["@context"] = value._context
                 return value_dict
             else:
                 # URI

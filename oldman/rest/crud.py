@@ -49,7 +49,7 @@ class CRUDController(object):
             obj_iri = self._registry.find_object_from_base_uri(base_uri)
             obj = self._registry.get_object(obj_iri)
             graph.parse(data=new_document, format="json-ld", publicID=base_uri,
-                        context=obj.context_dict)
+                        context=obj.context)
         #RDF graph
         else:
             graph.parse(data=new_document, format=content_type, publicID=base_uri)
