@@ -69,7 +69,7 @@ print bob.to_rdf("turtle")
 # Email is required
 #LocalPerson.objects.create(name="Jack")
 
-#bob.emails = {'not an email address'}
+#bob.emails = {'bad email address'}
 
 # Schema
 print schema_graph.serialize(format="turtle")

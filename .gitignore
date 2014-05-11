@@ -11,3 +11,5 @@ dist/
 *egg-info/
 .idea/
 settings.cfg
+_build/
+build/
