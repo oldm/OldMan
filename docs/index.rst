@@ -2,32 +2,29 @@
 OldMan: Python OLDM
 ===================
 
-OldMan is a Python *Object Linked Data Mapper* (OLDM), an alternative name for *Object* **RDF** *Mapper*.
-
 .. image:: _static/wiseoldman_small.png
   :alt: Wise old man from https://openclipart.org/detail/190655/wise-old-man-by-j4p4n-190655
 
-OLDMs differ from common *Object Relational Mappers* (ORMs) by mapping objects to **RDF graphs** instead of *tables*.
-RDF *(Resource Description Framework)* is a simple yet powerful data model for publishing Linked Data.
+OldMan is a Python *Object Linked Data Mapper* (OLDM), an alternative name for *Object RDF Mapper*.
+
+An OLDM let you access, create and alter objects that represent resources described in RDF
+(the so called *Resource Description Framework*).
+Mapping objects to **RDF graphs** instead of *table rows* is the core difference between OLDMs and
+*Object Relational Mappers* (ORMs).
 
 OldMan is based on three W3C standards:
  1. RDF as data model;
- 2. SPARQL for querying and updating persistent data;
+ 2. SPARQL for querying and updating (persistent) data;
  3. JSON-LD context for mapping objects and RDF graphs.
 
 OldMan relies on the popular RDFlib Python library.
-
-.. toctree::
-    :maxdepth: 2
 
 
 Mission
 =======
 
-.. toctree::
-    :maxdepth: 2
 
-OldMan has one main objective: help you to **declare your models using RDF assertions and JSON-LD contexts** instead
+OldMan has one main objective: help you to **declare your models using RDF triples and JSON-LD contexts** instead
 of programming Python model classes yourself.
 
 However, OldMan does not force you to express all your domain logic in a declarative style.
@@ -42,6 +39,12 @@ By adopting a declarative style:
 
 Examples
 ========
+
+
+.. toctree::
+   :maxdepth: 2
+
+   quickstart
 
 
 
@@ -61,7 +64,7 @@ Current core features
 Status
 ======
 
-OldMan is still a young project under active development started in April 2014.
+OldMan is a young project **under active development** started in April 2014.
 Feel free to join us on Github and to subscribe to our mailing list (coming).
 
 Only Python 2.7 is currently supported, but support for Python 3.x is of course something we would like to consider.
