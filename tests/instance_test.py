@@ -5,7 +5,7 @@
 
 from unittest import TestCase
 from rdflib import ConjunctiveGraph, URIRef
-from oldman import default_model_factory
+from oldman import default_domain
 from oldman.model import Model
 from oldman.iri import IncrementalIriGenerator
 
@@ -134,25 +134,25 @@ def disclaim2(self):
     return new_disclaim
 
 
-model_generator = default_model_factory(schema_graph, default_graph)
+domain = default_domain(schema_graph, default_graph)
 # Methods
-model_generator.add_method(square_value, "square_value", EXAMPLE + "GrandParentClass")
-model_generator.add_method(print_new_value, "print_new_value", EXAMPLE + "ChildClass")
+domain.add_method(square_value, "square_value", EXAMPLE + "GrandParentClass")
+domain.add_method(print_new_value, "print_new_value", EXAMPLE + "ChildClass")
 # Method overloading
-model_generator.add_method(disclaim1, "disclaim", EXAMPLE + "GrandParentClass")
-model_generator.add_method(disclaim2, "disclaim", EXAMPLE + "ParentClass")
+domain.add_method(disclaim1, "disclaim", EXAMPLE + "GrandParentClass")
+domain.add_method(disclaim2, "disclaim", EXAMPLE + "ParentClass")
 
 # ChildClass is generated before its ancestors!!
 child_prefix = "http://localhost/children/"
 uri_fragment = "this"
 
-ChildClass = model_generator.generate("ChildClass", context, data_graph,
+ChildClass = domain.create_model("ChildClass", context, data_graph,
                                       iri_prefix=child_prefix, iri_fragment=uri_fragment,
                                       incremental_iri=True)
-GrandParentClass = model_generator.generate("GrandParentClass", context, data_graph,
+GrandParentClass = domain.create_model("GrandParentClass", context, data_graph,
                                             iri_prefix="http://localhost/ancestors/",
                                             iri_fragment=uri_fragment)
-ParentClass = model_generator.generate("ParentClass", context, data_graph,
+ParentClass = domain.create_model("ParentClass", context, data_graph,
                                        iri_prefix="http://localhost/parents/")
 
 

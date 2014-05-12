@@ -3,7 +3,7 @@
 """
 
 from rdflib.plugin import register, Parser, Serializer
-from .factory import default_model_factory
+from .domain import default_domain
 
 register('json-ld', Parser, 'rdflib_jsonld.parser', 'JsonLDParser')
 register('application/ld+json', Parser, 'rdflib_jsonld.parser', 'JsonLDParser')

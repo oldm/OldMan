@@ -7,7 +7,7 @@ import json
 from rdflib import ConjunctiveGraph, Graph, URIRef, Literal, RDF, XSD
 from rdflib.namespace import FOAF
 
-from oldman import default_model_factory
+from oldman import default_domain
 from oldman.attribute import OMAttributeTypeCheckError, OMRequiredPropertyError
 from oldman.exception import OMClassInstanceError, OMAttributeAccessError, OMUniquenessError
 from oldman.exception import OMWrongObjectError, OMObjectNotFoundError, OMHashIriError, OMEditError
@@ -210,16 +210,14 @@ context = {
 }
 
 
-model_factory = default_model_factory(schema_graph, default_graph)
+domain = default_domain(schema_graph, default_graph)
 # Model classes are generated here!
-LocalPerson = model_factory.generate("LocalPerson", context,
-                                       data_graph, iri_prefix="http://localhost/persons/",
-                                       iri_fragment="me")
-LocalRSAPublicKey = model_factory.generate("LocalRSAPublicKey", context, data_graph)
-LocalGPGKey = model_factory.generate("LocalGPGPublicKey", context, data_graph)
+lp_model = domain.create_model("LocalPerson", context, iri_prefix="http://localhost/persons/",
+                               iri_fragment="me")
+rsa_model = domain.create_model("LocalRSAPublicKey", context)
+gpg_model = domain.create_model("LocalGPGPublicKey", context)
 
-# GET, POST, PUT, DELETE
-crud_controller = CRUDController(model_factory.registry)
+crud_controller = CRUDController(domain)
 
 bob_name = "Bob"
 bob_blog = "http://blog.example.com/"
@@ -249,28 +247,28 @@ class ModelTest(TestCase):
     def tearDown(self):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
-        LocalPerson.objects.clear_cache()
-        LocalRSAPublicKey.objects.clear_cache()
+        lp_model.objects.clear_cache()
+        rsa_model.objects.clear_cache()
 
     def create_bob(self):
-        return LocalPerson.objects.create(name=bob_name, blog=bob_blog, mboxes=bob_emails,
-                                          short_bio_en=bob_bio_en, short_bio_fr=bob_bio_fr)
+        return lp_model.objects.create(name=bob_name, blog=bob_blog, mboxes=bob_emails,
+                                       short_bio_en=bob_bio_en, short_bio_fr=bob_bio_fr)
 
     def create_alice(self):
-        return LocalPerson.objects.create(name=alice_name, mboxes={alice_mail}, short_bio_en=alice_bio_en)
+        return lp_model.objects.create(name=alice_name, mboxes={alice_mail}, short_bio_en=alice_bio_en)
 
     def create_john(self):
-        return LocalPerson.objects.create(name=john_name, mboxes={john_mail}, short_bio_en=john_bio_en)
+        return lp_model.objects.create(name=john_name, mboxes={john_mail}, short_bio_en=john_bio_en)
 
     def create_rsa_key(self):
-        return LocalRSAPublicKey.objects.create(exponent=key_exponent, modulus=key_modulus,
+        return rsa_model.objects.create(exponent=key_exponent, modulus=key_modulus,
                                                 label=key_label)
 
     def create_gpg_key(self):
-        return LocalGPGKey.objects.create(fingerprint=gpg_fingerprint, hex_id=gpg_hex_id)
+        return gpg_model.objects.create(fingerprint=gpg_fingerprint, hex_id=gpg_hex_id)
 
     def test_bio_requirement(self):
-        bob = LocalPerson()
+        bob = lp_model.new()
         bob.name = bob_name
         bob.blog = bob_blog
         bob.mboxes = {bob_email1}
@@ -317,8 +315,8 @@ class ModelTest(TestCase):
         bob.name = "You should not retrieve this string"
 
         del bob
-        LocalPerson.objects.clear_cache()
-        bob = LocalPerson.objects.get(id=bob_uri)
+        lp_model.objects.clear_cache()
+        bob = lp_model.objects.get(id=bob_uri)
 
         self.assertEquals(bob_name, bob.name)
         self.assertEquals(bob_blog, bob.blog.id)
@@ -361,7 +359,7 @@ class ModelTest(TestCase):
         self.assertFalse(bool(data_graph.query(mbox_query % bob_email1)))
 
     def test_list_assignment_instead_of_set(self):
-        bob = LocalPerson()
+        bob = lp_model.new()
         bob.name = bob_name
         bob.short_bio_en = bob_bio_en
 
@@ -375,8 +373,8 @@ class ModelTest(TestCase):
         bob.save()
         bob_uri = bob.id
         del bob
-        LocalPerson.objects.clear_cache()
-        bob = LocalPerson.objects.get(id=bob_uri)
+        lp_model.objects.clear_cache()
+        bob = lp_model.objects.get(id=bob_uri)
 
         self.assertEquals(bob.short_bio_en, None)
         self.assertEquals(bob.short_bio_fr, bob_bio_fr)
@@ -400,8 +398,8 @@ class ModelTest(TestCase):
         self.assertEquals(bob.short_bio_en, forbidden_string)
 
         del bob
-        LocalPerson.objects.clear_cache()
-        bob = LocalPerson.objects.get(id=bob_id)
+        lp_model.objects.clear_cache()
+        bob = lp_model.objects.get(id=bob_id)
         self.assertEquals(bob.short_bio_en, None)
         self.assertEquals(bob.short_bio_fr, bob_bio_fr)
 
@@ -410,8 +408,8 @@ class ModelTest(TestCase):
         bob.save()
         bob.short_bio_en = "You should not retrieve this string (again)"
 
-        LocalPerson.objects.clear_cache()
-        bob = LocalPerson.objects.get(id=bob_id)
+        lp_model.objects.clear_cache()
+        bob = lp_model.objects.get(id=bob_id)
         self.assertEquals(bob.short_bio_en, bob_bio_en_2)
         self.assertEquals(bob.short_bio_fr, bob_bio_fr)
 
@@ -419,9 +417,9 @@ class ModelTest(TestCase):
         rsa_key = self.create_rsa_key()
         rsa_skolemized_iri = rsa_key.id
         del rsa_key
-        LocalRSAPublicKey.objects.clear_cache()
+        rsa_model.objects.clear_cache()
 
-        rsa_key = LocalRSAPublicKey.objects.get(id=rsa_skolemized_iri)
+        rsa_key = rsa_model.objects.get(id=rsa_skolemized_iri)
         self.assertEquals(rsa_key.exponent, key_exponent)
         self.assertEquals(rsa_key.modulus, key_modulus)
         self.assertEquals(rsa_key.label, key_label)
@@ -434,7 +432,7 @@ class ModelTest(TestCase):
             rsa_key.modulus = 235
         rsa_key.modulus = format(235, "x")
         with self.assertRaises(OMRequiredPropertyError):
-            LocalRSAPublicKey.objects.create(exponent=key_exponent)
+            rsa_model.objects.create(exponent=key_exponent)
 
     def test_filter_two_bobs(self):
         #Bob 1
@@ -443,39 +441,39 @@ class ModelTest(TestCase):
         bob2_mail = "bob2@example.org"
         bob2_bio_en = "I am a double."
         # Bob 2
-        LocalPerson.objects.create(name=bob_name, mboxes={bob2_mail}, short_bio_en=bob2_bio_en)
+        lp_model.objects.create(name=bob_name, mboxes={bob2_mail}, short_bio_en=bob2_bio_en)
 
-        bobs = list(LocalPerson.objects.filter(name=bob_name))
+        bobs = list(lp_model.objects.filter(name=bob_name))
         self.assertEquals(len(bobs), 2)
         self.assertEquals(bobs[0].name, bobs[1].name)
         self.assertEquals(bobs[0].name, bob_name)
         self.assertNotEquals(bobs[0].mboxes, bobs[1].mboxes)
 
-        bobs2 = set(LocalPerson.objects.filter(name=bob_name,
+        bobs2 = set(lp_model.objects.filter(name=bob_name,
                                                # mboxes is NOT REQUIRED to be exhaustive
                                                mboxes={bob_email2}))
         self.assertEquals(len(bobs2), 1)
-        bobs3 = set(LocalPerson.objects.filter(name=bob_name,
+        bobs3 = set(lp_model.objects.filter(name=bob_name,
                                                mboxes={bob_email1, bob_email2}))
         self.assertEquals(bobs2, bobs3)
 
         # Nothing
-        bobs4 = list(LocalPerson.objects.filter(name=bob_name,
+        bobs4 = list(lp_model.objects.filter(name=bob_name,
                                                 mboxes={bob_email1, bob_email2, bob2_mail}))
         self.assertEquals(len(bobs4), 0)
 
     def test_wrong_filter(self):
         with self.assertRaises(OMAttributeAccessError):
-            LocalPerson.objects.filter(undeclared_attr="not in datastore")
+            lp_model.objects.filter(undeclared_attr="not in datastore")
 
     def test_set_validation(self):
         with self.assertRaises(OMAttributeTypeCheckError):
             # Mboxes should be a set
-            LocalPerson.objects.create(name="Lola", mboxes="lola@example.org",
+            lp_model.objects.create(name="Lola", mboxes="lola@example.org",
                                        short_bio_en="Will not exist.")
         with self.assertRaises(OMAttributeTypeCheckError):
             # Mboxes should be a set not a list
-            LocalPerson.objects.create(name="Lola", mboxes=["lola@example.org"],
+            lp_model.objects.create(name="Lola", mboxes=["lola@example.org"],
                                        short_bio_en="Will not exist.")
 
     def test_children_object_assignment(self):
@@ -492,8 +490,8 @@ class ModelTest(TestCase):
 
         # Force reload from the triplestore
         del bob
-        LocalPerson.objects.clear_cache()
-        bob = LocalPerson.objects.get(id=bob_uri)
+        lp_model.objects.clear_cache()
+        bob = lp_model.objects.get(id=bob_uri)
         self.assertEquals(bob_children_ids, [c.id for c in bob.children])
 
     def test_children_uri_assignment(self):
@@ -508,9 +506,9 @@ class ModelTest(TestCase):
 
         # Force reload from the triplestore
         del bob
-        LocalPerson.objects.clear_cache()
+        lp_model.objects.clear_cache()
 
-        bob = LocalPerson.objects.get(id=bob_uri)
+        bob = lp_model.objects.get(id=bob_uri)
         self.assertEquals(bob.id, bob_uri)
         self.assertEquals(bob.name, bob_name)
         self.assertEquals(bob_children_uris, [c.id for c in bob.children])
@@ -552,7 +550,7 @@ class ModelTest(TestCase):
         self.assertEquals(set(bob_json["mboxes"]), bob_emails)
         self.assertEquals(bob_json["short_bio_en"], bob_bio_en)
         self.assertEquals(bob_json["short_bio_fr"], bob_bio_fr)
-        self.assertEquals(bob_json["types"], LocalPerson.class_types)
+        self.assertEquals(bob_json["types"], lp_model.class_types)
 
     def test_bob_jsonld(self):
         bob = self.create_bob()
@@ -564,7 +562,7 @@ class ModelTest(TestCase):
         self.assertEquals(bob_jsonld["short_bio_fr"], bob_bio_fr)
         self.assertTrue("@context" in bob_jsonld)
         self.assertEquals(bob_jsonld["@context"], context["@context"])
-        self.assertEquals(bob_jsonld["types"], LocalPerson.class_types)
+        self.assertEquals(bob_jsonld["types"], lp_model.class_types)
 
     def test_rsa_jsonld(self):
         rsa_key = self.create_rsa_key()
@@ -590,10 +588,10 @@ class ModelTest(TestCase):
     def test_is_blank_node(self):
         bob = self.create_bob()
         self.assertFalse(bob.is_blank_node())
-        alice = LocalPerson()
+        alice = lp_model.new()
         self.assertFalse(alice.is_blank_node())
 
-        raoul = LocalPerson(id="http://localhost/.well-known/genid/2387335")
+        raoul = lp_model.new(id="http://localhost/.well-known/genid/2387335")
         self.assertTrue(raoul.is_blank_node())
 
     def test_same_document(self):
@@ -603,10 +601,10 @@ class ModelTest(TestCase):
 
         partial_uri = u"http://localhost/persons"
         bob_uri = partial_uri + "#bob"
-        bob = LocalPerson.objects.create(id=bob_uri, name=bob_name, blog=bob_blog, mboxes=bob_emails,
+        bob = lp_model.objects.create(id=bob_uri, name=bob_name, blog=bob_blog, mboxes=bob_emails,
                                          short_bio_en=bob_bio_en, short_bio_fr=bob_bio_fr)
         alice_uri = partial_uri + "#alice"
-        alice = LocalPerson.objects.create(id=alice_uri, name=alice_name, mboxes={alice_mail},
+        alice = lp_model.objects.create(id=alice_uri, name=alice_name, mboxes={alice_mail},
                                            short_bio_en=alice_bio_en)
         self.assertTrue(bob.in_same_document(alice))
 
@@ -630,10 +628,10 @@ class ModelTest(TestCase):
     def test_friendship_jsonld(self):
         friendship_uri = u"http://localhost/friendship"
         bob_uri = friendship_uri + "#bob"
-        bob = LocalPerson.objects.create(id=bob_uri, name=bob_name, blog=bob_blog, mboxes=bob_emails,
+        bob = lp_model.objects.create(id=bob_uri, name=bob_name, blog=bob_blog, mboxes=bob_emails,
                                          short_bio_en=bob_bio_en, short_bio_fr=bob_bio_fr)
         alice_uri = friendship_uri + "#alice"
-        alice = LocalPerson.objects.create(id=alice_uri, name=alice_name, mboxes={alice_mail},
+        alice = lp_model.objects.create(id=alice_uri, name=alice_name, mboxes={alice_mail},
                                            short_bio_en=alice_bio_en)
         bob_friends = {alice}
         bob.friends = bob_friends
@@ -652,10 +650,10 @@ class ModelTest(TestCase):
     def test_friendship_rdf(self):
         friendship_uri = u"http://localhost/friendship"
         bob_uri = friendship_uri + "#bob"
-        bob = LocalPerson.objects.create(id=bob_uri, name=bob_name, blog=bob_blog, mboxes=bob_emails,
+        bob = lp_model.objects.create(id=bob_uri, name=bob_name, blog=bob_blog, mboxes=bob_emails,
                                          short_bio_en=bob_bio_en, short_bio_fr=bob_bio_fr)
         alice_uri = friendship_uri + "#alice"
-        alice = LocalPerson.objects.create(id=alice_uri, name=alice_name, mboxes={alice_mail},
+        alice = lp_model.objects.create(id=alice_uri, name=alice_name, mboxes={alice_mail},
                                            short_bio_en=alice_bio_en)
         bob_friends = {alice}
         bob.friends = bob_friends
@@ -678,10 +676,10 @@ class ModelTest(TestCase):
         bob.save()
         del bob
         del rsa_key
-        LocalPerson.objects.clear_cache()
-        LocalRSAPublicKey.objects.clear_cache()
+        lp_model.objects.clear_cache()
+        rsa_model.objects.clear_cache()
 
-        bob = LocalPerson.objects.get(id=bob_iri)
+        bob = lp_model.objects.get(id=bob_iri)
         bob_jsonld = json.loads(bob.to_jsonld())
         self.assertEquals(bob_jsonld["name"], bob_name)
         self.assertEquals(bob_jsonld["short_bio_en"], bob_bio_en)
@@ -700,12 +698,12 @@ class ModelTest(TestCase):
 
         # LocalPerson type is missing
         with self.assertRaises(OMClassInstanceError):
-            LocalPerson.objects.get(id=str(jason_uri))
+            lp_model.objects.get(id=str(jason_uri))
 
-        data_graph.add((jason_uri, RDF["type"], URIRef(LocalPerson.class_uri)))
+        data_graph.add((jason_uri, RDF["type"], URIRef(lp_model.class_iri)))
 
         # Mboxes is still missing
-        jason = LocalPerson.objects.get(id=str(jason_uri))
+        jason = lp_model.objects.get(id=str(jason_uri))
         self.assertFalse(jason.is_valid())
 
         mboxes = {"jason@example.com", "jason@example.org"}
@@ -717,8 +715,8 @@ class ModelTest(TestCase):
                          format="json-ld")
 
         # Clear the cache (out-of-band update)
-        LocalPerson.objects.clear_cache()
-        jason = LocalPerson.objects.get(id=jason_uri)
+        lp_model.objects.clear_cache()
+        jason = lp_model.objects.get(id=jason_uri)
         self.assertEquals(jason.mboxes, mboxes)
         self.assertTrue(jason.is_valid())
 
@@ -727,20 +725,20 @@ class ModelTest(TestCase):
         bob_iri = bob.id
 
         with self.assertRaises(OMUniquenessError):
-            LocalPerson(id=bob_iri, name=bob_name, mboxes=bob_emails, short_bio_en=u"Will not exist")
+            lp_model.new(id=bob_iri, name=bob_name, mboxes=bob_emails, short_bio_en=u"Will not exist")
 
         with self.assertRaises(OMUniquenessError):
-            LocalPerson.objects.create(id=bob_iri, name=bob_name, mboxes=bob_emails,
+            lp_model.objects.create(id=bob_iri, name=bob_name, mboxes=bob_emails,
                                        short_bio_en=u"Will not exist")
 
         with self.assertRaises(OMUniquenessError):
-            LocalPerson(id=bob_iri, name=bob_name, mboxes=bob_emails,
+            lp_model.new(id=bob_iri, name=bob_name, mboxes=bob_emails,
                         short_bio_en=u"Will not exist", create=True)
 
         # Forces the creation (by claiming your are not)
         # Dangerous!
         short_bio_en = u"Is forced to exist"
-        bob2 = LocalPerson(id=bob_iri, name=bob_name, mboxes=bob_emails,
+        bob2 = lp_model.new(id=bob_iri, name=bob_name, mboxes=bob_emails,
                            short_bio_en=short_bio_en, create=False)
         self.assertEquals(bob2.short_bio_en, short_bio_en)
 
@@ -756,8 +754,8 @@ class ModelTest(TestCase):
         self.assertEquals(bob.gpg_key.hex_id, gpg_hex_id)
 
         del bob
-        LocalPerson.objects.clear_cache()
-        bob = LocalPerson.objects.get(id=bob_id)
+        lp_model.objects.clear_cache()
+        bob = lp_model.objects.get(id=bob_id)
         self.assertEquals(bob.gpg_key.fingerprint, gpg_fingerprint)
         self.assertEquals(bob.gpg_key.hex_id, gpg_hex_id)
 
@@ -932,7 +930,7 @@ class ModelTest(TestCase):
         doc = json.loads(crud_controller.get(doc_iri, "json"))
         self.assertEquals(doc["id"], doc_iri)
 
-        obj_iris = model_factory.registry.find_object_iris(doc_iri)
+        obj_iris = domain.registry.find_object_iris(doc_iri)
         self.assertEquals({bob_iri, doc_iri}, obj_iris)
 
     def test_bob_controller_delete(self):
@@ -945,14 +943,14 @@ class ModelTest(TestCase):
 
         ask_alice = """ASK {?x foaf:name "%s"^^xsd:string }""" % alice_name
         self.assertFalse(bool(data_graph.query(ask_alice)))
-        LocalPerson.objects.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
+        lp_model.objects.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
                                    short_bio_en=alice_bio_en)
         self.assertTrue(bool(data_graph.query(ask_alice)))
 
         #John is the base uri (bad practise, only for test convenience)
         ask_john = """ASK {?x foaf:name "%s"^^xsd:string }""" % john_name
         self.assertFalse(bool(data_graph.query(ask_john)))
-        LocalPerson.objects.create(id=doc_iri, name=john_name, mboxes={john_mail},
+        lp_model.objects.create(id=doc_iri, name=john_name, mboxes={john_mail},
                                    short_bio_en=john_bio_en)
         self.assertTrue(bool(data_graph.query(ask_john)))
 
@@ -977,7 +975,7 @@ class ModelTest(TestCase):
 
         ask_alice = """ASK {?x foaf:name "%s"^^xsd:string }""" % alice_name
         self.assertFalse(bool(data_graph.query(ask_alice)))
-        LocalPerson.objects.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
+        lp_model.objects.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
                                    short_bio_en=alice_bio_en)
         self.assertTrue(bool(data_graph.query(ask_alice)))
 
@@ -994,7 +992,7 @@ class ModelTest(TestCase):
     def test_controller_put_change_name(self):
         bob = self.create_bob()
         doc_iri = bob.base_iri
-        alice = LocalPerson.objects.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
+        alice = lp_model.objects.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
                                            short_bio_en=alice_bio_en)
         alice_ref = URIRef(alice.id)
         bob_ref = URIRef(bob.id)
@@ -1033,7 +1031,7 @@ class ModelTest(TestCase):
         jsld_dump = alice.to_jsonld()
 
         del alice
-        LocalPerson.objects.clear_cache()
+        lp_model.objects.clear_cache()
         self.assertEquals(unicode(data_graph.value(alice_ref, FOAF.name)), alice_name)
 
         crud_controller.update(alice_base_iri, jsld_dump, "application/ld+json")
@@ -1081,16 +1079,16 @@ class ModelTest(TestCase):
 
     def test_bob_additional_types(self):
         additional_types = [prof_type]
-        bob = LocalPerson(name=bob_name, blog=bob_blog, mboxes=bob_emails, short_bio_en=bob_bio_en,
+        bob = lp_model.new(name=bob_name, blog=bob_blog, mboxes=bob_emails, short_bio_en=bob_bio_en,
                           short_bio_fr=bob_bio_fr, types=additional_types)
         bob.save()
-        self.assertEquals(set(bob.types), set(bob.class_types + additional_types))
-        self.assertTrue(prof_type not in bob.class_types)
+        self.assertEquals(set(bob.types), set(lp_model.class_types + additional_types))
+        self.assertTrue(prof_type not in lp_model.class_types)
 
         additional_types += [researcher_type]
         bob.add_type(researcher_type)
-        self.assertEquals(set(bob.types), set(bob.class_types + additional_types))
-        self.assertTrue(researcher_type not in bob.class_types)
+        self.assertEquals(set(bob.types), set(lp_model.class_types + additional_types))
+        self.assertTrue(researcher_type not in lp_model.class_types)
 
     def test_alice_json_additional_types(self):
         alice = self.create_alice()
@@ -1098,7 +1096,7 @@ class ModelTest(TestCase):
         additional_types = [prof_type, researcher_type]
         dct["types"] += additional_types
         alice.full_update(dct)
-        self.assertEquals(set(alice.types), set(alice.class_types + additional_types))
+        self.assertEquals(set(alice.types), set(lp_model.class_types + additional_types))
         alice.full_update(dct)
         self.assertEquals(len(alice.types), len(set(alice.types)))
 
@@ -1111,4 +1109,4 @@ class ModelTest(TestCase):
         for t in additional_types:
             graph.add((alice_ref, RDF.type, URIRef(t)))
         alice.full_update_from_graph(graph)
-        self.assertEquals(set(alice.types), set(alice.class_types + additional_types))
+        self.assertEquals(set(alice.types), set(lp_model.class_types + additional_types))

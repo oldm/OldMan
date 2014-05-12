@@ -8,7 +8,7 @@ from os import path
 from rdflib import ConjunctiveGraph, URIRef
 import json
 from copy import copy
-from oldman import default_model_factory
+from oldman import default_domain
 from oldman.exception import OMRequiredPropertyError, OMAttributeTypeCheckError
 
 default_graph = ConjunctiveGraph()
@@ -115,10 +115,9 @@ context = {
     }
 }
 
-model_generator = default_model_factory(schema_graph, default_graph)
+domain = default_domain(schema_graph, default_graph)
 # Model class is generated here!
-LocalClass = model_generator.generate("LocalClass", context, data_graph,
-                                      iri_prefix="http://localhost/objects/")
+model = domain.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
 default_list_en = ["w1", "w2"]
 
 
@@ -127,10 +126,10 @@ class ContainerTest(TestCase):
     def tearDown(self):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
-        LocalClass.objects.clear_cache()
+        model.objects.clear_cache()
 
     def create_object(self):
-        return LocalClass.objects.create(list_en=default_list_en)
+        return model.objects.create(list_en=default_list_en)
 
     def test_basic_list(self):
         obj = self.create_object()
@@ -141,14 +140,14 @@ class ContainerTest(TestCase):
         obj.save()
 
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        model.objects.clear_cache()
+        obj = model.objects.get(id=uri)
         self.assertEquals(lst, backup_list)
         self.assertEquals(obj.primary_list, lst)
         self.assertNotEquals(obj.primary_list, list(set(lst)))
 
     def test_localized_lists(self):
-        obj = LocalClass()
+        obj = model.new()
         uri = obj.id
         list_fr = ["Salut", "Bonjour"]
         list_en = ["Hi", "Hello"]
@@ -157,13 +156,13 @@ class ContainerTest(TestCase):
         obj.save()
 
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        model.objects.clear_cache()
+        obj = model.objects.get(id=uri)
         self.assertEquals(obj.list_fr, list_fr)
         self.assertEquals(obj.list_en, list_en)
 
     def test_required_list(self):
-        obj = LocalClass()
+        obj = model.new()
         with self.assertRaises(OMRequiredPropertyError):
             obj.save()
         obj.list_fr = []
@@ -185,7 +184,7 @@ class ContainerTest(TestCase):
         obj.save()
 
     def test_change_attribute_of_required_property(self):
-        obj = LocalClass()
+        obj = model.new()
         list_fr = ["Salut", "Bonjour"]
         list_en = ["Hi", "Hello"]
         obj.list_en = list_en
@@ -203,8 +202,8 @@ class ContainerTest(TestCase):
         self.assertEquals(obj.bool_list, lst)
         obj.save()
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        model.objects.clear_cache()
+        obj = model.objects.get(id=uri)
         self.assertEquals(obj.bool_list, lst)
         obj.bool_list = [True]
         obj.save()
@@ -220,8 +219,8 @@ class ContainerTest(TestCase):
         obj.bool_set = bools
         obj.save()
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        model.objects.clear_cache()
+        obj = model.objects.get(id=uri)
         self.assertEquals(obj.bool_set, bools)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.bool_set = [True]
@@ -236,8 +235,8 @@ class ContainerTest(TestCase):
         obj.lang_map = values
         obj.save()
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        model.objects.clear_cache()
+        obj = model.objects.get(id=uri)
         self.assertEquals(obj.lang_map, values)
 
         with self.assertRaises(OMAttributeTypeCheckError):

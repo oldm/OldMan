@@ -9,7 +9,7 @@ class IriGenerator(object):
     def __init__(self, **kwargs):
         pass
 
-    def generate(self):
+    def generate(self, **kwargs):
         raise NotImplementedError()
 
 

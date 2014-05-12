@@ -5,7 +5,21 @@ class OMError(Exception):
     pass
 
 
-class OMSchemaError(OMError):
+class ModelGenerationError(OMError):
+    """
+        Error occured when generating a new model
+    """
+    pass
+
+
+class AlreadyAllocatedModelError(ModelGenerationError):
+    """
+        The class IRI or the short name of a new model is already allocated
+    """
+    pass
+
+
+class OMSchemaError(ModelGenerationError):
     """
         Error in the schema graph and/or the JSON-LD context
     """
@@ -183,14 +197,6 @@ class OMAlreadyGeneratedAttributeError(OMInternalError):
     """
         Attribute generation occurs only once per SupportedProperty.
         You should not try to add metadata or regenerate after that.
-    """
-    pass
-
-
-class OMMissingClassAttributeError(OMInternalError):
-    """
-        Some attributes required for generating a model class
-        are missing.
     """
     pass
 

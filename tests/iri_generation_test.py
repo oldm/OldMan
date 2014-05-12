@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from rdflib import ConjunctiveGraph, URIRef, RDF, BNode, Graph
 
-from oldman import default_model_factory
+from oldman import default_domain
 from oldman.iri import RandomFragmentIriGenerator
 from oldman.exception import OMRequiredBaseIRIError
 from oldman.rest.crud import CRUDController
@@ -27,10 +27,9 @@ context = {
     }
 }
 
-model_generator = default_model_factory(schema_graph, default_graph)
-crud_controller = CRUDController(model_generator.registry)
-MyClass = model_generator.generate("MyClass", context, data_graph,
-                                   iri_generator=RandomFragmentIriGenerator())
+domain = default_domain(schema_graph, default_graph)
+crud_controller = CRUDController(domain)
+model = domain.create_model("MyClass", context, iri_generator=RandomFragmentIriGenerator())
 
 
 class DatatypeTest(TestCase):
@@ -38,23 +37,23 @@ class DatatypeTest(TestCase):
     def tearDown(self):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
-        MyClass.objects.clear_cache()
+        model.objects.clear_cache()
 
     def test_generation(self):
         base_iri = "http://example.org/doc1"
-        obj1 = MyClass(base_iri=base_iri)
+        obj1 = model.new(base_iri=base_iri)
         self.assertEquals(obj1.base_iri, base_iri)
         self.assertTrue(base_iri in obj1.id)
 
-        obj2 = MyClass.objects.create(base_iri=base_iri)
+        obj2 = model.objects.create(base_iri=base_iri)
         self.assertEquals(obj2.base_iri, base_iri)
         self.assertTrue(base_iri in obj2.id)
         self.assertNotEquals(obj1.id, obj2.id)
 
         with self.assertRaises(OMRequiredBaseIRIError):
-            MyClass()
+            model.new()
         with self.assertRaises(OMRequiredBaseIRIError):
-            MyClass(base_iri="http://localhost/not#a-base-iri")
+            model.new(base_iri="http://localhost/not#a-base-iri")
 
     def test_controller_put(self):
         base_iri = "http://example.org/doc2"
@@ -62,7 +61,7 @@ class DatatypeTest(TestCase):
         g.add((BNode(), RDF.type, URIRef(EXAMPLE + "MyClass")))
         crud_controller.update(base_iri, g.serialize(format="turtle"), "turtle")
 
-        obj_iri = model_generator.registry.find_object_from_base_uri(base_iri)
+        obj_iri = domain.registry.find_object_from_base_uri(base_iri)
         self.assertTrue(obj_iri is not None)
         self.assertTrue(base_iri in obj_iri)
         self.assertTrue('#' in obj_iri)
@@ -78,5 +77,5 @@ class DatatypeTest(TestCase):
         """
         base_iri = "http://example.org/doc3"
         crud_controller.update(base_iri, ttl, "turtle")
-        obj_iri = model_generator.registry.find_object_from_base_uri(base_iri)
+        obj_iri = domain.registry.find_object_from_base_uri(base_iri)
         self.assertEquals(obj_iri, base_iri + "#this")

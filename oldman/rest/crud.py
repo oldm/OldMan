@@ -1,6 +1,6 @@
 from rdflib import BNode, Graph, RDF, URIRef
 from oldman.exception import OMDifferentBaseIRIError, OMForbiddenSkolemizedIRIError, OMClassInstanceError
-from oldman.model import is_blank_node
+from oldman.resource import Resource, is_blank_node
 from oldman.registry import extract_types
 
 _JSON_TYPES = ["application/json", "json"]
@@ -14,8 +14,9 @@ class CRUDController(object):
         Generic (does not support the Collection pattern so there is no append method)
     """
 
-    def __init__(self, registry):
-        self._registry = registry
+    def __init__(self, domain):
+        self._domain = domain
+        self._registry = domain.registry
 
     def get(self, base_uri, content_type="text/turtle"):
         """
@@ -95,8 +96,8 @@ class CRUDController(object):
 
         for bnode in bnode_subjects:
             types = {unicode(t) for t in graph.objects(bnode, RDF.type)}
-            model_class = self._registry.select_model_class(types)
-            obj = model_class(base_iri=base_iri)
+            model = self._registry.select_model(self._registry.get_models(types))
+            obj = model.new(base_iri=base_iri)
             alter_bnode_triples(graph, bnode, URIRef(obj.id))
             obj.full_update_from_graph(graph, save=False)
             objs.append(obj)
@@ -126,13 +127,13 @@ class CRUDController(object):
                 raise OMDifferentBaseIRIError("%s is not the base IRI of %s" % (base_iri, obj_iri))
 
             types = extract_types(obj_iri, graph)
-            model_class = self._registry.select_model_class(types)
+            model = self._registry.select_model(self._registry.get_models(types))
             try:
-                obj = model_class.objects.get(id=obj_iri)
+                obj = model.objects.get(id=obj_iri)
                 obj.full_update_from_graph(graph, save=False)
             except OMClassInstanceError:
                 # New object
-                obj = model_class.load_from_graph(obj_iri, graph, create=True)
+                obj = Resource.load_from_graph(self._domain, obj_iri, graph, is_new=True)
 
             objs.append(obj)
         return objs

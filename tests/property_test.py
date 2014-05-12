@@ -7,7 +7,7 @@ from unittest import TestCase
 from os import path
 from rdflib import ConjunctiveGraph, URIRef, Literal, Graph, XSD
 import json
-from oldman import default_model_factory
+from oldman import default_domain
 from oldman.exception import OMPropertyDefError, OMReadOnlyAttributeError
 
 default_graph = ConjunctiveGraph()
@@ -87,10 +87,8 @@ context = {
     }
 }
 
-model_generator = default_model_factory(schema_graph, default_graph)
-# Model class is generated here!
-LocalClass = model_generator.generate("LocalClass", context, data_graph,
-                                      iri_prefix="http://localhost/objects/")
+domain = default_domain(schema_graph, default_graph)
+lc_model = domain.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
 
 
 class PropertyTest(TestCase):
@@ -98,14 +96,14 @@ class PropertyTest(TestCase):
     def tearDown(self):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
-        LocalClass.objects.clear_cache()
+        lc_model.objects.clear_cache()
 
     def test_read_and_write_only(self):
         with self.assertRaises(OMPropertyDefError):
-            model_generator.generate("BadClass", context, data_graph)
+            domain.create_model("BadClass", context, data_graph)
 
     def test_write_only(self):
-        obj = LocalClass()
+        obj = lc_model.new()
         secret = "My secret"
         obj.secret = secret
         for obj_dump in [obj.to_json(), obj.to_jsonld()]:
@@ -116,7 +114,7 @@ class PropertyTest(TestCase):
         self.assertFalse(secret in obj.to_rdf("turtle"))
 
     def test_read_only(self):
-        obj = LocalClass()
+        obj = lc_model.new()
         # End-user
         end_user_str = "A user is not allowed to write this"
         obj.ro_property = end_user_str
@@ -129,10 +127,10 @@ class PropertyTest(TestCase):
         self.assertEquals(admin_str, obj.ro_property)
 
         with self.assertRaises(OMReadOnlyAttributeError):
-            LocalClass.objects.create(ro_property=end_user_str)
+            lc_model.objects.create(ro_property=end_user_str)
 
     def test_read_only_update(self):
-        obj = LocalClass()
+        obj = lc_model.new()
         admin_str = "An admin is allowed to write it"
         obj.ro_property = admin_str
         obj.save(is_end_user=False)
@@ -148,7 +146,7 @@ class PropertyTest(TestCase):
         obj.full_update(obj_dict, is_end_user=False)
 
     def test_read_only_graph_update(self):
-        obj = LocalClass()
+        obj = lc_model.new()
         obj_iri = URIRef(obj.id)
         admin_str = "An admin is allowed to write it"
         obj.ro_property = admin_str

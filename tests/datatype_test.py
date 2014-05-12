@@ -10,7 +10,7 @@ import json
 from decimal import Decimal
 from copy import copy
 from datetime import date, datetime, time
-from oldman import default_model_factory
+from oldman import default_domain
 from oldman.exception import OMRequiredPropertyError, OMAttributeTypeCheckError
 
 default_graph = ConjunctiveGraph()
@@ -147,10 +147,8 @@ context = {
     }
 }
 
-model_generator = default_model_factory(schema_graph, default_graph)
-# Model class is generated here!
-LocalClass = model_generator.generate("LocalClass", context, data_graph,
-                                      iri_prefix="http://localhost/objects/")
+domain = default_domain(schema_graph, default_graph)
+lc_model = domain.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
 default_list_en = ["w1", "w2"]
 
 
@@ -159,10 +157,10 @@ class DatatypeTest(TestCase):
     def tearDown(self):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
-        LocalClass.objects.clear_cache()
+        lc_model.objects.clear_cache()
 
     def create_object(self):
-        return LocalClass.objects.create()
+        return lc_model.objects.create()
 
     def test_single_bool(self):
         obj = self.create_object()
@@ -170,22 +168,22 @@ class DatatypeTest(TestCase):
         obj.single_bool = True
         obj.save()
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        lc_model.objects.clear_cache()
+        obj = lc_model.objects.get(id=uri)
         self.assertEquals(obj.single_bool, True)
 
         obj.single_bool = None
         obj.save()
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        lc_model.objects.clear_cache()
+        obj = lc_model.objects.get(id=uri)
         self.assertEquals(obj.single_bool, None)
 
         obj.single_bool = False
         obj.save()
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        lc_model.objects.clear_cache()
+        obj = lc_model.objects.get(id=uri)
         self.assertEquals(obj.single_bool, False)
 
     def test_single_date(self):
@@ -195,8 +193,8 @@ class DatatypeTest(TestCase):
         obj.date = copy(d)
         obj.save()
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        lc_model.objects.clear_cache()
+        obj = lc_model.objects.get(id=uri)
         self.assertEquals(obj.date, d)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.date = "not a date object"
@@ -208,8 +206,8 @@ class DatatypeTest(TestCase):
         obj.datetime = copy(d)
         obj.save()
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        lc_model.objects.clear_cache()
+        obj = lc_model.objects.get(id=uri)
         self.assertEquals(obj.datetime, d)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.datetime = "not a date time object"
@@ -221,8 +219,8 @@ class DatatypeTest(TestCase):
         obj.time = copy(t)
         obj.save()
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        lc_model.objects.clear_cache()
+        obj = lc_model.objects.get(id=uri)
         self.assertEquals(obj.time, t)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.time = "not a time object"
@@ -234,8 +232,8 @@ class DatatypeTest(TestCase):
         obj.int = value
         obj.save()
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        lc_model.objects.clear_cache()
+        obj = lc_model.objects.get(id=uri)
         self.assertEquals(obj.int, value)
         obj.int = 0
         obj.int = 5
@@ -251,8 +249,8 @@ class DatatypeTest(TestCase):
         obj.integer = value
         obj.save()
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        lc_model.objects.clear_cache()
+        obj = lc_model.objects.get(id=uri)
         self.assertEquals(obj.integer, value)
         obj.integer = 0
         obj.integer = -5
@@ -268,8 +266,8 @@ class DatatypeTest(TestCase):
         obj.short = value
         obj.save()
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        lc_model.objects.clear_cache()
+        obj = lc_model.objects.get(id=uri)
         self.assertEquals(obj.short, value)
         obj.short = 0
         obj.short = 5
@@ -285,8 +283,8 @@ class DatatypeTest(TestCase):
         obj.positiveInt = value
         obj.save()
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        lc_model.objects.clear_cache()
+        obj = lc_model.objects.get(id=uri)
         self.assertEquals(obj.positiveInt, value)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.positiveInt = -1
@@ -304,8 +302,8 @@ class DatatypeTest(TestCase):
         obj.negativeInt = value
         obj.save()
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        lc_model.objects.clear_cache()
+        obj = lc_model.objects.get(id=uri)
         self.assertEquals(obj.negativeInt, value)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.negativeInt = 1
@@ -323,8 +321,8 @@ class DatatypeTest(TestCase):
         obj.nonPositiveInt = value
         obj.save()
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        lc_model.objects.clear_cache()
+        obj = lc_model.objects.get(id=uri)
         self.assertEquals(obj.nonPositiveInt, value)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.nonPositiveInt = 1
@@ -341,8 +339,8 @@ class DatatypeTest(TestCase):
         obj.nonNegativeInt = value
         obj.save()
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        lc_model.objects.clear_cache()
+        obj = lc_model.objects.get(id=uri)
         self.assertEquals(obj.nonNegativeInt, value)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.nonNegativeInt = -1
@@ -359,8 +357,8 @@ class DatatypeTest(TestCase):
         obj.decimal = value
         obj.save()
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        lc_model.objects.clear_cache()
+        obj = lc_model.objects.get(id=uri)
         self.assertEquals(obj.decimal, value)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.decimal = "not a number"
@@ -374,8 +372,8 @@ class DatatypeTest(TestCase):
         obj.double = value
         obj.save()
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        lc_model.objects.clear_cache()
+        obj = lc_model.objects.get(id=uri)
         self.assertEquals(obj.double, value)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.double = "not a number"
@@ -389,8 +387,8 @@ class DatatypeTest(TestCase):
         obj.float = value
         obj.save()
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        lc_model.objects.clear_cache()
+        obj = lc_model.objects.get(id=uri)
         self.assertEquals(obj.float, value)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.float = "not a number"
@@ -404,8 +402,8 @@ class DatatypeTest(TestCase):
         obj.mbox = mail
         obj.save()
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        lc_model.objects.clear_cache()
+        obj = lc_model.objects.get(id=uri)
         self.assertEquals(obj.mbox, mail)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.mbox = "john@somewhere@nowhereindeed.org"
@@ -422,8 +420,8 @@ class DatatypeTest(TestCase):
         obj.email = mail
         obj.save()
         del obj
-        LocalClass.objects.clear_cache()
-        obj = LocalClass.objects.get(id=uri)
+        lc_model.objects.clear_cache()
+        obj = lc_model.objects.get(id=uri)
         self.assertEquals(obj.email, mail)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.email = "john@somewhere@nowhereindeed.org"
