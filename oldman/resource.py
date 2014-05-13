@@ -1,6 +1,7 @@
 """
 
 """
+from functools import partial
 from urlparse import urlparse
 import json
 from types import GeneratorType
@@ -22,6 +23,7 @@ class Resource(object):
             Does not save (like Django)
             TODO: rename create into is_new
         """
+        #TODO: refactor these methods so that models are sorted
         models = domain.registry.get_models(types)
         main_model = domain.registry.select_model(models)
         self._models = models
@@ -39,10 +41,12 @@ class Resource(object):
         else:
             self._id = main_model.generate_iri(base_iri=base_iri)
 
-        self._types = types
-        #TODO: improve the order
+        #TODO: remove (not necessary once models are sorted)
+        #self._types = main_model.class_types
+        self._types = []
         for model in models:
             self._types += [t for t in model.class_types if t not in self._types]
+        self._types += [t for t in types if t not in self._types]
 
         for k, v in kwargs.iteritems():
             setattr(self, k, v)
@@ -62,6 +66,10 @@ class Resource(object):
         for model in self._models:
             if name in model.om_attributes:
                 return model.access_attribute(name).get(self, self._domain)
+            method = model.methods.get(name)
+            if method is not None:
+                # Make this function be a method (taking self as first parameter)
+                return partial(method, self)
         raise AttributeError("%s has not attribute %s" % (self, name))
 
     def __setattr__(self, name, value):
@@ -117,6 +125,9 @@ class Resource(object):
     def is_blank_node(self):
         return self._is_blank_node
 
+    def is_instance_of(self, model):
+        return model in self._models
+
     def save(self, is_end_user=True):
         # Checks
         attributes = self._extract_attribute_list()
@@ -148,7 +159,7 @@ class Resource(object):
                 if isinstance(former_values, dict):
                     raise NotImplementedError("Object dicts are not yet supported.")
                 former_values = former_values if isinstance(former_values, (set, list)) else [former_values]
-                former_objects = [self.__class__.objects.get_any(id=v) for v in former_values if v is not None]
+                former_objects = [self._domain.get(id=v) for v in former_values if v is not None]
                 objects_to_delete += [v for v in former_objects if should_delete_object(v)]
 
         #TODO: only execute once (first save())
@@ -251,10 +262,11 @@ class Resource(object):
         return self._id.split("#")[0] == other_obj.id.split("#")[0]
 
     def delete(self):
-        for attr_name, attr in self._attributes.iteritems():
+        attributes = self._extract_attribute_list()
+        for attr in attributes:
             # Delete blank nodes recursively
             if attr.om_property.type == PropertyType.ObjectProperty:
-                objs = getattr(self, attr_name)
+                objs = getattr(self, attr.name)
                 if objs is not None:
                     if isinstance(objs, (list, set, GeneratorType)):
                         for obj in objs:
@@ -263,8 +275,8 @@ class Resource(object):
                     elif should_delete_object(objs):
                         objs.delete()
 
-            setattr(self, attr_name, None)
-        self._save()
+            setattr(self, attr.name, None)
+        self._save(attributes)
 
     def full_update(self, full_dict, is_end_user=True):
         """

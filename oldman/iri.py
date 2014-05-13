@@ -43,10 +43,10 @@ class IncrementalIriGenerator(IriGenerator):
 
     mutex = Lock()
 
-    def __init__(self, prefix, graph, class_uri, fragment=None):
+    def __init__(self, prefix, graph, class_iri, fragment=None):
         self._prefix = prefix
         self._graph = graph
-        self._class_uri = class_uri
+        self._class_iri = class_iri
         self._fragment = fragment
 
         self._counter_query_req = prepareQuery(u"""
@@ -54,7 +54,7 @@ class IncrementalIriGenerator(IriGenerator):
             SELECT ?number
             WHERE {
                 ?class_uri ldorm:nextNumber ?number .
-            }""".replace("?class_uri", u"<%s>" % self._class_uri))
+            }""".replace("?class_uri", u"<%s>" % self._class_iri))
 
         self._counter_update_req = u"""
             prefix ldorm: <http://localhost/ldorm#>
@@ -67,21 +67,21 @@ class IncrementalIriGenerator(IriGenerator):
             WHERE {
                 ?class_uri ldorm:nextNumber ?current .
                 BIND (?current+1 AS ?next)
-            }""".replace("?class_uri", "<%s>" % self._class_uri)
+            }""".replace("?class_uri", "<%s>" % self._class_iri)
 
         numbers = list(self._graph.query(self._counter_query_req))
         # Inits if no counter
         if len(numbers) == 0:
             self.reset_counter()
         elif len(numbers) > 1:
-            raise OMDataStoreError(u"Multiple counter for class %s" % self._class_uri)
+            raise OMDataStoreError(u"Multiple counter for class %s" % self._class_iri)
 
     def reset_counter(self):
         self._graph.update(u"""
             prefix ldorm: <http://localhost/ldorm#>
             INSERT {
                 <%s> ldorm:nextNumber 0 .
-                } WHERE {}""" % self._class_uri)
+                } WHERE {}""" % self._class_iri)
 
     def generate(self, **kwargs):
         # Critical section
@@ -93,9 +93,9 @@ class IncrementalIriGenerator(IriGenerator):
             self.mutex.release()
 
         if len(numbers) == 0:
-            raise OMDataStoreError(u"No counter for class %s (has disappeared)" % self._class_uri)
+            raise OMDataStoreError(u"No counter for class %s (has disappeared)" % self._class_iri)
         elif len(numbers) > 1:
-            raise OMDataStoreError(u"Multiple counter for class %s" % self._class_uri)
+            raise OMDataStoreError(u"Multiple counter for class %s" % self._class_iri)
 
         partial_iri = u"%s%d" % (self._prefix, numbers[0])
         if self._fragment is not None:

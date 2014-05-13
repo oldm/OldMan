@@ -1,8 +1,6 @@
 from collections import namedtuple
 from weakref import WeakKeyDictionary
-
 from rdflib import Literal
-
 from .exception import OMAttributeTypeCheckError, OMRequiredPropertyError, OMReadOnlyAttributeError, OMEditError
 from oldman.parsing.value import AttributeValueExtractorFromGraph
 from oldman.validation.value_format import ValueFormatError
@@ -278,8 +276,8 @@ class ObjectOMAttribute(OMAttribute):
             return None
 
     def set(self, instance, value):
-        from .model import Model
-        f = lambda x: x.id if isinstance(x, Model) else x
+        from .resource import Resource
+        f = lambda x: x.id if isinstance(x, Resource) else x
 
         if isinstance(value, set):
             values = {f(v) for v in value}

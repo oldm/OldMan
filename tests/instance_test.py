@@ -6,16 +6,12 @@
 from unittest import TestCase
 from rdflib import ConjunctiveGraph, URIRef
 from oldman import default_domain
-from oldman.model import Model
-from oldman.iri import IncrementalIriGenerator
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
-data_graph = default_graph.get_context(URIRef("http://localhost/data"))
 
 EXAMPLE = "http://localhost/vocab#"
 
-#Turtle instead of JSON-LD because of a bug with the JSON-LD parser
 schema_ttl = """
 @prefix ex: <%s> .
 @prefix hydra: <http://www.w3.org/ns/hydra/core#> .
@@ -39,54 +35,7 @@ ex:ChildClass a hydra:Class ;
     ] .
 """ % format(EXAMPLE)
 
-# schema_def = {
-#     "@context": [
-#         {
-#             "ex": EXAMPLE,
-#         },
-#         "http://www.w3.org/ns/hydra/core"
-#     ],
-#     "@graph": [
-#         {
-#             "@id": "ex:GrandParentClass",
-#             "@type": "hydra:Class",
-#             "supportedProperty": [
-#                 {
-#                     "property": "ex:oldProperty",
-#                     "required": False
-#                 }
-#             ]
-#         },
-#         {
-#             "@id": "ex:ParentClass",
-#             "@type": "hydra:Class",
-#             "subClassOf": "ex:GrandParentClass",
-#             "supportedProperty": [
-#                 {
-#                     "property": "ex:mediumProperty",
-#                     "required": False
-#                 }
-#             ]
-#         },
-#         {
-#             "@id": "ex:ChildClass",
-#             "@type": "hydra:Class",
-#             # Saves inference
-#             "subClassOf": ["ex:ParentClass", "ex:GrandParentClass"],
-#             "supportedProperty": [
-#                 {
-#                     "property": "ex:newProperty",
-#                     "required": False
-#                 }
-#             ]
-#         }
-#     ]
-# }
-#print json.dumps(schema_def)
-#schema_graph.parse(data=json.dumps(schema_def), format="json-ld")
-
 schema_graph.parse(data=schema_ttl, format="turtle")
-#print schema_graph.serialize(format="n3")
 
 context = {
     "@context": {
@@ -115,6 +64,7 @@ context = {
 
 old_disclaim = "Old disclam"
 new_disclaim = "New disclam"
+
 
 def square_value(self):
     if self.old_number_value is None:
@@ -146,48 +96,44 @@ domain.add_method(disclaim2, "disclaim", EXAMPLE + "ParentClass")
 child_prefix = "http://localhost/children/"
 uri_fragment = "this"
 
-ChildClass = domain.create_model("ChildClass", context, data_graph,
-                                      iri_prefix=child_prefix, iri_fragment=uri_fragment,
-                                      incremental_iri=True)
-GrandParentClass = domain.create_model("GrandParentClass", context, data_graph,
-                                            iri_prefix="http://localhost/ancestors/",
-                                            iri_fragment=uri_fragment)
-ParentClass = domain.create_model("ParentClass", context, data_graph,
-                                       iri_prefix="http://localhost/parents/")
+child_model = domain.create_model("ChildClass", context, iri_prefix=child_prefix, iri_fragment=uri_fragment,
+                                  incremental_iri=True)
+grand_parent_model = domain.create_model("GrandParentClass", context, iri_prefix="http://localhost/ancestors/",
+                                         iri_fragment=uri_fragment)
+parent_model = domain.create_model("ParentClass", context, iri_prefix="http://localhost/parents/")
 
 
-class DatatypeTest(TestCase):
+class InstanceTest(TestCase):
 
     def tearDown(self):
         """ Clears the data graph """
-        data_graph.update("CLEAR DEFAULT")
-        ChildClass.reset_counter()
-        ChildClass.objects.clear_cache()
-        ParentClass.objects.clear_cache()
-        GrandParentClass.objects.clear_cache()
+        default_graph.update("CLEAR DEFAULT")
+        child_model.reset_counter()
+        child_model.objects.clear_cache()
+        parent_model.objects.clear_cache()
+        grand_parent_model.objects.clear_cache()
 
     def test_types(self):
-        john = GrandParentClass()
-        jack = ParentClass()
-        tom = ChildClass()
-        self.assertEquals(john.types,[GrandParentClass.class_uri])
-        self.assertEquals(jack.types, [ParentClass.class_uri, GrandParentClass.class_uri])
-        self.assertEquals(tom.types, [ChildClass.class_uri, ParentClass.class_uri, GrandParentClass.class_uri])
+        john = grand_parent_model.new()
+        jack = parent_model.new()
+        tom = child_model.new()
+        self.assertEquals(john.types, [grand_parent_model.class_iri])
+        self.assertEquals(jack.types, [parent_model.class_iri, grand_parent_model.class_iri])
+        self.assertEquals(tom.types, [child_model.class_iri, parent_model.class_iri, grand_parent_model.class_iri])
 
     def test_ancestor_assignment(self):
-        john = GrandParentClass()
+        john = grand_parent_model.new()
         uri = john.id
         old_value = 5
         john.old_number_value = old_value
-        # Not declared so will not be saved
-        mid_values = {"not saved"}
-        john.mid_values = mid_values
-        new_value = "not saved (again)"
-        john.new_value = new_value
         john.save()
+        with self.assertRaises(AttributeError):
+            john.mid_values = {"not saved"}
+        with self.assertRaises(AttributeError):
+            john.new_value = "not saved (again)"
         del john
-        GrandParentClass.objects.clear_cache()
-        john = GrandParentClass.objects.get(id=uri)
+        grand_parent_model.objects.clear_cache()
+        john = grand_parent_model.objects.get(id=uri)
         self.assertEquals(john.old_number_value, old_value)
         with self.assertRaises(AttributeError):
             print john.mid_values
@@ -195,25 +141,25 @@ class DatatypeTest(TestCase):
             print john.new_value
 
     def test_parent_assignment(self):
-        jack = ParentClass()
+        jack = parent_model.new()
         uri = jack.id
         mid_values = {"Hello", "world"}
         jack.mid_values = mid_values
         old_value = 8
         jack.old_number_value = old_value
-        new_value = "not saved"
-        jack.new_value = new_value
+        with self.assertRaises(AttributeError):
+            jack.new_value = "not saved"
         jack.save()
         del jack
-        ParentClass.objects.clear_cache()
-        jack = ParentClass.objects.get(id=uri)
+        parent_model.objects.clear_cache()
+        jack = parent_model.objects.get(id=uri)
         self.assertEquals(jack.mid_values, mid_values)
         self.assertEquals(jack.old_number_value, old_value)
         with self.assertRaises(AttributeError):
             print jack.new_value
 
     def test_child_assignment(self):
-        tom = ChildClass()
+        tom = child_model.new()
         uri = tom.id
         mid_values = {"Hello", "world"}
         tom.mid_values = mid_values
@@ -223,96 +169,80 @@ class DatatypeTest(TestCase):
         tom.new_value = new_value
         tom.save()
         del tom
-        ChildClass.objects.clear_cache()
-        tom = ChildClass.objects.get(id=uri)
+        child_model.objects.clear_cache()
+        tom = child_model.objects.get(id=uri)
         self.assertEquals(tom.new_value, new_value)
         self.assertEquals(tom.mid_values, mid_values)
         self.assertEquals(tom.old_number_value, old_value)
 
     def test_isinstance(self):
-        john = GrandParentClass.objects.create()
-        self.assertTrue(isinstance(john, GrandParentClass))
-        self.assertTrue(isinstance(john, Model))
-        self.assertTrue(isinstance(john, object))
-        self.assertFalse(isinstance(john, ParentClass))
-        self.assertFalse(isinstance(john, ChildClass))
+        john = grand_parent_model.objects.create()
+        self.assertTrue(john.is_instance_of(grand_parent_model))
+        self.assertFalse(john.is_instance_of(parent_model))
+        self.assertFalse(john.is_instance_of(child_model))
 
-        jack = ParentClass.objects.create()
-        self.assertTrue(isinstance(jack, ParentClass))
-        self.assertTrue(isinstance(jack, GrandParentClass))
-        self.assertTrue(isinstance(jack, Model))
-        self.assertTrue(isinstance(jack, object))
-        self.assertFalse(isinstance(jack, ChildClass))
+        jack = parent_model.objects.create()
+        self.assertTrue(jack.is_instance_of(parent_model))
+        self.assertTrue(jack.is_instance_of(grand_parent_model))
+        self.assertFalse(jack.is_instance_of(child_model))
 
-        tom = ChildClass.objects.create()
-        self.assertTrue(isinstance(tom, ChildClass))
-        self.assertTrue(isinstance(tom, ParentClass))
-        self.assertTrue(isinstance(tom, GrandParentClass))
-        self.assertTrue(isinstance(tom, Model))
-        self.assertTrue(isinstance(tom, object))
-
-        self.assertFalse(isinstance(5, Model))
+        tom = child_model.objects.create()
+        self.assertTrue(tom.is_instance_of(child_model))
+        self.assertTrue(tom.is_instance_of(parent_model))
+        self.assertTrue(tom.is_instance_of(grand_parent_model))
 
     def test_subclass(self):
-        self.assertTrue(issubclass(ChildClass, ParentClass))
-        self.assertTrue(issubclass(ParentClass, GrandParentClass))
-        self.assertTrue(issubclass(ChildClass, GrandParentClass))
+        self.assertTrue(child_model.is_subclass_of(parent_model))
+        self.assertTrue(parent_model.is_subclass_of(grand_parent_model))
+        self.assertTrue(child_model.is_subclass_of(grand_parent_model))
 
-        self.assertFalse(issubclass(ParentClass, ChildClass))
-        self.assertFalse(issubclass(GrandParentClass, ParentClass))
-        self.assertFalse(issubclass(GrandParentClass, ChildClass))
-
-        self.assertTrue(issubclass(ChildClass, Model))
-        self.assertTrue(issubclass(ParentClass, Model))
-        self.assertTrue(issubclass(GrandParentClass, Model))
-
-        self.assertTrue(issubclass(Model, Model))
-        self.assertFalse(issubclass(Model, ChildClass))
-        self.assertFalse(issubclass(int, Model))
+        self.assertFalse(parent_model.is_subclass_of(child_model))
+        self.assertFalse(grand_parent_model.is_subclass_of(parent_model))
+        self.assertFalse(grand_parent_model.is_subclass_of(child_model))
 
     def test_square_method(self):
-        john = GrandParentClass.objects.create()
+        john = grand_parent_model.objects.create()
         self.assertEquals(john.square_value(), 0)
         john.old_number_value = 5
         self.assertEquals(john.square_value(), 25)
-        jack = ParentClass.objects.create()
+        jack = parent_model.objects.create()
         self.assertEquals(jack.square_value(), 0)
         jack.old_number_value = 6
         self.assertEquals(jack.square_value(), 36)
-        tom = ChildClass.objects.create()
+        tom = child_model.objects.create()
         self.assertEquals(tom.square_value(), 0)
         tom.old_number_value = 7
         self.assertEquals(tom.square_value(), 49)
 
     def test_new_method(self):
-        john = GrandParentClass.objects.create()
+        john = grand_parent_model.objects.create()
         with self.assertRaises(AttributeError):
             john.print_new_value()
-        jack = ParentClass.objects.create()
+        jack = parent_model.objects.create()
         with self.assertRaises(AttributeError):
             jack.print_new_value()
-        tom = ChildClass.objects.create()
+        tom = child_model.objects.create()
         tom.print_new_value()
         tom.new_value = "Hello"
         tom.print_new_value()
 
     def test_method_overloading(self):
-        john = GrandParentClass.objects.create()
+        john = grand_parent_model.objects.create()
         self.assertEquals(john.disclaim(), old_disclaim)
-        jack = ParentClass.objects.create()
+        jack = parent_model.objects.create()
         self.assertEquals(jack.disclaim(), new_disclaim)
-        tom = ChildClass.objects.create()
+        tom = child_model.objects.create()
         self.assertEquals(tom.disclaim(), new_disclaim)
 
     def test_gets(self):
-        john = GrandParentClass.objects.create()
+        john = grand_parent_model.objects.create()
         john_uri = john.id
-        jack = ParentClass.objects.create()
+        jack = parent_model.objects.create()
         jack_uri = jack.id
         jack_mid_values = {"jack"}
         jack.mid_values = jack_mid_values
         jack.save()
-        tom = ChildClass.objects.create()
+        tom = child_model.objects.create()
         tom_uri = tom.id
         tom_new_value = "Tom new value"
         tom.new_value = tom_new_value
@@ -320,27 +250,27 @@ class DatatypeTest(TestCase):
         del john
         del jack
         del tom
-        GrandParentClass.objects.clear_cache()
-        ParentClass.objects.clear_cache()
-        ChildClass.objects.clear_cache()
+        grand_parent_model.objects.clear_cache()
+        parent_model.objects.clear_cache()
+        child_model.objects.clear_cache()
 
-        tom = GrandParentClass.objects.get_any(id=tom_uri)
+        tom = domain.get(id=tom_uri)
         self.assertEquals(tom.new_value, tom_new_value)
         self.assertEquals(tom.disclaim(), new_disclaim)
-        self.assertTrue(isinstance(tom, ChildClass))
+        self.assertTrue(tom.is_instance_of(child_model))
 
-        jack = GrandParentClass.objects.get_any(id=jack_uri)
+        jack = domain.get(id=jack_uri)
         self.assertEquals(jack.mid_values, jack_mid_values)
-        self.assertTrue(isinstance(jack, ParentClass))
-        self.assertFalse(isinstance(jack, ChildClass))
+        self.assertTrue(jack.is_instance_of(parent_model))
+        self.assertFalse(jack.is_instance_of(child_model))
 
-        john = GrandParentClass.objects.get_any(id=john_uri)
-        self.assertTrue(isinstance(john, GrandParentClass))
-        self.assertFalse(isinstance(john, ParentClass))
-        self.assertFalse(isinstance(john, ChildClass))
+        john = domain.get(id=john_uri)
+        self.assertTrue(john.is_instance_of(grand_parent_model))
+        self.assertFalse(john.is_instance_of(parent_model))
+        self.assertFalse(john.is_instance_of(child_model))
 
     def test_uris(self):
-        for i in range(1,6):
-            child = ChildClass()
+        for i in range(1, 6):
+            child = child_model.new()
             self.assertEquals(child.id, "%s%d#%s" % (child_prefix, i, uri_fragment))
             print child.id

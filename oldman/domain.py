@@ -3,7 +3,7 @@ from urlparse import urlparse
 from rdflib import Graph
 from .model import Model
 from .registry import ModelRegistry, ClassAncestry
-from .exception import OMUndeclaredClassNameError, OMReservedAttributeNameError
+from .exception import OMUndeclaredClassNameError
 from .iri import RandomPrefixedIriGenerator, IncrementalIriGenerator, BlankNodeIriGenerator
 from oldman.parsing.schema.attribute import OMAttributeExtractor
 
@@ -34,10 +34,13 @@ class Domain(object):
         return self._default_graph
 
     def add_method(self, method, name, class_iri):
+        """
+            TODO: Warns when a method is overwritten
+        """
         if class_iri in self._methods:
-            self._methods[class_iri].append((method, name))
+            self._methods[class_iri][name] = method
         else:
-            self._methods[class_iri] = [(method, name)]
+            self._methods[class_iri] = {name: method}
 
     def create_model(self, class_name, context, iri_prefix=None,
                      iri_fragment=None, iri_generator=None, incremental_iri=False):
@@ -71,14 +74,12 @@ class Domain(object):
         else:
             id_generator = BlankNodeIriGenerator()
 
+        methods = {}
+        for m_dict in [self._methods.get(t, {}) for t in ancestry.top_down]:
+            methods.update(m_dict)
         model = Model(class_name, class_iri, om_attributes, context,
-                      id_generator, ancestry.bottom_up, self)
+                      id_generator, ancestry.bottom_up, self, methods=methods)
 
-        for type_uri in ancestry.top_down:
-            methods = self._methods.get(type_uri)
-            if methods is not None:
-                for method, name in methods:
-                    setattr(model, name, method)
         return model
 
     def new(self, *args, **kwargs):

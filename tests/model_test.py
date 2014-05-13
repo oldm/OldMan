@@ -17,7 +17,6 @@ from oldman.rest.crud import CRUDController
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
-data_graph = default_graph.get_context(URIRef("http://localhost/data"))
 
 BIO = "http://purl.org/vocab/bio/0.1/"
 REL = "http://purl.org/vocab/relationship/"
@@ -246,7 +245,7 @@ class ModelTest(TestCase):
 
     def tearDown(self):
         """ Clears the data graph """
-        data_graph.update("CLEAR DEFAULT")
+        default_graph.update("CLEAR DEFAULT")
         lp_model.objects.clear_cache()
         rsa_model.objects.clear_cache()
 
@@ -289,15 +288,15 @@ class ModelTest(TestCase):
 
         # Check the triplestore
         type_request = """SELECT ?t WHERE {?x a ?t }"""
-        retrieved_types = {str(r) for r, in data_graph.query(type_request,
+        retrieved_types = {str(r) for r, in default_graph.query(type_request,
                                                              initBindings={'x': URIRef(bob.id)})}
         self.assertEquals(set(expected_types), retrieved_types)
 
     def test_bob_in_triplestore(self):
         request = """ASK {?x foaf:name "%s"^^xsd:string }""" % bob_name
-        self.assertFalse(bool(data_graph.query(request)))
+        self.assertFalse(bool(default_graph.query(request)))
         self.create_bob()
-        self.assertTrue(bool(data_graph.query(request)))
+        self.assertTrue(bool(default_graph.query(request)))
 
     def test_bob_attributes(self):
         bob = self.create_bob()
@@ -334,17 +333,12 @@ class ModelTest(TestCase):
         new_name = "Fake Bob"
         bob.name = new_name
         # Not saved
-        self.assertFalse(bool(data_graph.query("""ASK {?x foaf:name "%s"^^xsd:string }""" % new_name)))
+        self.assertFalse(bool(default_graph.query("""ASK {?x foaf:name "%s"^^xsd:string }""" % new_name)))
 
     def test_objects_access(self):
         """ Object manager is only accessible at the class level """
         bob = self.create_bob()
         self.assertRaises(AttributeError, getattr, bob, "objects")
-
-    def test_dict_attributes(self):
-        bob = self.create_bob()
-        # Because of descriptors, these attributes should not appear in __dict__ except id and _is_blank_node
-        self.assertEquals(set(vars(bob).keys()), {"_id", "_is_blank_node", "_types"})
 
     def test_multiple_mboxes(self):
         bob = self.create_bob()
@@ -353,10 +347,10 @@ class ModelTest(TestCase):
         bob.save()
 
         mbox_query = """ASK {?x foaf:mbox "%s"^^xsd:string }"""
-        self.assertTrue(bool(data_graph.query(mbox_query % bob_email2)))
-        self.assertTrue(bool(data_graph.query(mbox_query % email3)))
+        self.assertTrue(bool(default_graph.query(mbox_query % bob_email2)))
+        self.assertTrue(bool(default_graph.query(mbox_query % email3)))
         # Has been removed
-        self.assertFalse(bool(data_graph.query(mbox_query % bob_email1)))
+        self.assertFalse(bool(default_graph.query(mbox_query % bob_email1)))
 
     def test_list_assignment_instead_of_set(self):
         bob = lp_model.new()
@@ -537,8 +531,8 @@ class ModelTest(TestCase):
                               { <%s> rel:parentOf ?children.
                                 ?children rdf:rest*/rdf:first ?child
                               } """ % bob.id
-        children_found = [str(r) for r, in data_graph.query(children_request)]
-        #print data_graph.serialize(format="turtle")
+        children_found = [str(r) for r, in default_graph.query(children_request)]
+        #print default_graph.serialize(format="turtle")
         # No guarantee about the order
         self.assertEquals(set(children_found), set([c.id for c in bob_children]))
 
@@ -693,21 +687,21 @@ class ModelTest(TestCase):
 
     def test_out_of_band_update(self):
         jason_uri = URIRef("https://example.com/jason#me")
-        data_graph.add((jason_uri, URIRef(FOAF + "name"), Literal("Jason")))
-        data_graph.add((jason_uri, URIRef(BIO + "olb"), Literal("Jason was a warrior", lang="en")))
+        default_graph.add((jason_uri, URIRef(FOAF + "name"), Literal("Jason")))
+        default_graph.add((jason_uri, URIRef(BIO + "olb"), Literal("Jason was a warrior", lang="en")))
 
         # LocalPerson type is missing
         with self.assertRaises(OMClassInstanceError):
             lp_model.objects.get(id=str(jason_uri))
 
-        data_graph.add((jason_uri, RDF["type"], URIRef(lp_model.class_iri)))
+        default_graph.add((jason_uri, RDF["type"], URIRef(lp_model.class_iri)))
 
         # Mboxes is still missing
         jason = lp_model.objects.get(id=str(jason_uri))
         self.assertFalse(jason.is_valid())
 
         mboxes = {"jason@example.com", "jason@example.org"}
-        data_graph.parse(data=json.dumps({"@id": jason_uri,
+        default_graph.parse(data=json.dumps({"@id": jason_uri,
                                           "@type": ["LocalPerson", "Person"],
                                           # Required
                                           "mboxes": list(mboxes)}),
@@ -762,16 +756,16 @@ class ModelTest(TestCase):
     def test_delete_bob(self):
         bob = self.create_bob()
         request = """ASK {?x foaf:name "%s"^^xsd:string }""" % bob_name
-        self.assertTrue(bool(data_graph.query(request)))
+        self.assertTrue(bool(default_graph.query(request)))
 
         bob.delete()
-        self.assertFalse(bool(data_graph.query(request)))
+        self.assertFalse(bool(default_graph.query(request)))
 
     def test_delete_rsa_but_no_alice(self):
         ask_modulus = """ASK {?x cert:modulus "%s"^^xsd:hexBinary }""" % key_modulus
         ask_alice = """ASK {?x foaf:name "%s"^^xsd:string }""" % alice_name
-        self.assertFalse(bool(data_graph.query(ask_modulus)))
-        self.assertFalse(bool(data_graph.query(ask_alice)))
+        self.assertFalse(bool(default_graph.query(ask_modulus)))
+        self.assertFalse(bool(default_graph.query(ask_alice)))
 
         bob = self.create_bob()
         alice = self.create_alice()
@@ -779,55 +773,55 @@ class ModelTest(TestCase):
         bob.keys = {rsa_key}
         bob.children = [alice]
         bob.save()
-        self.assertTrue(bool(data_graph.query(ask_modulus)))
-        self.assertTrue(bool(data_graph.query(ask_alice)))
+        self.assertTrue(bool(default_graph.query(ask_modulus)))
+        self.assertTrue(bool(default_graph.query(ask_alice)))
 
         bob.delete()
         # Blank node is deleted
-        self.assertFalse(bool(data_graph.query(ask_modulus)))
+        self.assertFalse(bool(default_graph.query(ask_modulus)))
         # Alice is not (non-blank)
-        self.assertTrue(bool(data_graph.query(ask_alice)))
+        self.assertTrue(bool(default_graph.query(ask_alice)))
 
     def test_rsa_key_removal(self):
         ask_modulus = """ASK {?x cert:modulus "%s"^^xsd:hexBinary }""" % key_modulus
-        self.assertFalse(bool(data_graph.query(ask_modulus)))
+        self.assertFalse(bool(default_graph.query(ask_modulus)))
 
         bob = self.create_bob()
         rsa_key = self.create_rsa_key()
         bob.keys = {rsa_key}
         bob.save()
-        self.assertTrue(bool(data_graph.query(ask_modulus)))
+        self.assertTrue(bool(default_graph.query(ask_modulus)))
 
         bob.keys = None
         bob.save()
-        self.assertFalse(bool(data_graph.query(ask_modulus)))
+        self.assertFalse(bool(default_graph.query(ask_modulus)))
 
     def test_gpg_key_removal(self):
         ask_fingerprint = """ASK {?x wot:fingerprint "%s"^^xsd:hexBinary }""" % gpg_fingerprint
         bob = self.create_bob()
-        self.assertFalse(bool(data_graph.query(ask_fingerprint)))
+        self.assertFalse(bool(default_graph.query(ask_fingerprint)))
         bob.gpg_key = self.create_gpg_key()
         bob.save()
-        self.assertTrue(bool(data_graph.query(ask_fingerprint)))
+        self.assertTrue(bool(default_graph.query(ask_fingerprint)))
 
         bob.gpg_key = None
         bob.save()
-        self.assertFalse(bool(data_graph.query(ask_fingerprint)))
+        self.assertFalse(bool(default_graph.query(ask_fingerprint)))
 
     def test_delete_gpg(self):
         ask_fingerprint = """ASK {?x wot:fingerprint "%s"^^xsd:hexBinary }""" % gpg_fingerprint
-        self.assertFalse(bool(data_graph.query(ask_fingerprint)))
+        self.assertFalse(bool(default_graph.query(ask_fingerprint)))
 
         bob = self.create_bob()
         gpg_key = self.create_gpg_key()
         self.assertEquals(gpg_key.fingerprint, gpg_fingerprint)
         bob.gpg_key = gpg_key
         bob.save()
-        self.assertTrue(bool(data_graph.query(ask_fingerprint)))
+        self.assertTrue(bool(default_graph.query(ask_fingerprint)))
 
         bob.delete()
         # Blank node is deleted
-        self.assertFalse(bool(data_graph.query(ask_fingerprint)))
+        self.assertFalse(bool(default_graph.query(ask_fingerprint)))
 
     def test_basic_bob_full_update(self):
         bob = self.create_bob()
@@ -844,9 +838,9 @@ class ModelTest(TestCase):
     def test_bob_gpg_update(self):
         bob = self.create_bob()
         ask_fingerprint = """ASK {?x wot:fingerprint "%s"^^xsd:hexBinary }""" % gpg_fingerprint
-        self.assertFalse(bool(data_graph.query(ask_fingerprint)))
+        self.assertFalse(bool(default_graph.query(ask_fingerprint)))
         bob.gpg_key = self.create_gpg_key()
-        self.assertTrue(bool(data_graph.query(ask_fingerprint)))
+        self.assertTrue(bool(default_graph.query(ask_fingerprint)))
         bob_dict = bob.to_dict()
 
         # GPG key blank-node is included as a dict
@@ -860,7 +854,7 @@ class ModelTest(TestCase):
 
         bob_dict["gpg_key"] = None
         bob.full_update(bob_dict)
-        self.assertFalse(bool(data_graph.query(ask_fingerprint)))
+        self.assertFalse(bool(default_graph.query(ask_fingerprint)))
 
     def test_wrong_update(self):
         bob = self.create_bob()
@@ -926,7 +920,7 @@ class ModelTest(TestCase):
         bob = self.create_bob()
         bob_iri = bob.id
         doc_iri = bob_iri.split("#")[0]
-        data_graph.add((URIRef(doc_iri), RDF.type, FOAF.Document))
+        default_graph.add((URIRef(doc_iri), RDF.type, FOAF.Document))
         doc = json.loads(crud_controller.get(doc_iri, "json"))
         self.assertEquals(doc["id"], doc_iri)
 
@@ -935,29 +929,29 @@ class ModelTest(TestCase):
 
     def test_bob_controller_delete(self):
         ask_bob = """ASK {?x foaf:name "%s"^^xsd:string }""" % bob_name
-        self.assertFalse(bool(data_graph.query(ask_bob)))
+        self.assertFalse(bool(default_graph.query(ask_bob)))
         bob = self.create_bob()
-        self.assertTrue(bool(data_graph.query(ask_bob)))
+        self.assertTrue(bool(default_graph.query(ask_bob)))
         bob_iri = bob.id
         doc_iri = bob_iri.split("#")[0]
 
         ask_alice = """ASK {?x foaf:name "%s"^^xsd:string }""" % alice_name
-        self.assertFalse(bool(data_graph.query(ask_alice)))
+        self.assertFalse(bool(default_graph.query(ask_alice)))
         lp_model.objects.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
                                    short_bio_en=alice_bio_en)
-        self.assertTrue(bool(data_graph.query(ask_alice)))
+        self.assertTrue(bool(default_graph.query(ask_alice)))
 
         #John is the base uri (bad practise, only for test convenience)
         ask_john = """ASK {?x foaf:name "%s"^^xsd:string }""" % john_name
-        self.assertFalse(bool(data_graph.query(ask_john)))
+        self.assertFalse(bool(default_graph.query(ask_john)))
         lp_model.objects.create(id=doc_iri, name=john_name, mboxes={john_mail},
                                    short_bio_en=john_bio_en)
-        self.assertTrue(bool(data_graph.query(ask_john)))
+        self.assertTrue(bool(default_graph.query(ask_john)))
 
         crud_controller.delete(doc_iri)
-        self.assertFalse(bool(data_graph.query(ask_bob)))
-        self.assertFalse(bool(data_graph.query(ask_alice)))
-        self.assertFalse(bool(data_graph.query(ask_john)))
+        self.assertFalse(bool(default_graph.query(ask_bob)))
+        self.assertFalse(bool(default_graph.query(ask_alice)))
+        self.assertFalse(bool(default_graph.query(ask_john)))
 
     def test_controller_put_implicit_removal(self):
         """
@@ -967,17 +961,17 @@ class ModelTest(TestCase):
             For test ONLY!
         """
         ask_bob = """ASK {?x foaf:name "%s"^^xsd:string }""" % bob_name
-        self.assertFalse(bool(data_graph.query(ask_bob)))
+        self.assertFalse(bool(default_graph.query(ask_bob)))
         bob = self.create_bob()
-        self.assertTrue(bool(data_graph.query(ask_bob)))
+        self.assertTrue(bool(default_graph.query(ask_bob)))
         bob_iri = bob.id
         doc_iri = bob_iri.split("#")[0]
 
         ask_alice = """ASK {?x foaf:name "%s"^^xsd:string }""" % alice_name
-        self.assertFalse(bool(data_graph.query(ask_alice)))
+        self.assertFalse(bool(default_graph.query(ask_alice)))
         lp_model.objects.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
                                    short_bio_en=alice_bio_en)
-        self.assertTrue(bool(data_graph.query(ask_alice)))
+        self.assertTrue(bool(default_graph.query(ask_alice)))
 
         g = Graph()
         bob_rdf = bob.to_rdf("turtle")
@@ -985,9 +979,9 @@ class ModelTest(TestCase):
         #No Alice
         crud_controller.update(doc_iri, g.serialize(format="turtle"), "turtle")
 
-        self.assertTrue(bool(data_graph.query(ask_bob)))
+        self.assertTrue(bool(default_graph.query(ask_bob)))
         # Should disappear because not in graph
-        self.assertFalse(bool(data_graph.query(ask_alice)))
+        self.assertFalse(bool(default_graph.query(ask_alice)))
 
     def test_controller_put_change_name(self):
         bob = self.create_bob()
@@ -1000,18 +994,18 @@ class ModelTest(TestCase):
         new_bob_name = bob_name + " B."
 
         g1 = Graph()
-        g1.parse(data=data_graph.serialize())
+        g1.parse(data=default_graph.serialize())
         g1.remove((alice_ref, FOAF.name, Literal(alice_name, datatype=XSD.string)))
         g1.add((alice_ref, FOAF.name, Literal(new_alice_name, datatype=XSD.string)))
         g1.remove((bob_ref, FOAF.name, Literal(bob_name, datatype=XSD.string)))
         g1.add((bob_ref, FOAF.name, Literal(new_bob_name, datatype=XSD.string)))
 
         crud_controller.update(doc_iri, g1.serialize(format="turtle"), "turtle")
-        self.assertEquals({unicode(o) for o in data_graph.objects(alice_ref, FOAF.name)}, {new_alice_name})
-        self.assertEquals({unicode(o) for o in data_graph.objects(bob_ref, FOAF.name)}, {new_bob_name})
+        self.assertEquals({unicode(o) for o in default_graph.objects(alice_ref, FOAF.name)}, {new_alice_name})
+        self.assertEquals({unicode(o) for o in default_graph.objects(bob_ref, FOAF.name)}, {new_bob_name})
 
         g2 = Graph()
-        g2.parse(data=data_graph.serialize())
+        g2.parse(data=default_graph.serialize())
         g2.remove((alice_ref, FOAF.name, Literal(new_alice_name, datatype=XSD.string)))
         # Alice name is required
         with self.assertRaises(OMEditError):
@@ -1032,13 +1026,13 @@ class ModelTest(TestCase):
 
         del alice
         lp_model.objects.clear_cache()
-        self.assertEquals(unicode(data_graph.value(alice_ref, FOAF.name)), alice_name)
+        self.assertEquals(unicode(default_graph.value(alice_ref, FOAF.name)), alice_name)
 
         crud_controller.update(alice_base_iri, jsld_dump, "application/ld+json")
-        self.assertEquals(unicode(data_graph.value(alice_ref, FOAF.name)), new_new_alice_name)
+        self.assertEquals(unicode(default_graph.value(alice_ref, FOAF.name)), new_new_alice_name)
 
         crud_controller.update(alice_base_iri, js_dump, "application/json")
-        self.assertEquals(unicode(data_graph.value(alice_ref, FOAF.name)), new_alice_name)
+        self.assertEquals(unicode(default_graph.value(alice_ref, FOAF.name)), new_alice_name)
 
 
 
@@ -1074,7 +1068,7 @@ class ModelTest(TestCase):
             crud_controller.update(bob.base_iri, bob_graph.serialize(format="turtle"), "turtle")
 
         # No modification
-        self.assertEquals({unicode(r) for r in data_graph.objects(gpg_skolem_ref, wot_fingerprint)},
+        self.assertEquals({unicode(r) for r in default_graph.objects(gpg_skolem_ref, wot_fingerprint)},
                           {gpg_fingerprint})
 
     def test_bob_additional_types(self):

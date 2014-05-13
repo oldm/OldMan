@@ -4,6 +4,21 @@ from .exception import OMSchemaError, OMInternalError, OMObjectNotFoundError, OM
 from .exception import AlreadyAllocatedModelError
 
 
+#TODO: replace it with a dereferenceable URL
+"""
+    ?cls <urn:oldman:test:model:ordering:hasPriority> [
+        <urn:oldman:test:model:ordering:class> ?parent1 ;
+        <urn:oldman:test:model:ordering:priority> 2
+    ],
+    [
+     etc.
+    ].
+"""
+MODEL_HAS_PRIORITY_IRI = "urn:oldman:test:model:ordering:hasPriority"
+MODEL_PRIORITY_CLASS_IRI = "urn:oldman:test:model:ordering:class"
+MODEL_PRIORITY_IRI = "urn:oldman:test:model:ordering:priority"
+
+
 class ModelRegistry(object):
     """
         All model classes are registered here
@@ -67,7 +82,6 @@ class ModelRegistry(object):
         return {unicode(u) for u, in self._default_graph.query(query)}
 
     def find_model(self, object_iri):
-        print "Object iri type %s" % type(object_iri)
         types = extract_types(object_iri, self._default_graph)
         return self.select_model(self.get_models(types))
 
@@ -86,6 +100,9 @@ class ModelRegistry(object):
         return list(obj_uris)[0]
 
     def select_model(self, models):
+        """
+            TODO: refactor it according to class ancestry
+        """
         if len(models) == 1:
             return list(models)[0]
         elif len(models) > 1:
@@ -115,36 +132,60 @@ def extract_types(object_iri, graph):
 
 
 ANCESTRY_REQUEST = prepareQuery("""
-                                SELECT ?class ?parent WHERE {
+                                SELECT ?class ?parent ?priority WHERE {
                                     ?child_class rdfs:subClassOf* ?class.
                                     ?class rdfs:subClassOf ?parent.
+                                    OPTIONAL {
+                                        ?class <urn:oldman:test:model:ordering:hasPriority> ?p .
+                                        ?p <urn:oldman:test:model:ordering:class> ?parent ;
+                                           <urn:oldman:test:model:ordering:priority> ?priority .
+                                    }.
                                     FILTER NOT EXISTS { ?class rdfs:subClassOf ?other .
                                                         ?other rdfs:subClassOf+ ?parent . }
-                                }""")
+                                } ORDER BY DESC(?priority)
+                                """)
 
 
-def extract_ancestry(class_iri, schema_graph):
+def _extract_ancestry(class_iri, schema_graph):
     """
-        Useful because class_uri is often a local specialization
+        Useful because class_iri is often a local specialization
         of a well-known class
     """
-    ancestry = {}
+    ancestry_dict = {}
     results = schema_graph.query(ANCESTRY_REQUEST, initBindings={'child_class': URIRef(class_iri)})
-    for c, parent in results:
-        cls_uri = unicode(c)
-        parent_uri = unicode(parent)
-        if cls_uri in ancestry:
-            ancestry[cls_uri].add(parent_uri)
+    for c, parent, pr in results:
+        priority = pr.toPython() if pr is not None else None
+        cls_iri = unicode(c)
+        parent_iri = unicode(parent)
+        if cls_iri in ancestry_dict:
+            ancestry_dict[cls_iri].append((parent_iri, priority))
         else:
-            ancestry[cls_uri] = {parent_uri}
-    return ancestry
+            ancestry_dict[cls_iri] = [(parent_iri, priority)]
+    return ancestry_dict
 
 
-def extract_types_from_bottom(child_class_iri, ancestry_dict):
+def _extract_types_from_bottom(child_class_iri, ancestry_dict, ignored_types=None):
+    """
+        ignored_types is only for recursive call.
+    """
+    ignored_types = list(ignored_types) if ignored_types else []
+    if child_class_iri in ignored_types:
+        raise OMInternalError("%s should not be in %s" %(child_class_iri, ignored_types))
+
     anti_chrono = [child_class_iri]
-    for class_uri in anti_chrono:
-        parents = ancestry_dict.get(class_uri, [])
-        anti_chrono += [p for p in parents if p not in anti_chrono]
+    for class_iri in anti_chrono:
+        prioritized_parents = ancestry_dict.get(class_iri, [])
+
+        # Prioritizes if there are different priorities
+        prioritize = (len({priority for _, priority in prioritized_parents}) > 1)
+        if prioritize:
+            for parent, _ in prioritized_parents:
+                if (parent not in ignored_types) and (parent not in anti_chrono):
+                    # Hybrid recursive style
+                    anti_chrono += _extract_types_from_bottom(parent, ancestry_dict, anti_chrono)
+        else:
+            anti_chrono += [parent for parent, _ in prioritized_parents if parent not in ignored_types
+                            and parent not in anti_chrono]
     return anti_chrono
 
 
@@ -155,8 +196,8 @@ class ClassAncestry(object):
             self._ancestry_dict = {}
             self._bottom_up_list = []
         else:
-            self._ancestry_dict = extract_ancestry(child_class_iri, schema_graph)
-            self._bottom_up_list = extract_types_from_bottom(child_class_iri, self._ancestry_dict)
+            self._ancestry_dict = _extract_ancestry(child_class_iri, schema_graph)
+            self._bottom_up_list = _extract_types_from_bottom(child_class_iri, self._ancestry_dict)
 
     @property
     def child(self):
@@ -176,4 +217,4 @@ class ClassAncestry(object):
         return chrono
 
     def parents(self, class_iri):
-        return self._ancestry.get(class_iri)
+        return [parent for parent, _ in self._ancestry_dict.get(class_iri, [])]
