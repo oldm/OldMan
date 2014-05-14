@@ -924,7 +924,7 @@ class ModelTest(TestCase):
         doc = json.loads(crud_controller.get(doc_iri, "json"))
         self.assertEquals(doc["id"], doc_iri)
 
-        obj_iris = dataset.registry.find_object_iris(doc_iri)
+        obj_iris = dataset.model_registry.find_object_iris(doc_iri)
         self.assertEquals({bob_iri, doc_iri}, obj_iris)
 
     def test_bob_controller_delete(self):

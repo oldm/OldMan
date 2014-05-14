@@ -16,7 +16,7 @@ class CRUDController(object):
 
     def __init__(self, dataset):
         self._dataset = dataset
-        self._registry = dataset.registry
+        self._registry = dataset.model_registry
 
     def get(self, base_uri, content_type="text/turtle"):
         """

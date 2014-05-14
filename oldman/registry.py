@@ -5,15 +5,10 @@ from .exception import AlreadyAllocatedModelError
 
 
 #TODO: replace it with a dereferenceable URL
-"""
-    ?cls <urn:oldman:test:model:ordering:hasPriority> [
-        <urn:oldman:test:model:ordering:class> ?parent1 ;
-        <urn:oldman:test:model:ordering:priority> 2
-    ],
-    [
-     etc.
-    ].
-"""
+#    ?cls <urn:oldman:test:model:ordering:hasPriority> [
+#        <urn:oldman:test:model:ordering:class> ?parent1 ;
+#        <urn:oldman:test:model:ordering:priority> 2
+#    ].
 MODEL_HAS_PRIORITY_IRI = "urn:oldman:test:model:ordering:hasPriority"
 MODEL_PRIORITY_CLASS_IRI = "urn:oldman:test:model:ordering:class"
 MODEL_PRIORITY_IRI = "urn:oldman:test:model:ordering:priority"
@@ -127,8 +122,35 @@ class ModelRegistry(object):
         raise OMInternalError("No model found, no untyped model registered")
 
 
-def extract_types(object_iri, graph):
-    return {t.toPython() for t in graph.objects(URIRef(object_iri), RDF.type)}
+class ClassAncestry(object):
+    def __init__(self, child_class_iri, schema_graph):
+        self._child_class_iri = child_class_iri
+        if child_class_iri is None:
+            self._ancestry_dict = {}
+            self._bottom_up_list = []
+        else:
+            self._ancestry_dict = _extract_ancestry(child_class_iri, schema_graph)
+            self._bottom_up_list = _extract_types_from_bottom(child_class_iri, self._ancestry_dict)
+
+    @property
+    def child(self):
+        return self._child_class_iri
+
+    @property
+    def bottom_up(self):
+        """
+            Starting from the child
+        """
+        return self._bottom_up_list
+
+    @property
+    def top_down(self):
+        chrono = list(self._bottom_up_list)
+        chrono.reverse()
+        return chrono
+
+    def parents(self, class_iri):
+        return [parent for parent, _ in self._ancestry_dict.get(class_iri, [])]
 
 
 ANCESTRY_REQUEST = prepareQuery("""
@@ -144,6 +166,10 @@ ANCESTRY_REQUEST = prepareQuery("""
                                                         ?other rdfs:subClassOf+ ?parent . }
                                 } ORDER BY DESC(?priority)
                                 """)
+
+
+def extract_types(object_iri, graph):
+    return {t.toPython() for t in graph.objects(URIRef(object_iri), RDF.type)}
 
 
 def _extract_ancestry(class_iri, schema_graph):
@@ -187,34 +213,3 @@ def _extract_types_from_bottom(child_class_iri, ancestry_dict, ignored_types=Non
             anti_chrono += [parent for parent, _ in prioritized_parents if parent not in ignored_types
                             and parent not in anti_chrono]
     return anti_chrono
-
-
-class ClassAncestry(object):
-    def __init__(self, child_class_iri, schema_graph):
-        self._child_class_iri = child_class_iri
-        if child_class_iri is None:
-            self._ancestry_dict = {}
-            self._bottom_up_list = []
-        else:
-            self._ancestry_dict = _extract_ancestry(child_class_iri, schema_graph)
-            self._bottom_up_list = _extract_types_from_bottom(child_class_iri, self._ancestry_dict)
-
-    @property
-    def child(self):
-        return self._child_class_iri
-
-    @property
-    def bottom_up(self):
-        """
-            Starting from the child
-        """
-        return self._bottom_up_list
-
-    @property
-    def top_down(self):
-        chrono = list(self._bottom_up_list)
-        chrono.reverse()
-        return chrono
-
-    def parents(self, class_iri):
-        return [parent for parent, _ in self._ancestry_dict.get(class_iri, [])]

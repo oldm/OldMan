@@ -24,8 +24,8 @@ class Resource(object):
             TODO: rename create into is_new
         """
         #TODO: refactor these methods so that models are sorted
-        models = dataset.registry.get_models(types)
-        main_model = dataset.registry.select_model(models)
+        models = dataset.model_registry.get_models(types)
+        main_model = dataset.model_registry.select_model(models)
         self._models = models
         self._dataset = dataset
 

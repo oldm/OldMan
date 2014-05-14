@@ -26,7 +26,7 @@ class Dataset(object):
                            iri_prefix=u"http://localhost/.well-known/genid/default/")
 
     @property
-    def registry(self):
+    def model_registry(self):
         return self._registry
 
     @property

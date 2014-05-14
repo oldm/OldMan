@@ -21,7 +21,7 @@ class Model(object):
         self._dataset = dataset
         self._methods = methods if methods else {}
 
-        registry = dataset.registry
+        registry = dataset.model_registry
         registry.register(self, name)
         #TODO: remove it
         self.objects = InstanceManager(self, self._dataset)

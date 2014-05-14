@@ -61,7 +61,7 @@ class DatatypeTest(TestCase):
         g.add((BNode(), RDF.type, URIRef(EXAMPLE + "MyClass")))
         crud_controller.update(base_iri, g.serialize(format="turtle"), "turtle")
 
-        obj_iri = dataset.registry.find_object_from_base_uri(base_iri)
+        obj_iri = dataset.model_registry.find_object_from_base_uri(base_iri)
         self.assertTrue(obj_iri is not None)
         self.assertTrue(base_iri in obj_iri)
         self.assertTrue('#' in obj_iri)
@@ -77,5 +77,5 @@ class DatatypeTest(TestCase):
         """
         base_iri = "http://example.org/doc3"
         crud_controller.update(base_iri, ttl, "turtle")
-        obj_iri = dataset.registry.find_object_from_base_uri(base_iri)
+        obj_iri = dataset.model_registry.find_object_from_base_uri(base_iri)
         self.assertEquals(obj_iri, base_iri + "#this")
