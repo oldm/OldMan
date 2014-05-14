@@ -17,7 +17,7 @@ dataset = create_dataset(schema_graph, default_graph)
 
 #LocalPerson model
 lp_model = dataset.create_model("LocalPerson", context_iri, iri_prefix="http://localhost/persons/",
-                               iri_fragment="me", incremental_iri=True)
+                                iri_fragment="me", incremental_iri=True)
 
 # First object stored in the graph
 alice = lp_model.objects.create(name="Alice", emails={"alice@example.org"}, short_bio_en="I am ...")
@@ -64,7 +64,7 @@ print alice.to_jsonld()
 print bob.to_rdf("turtle")
 
 
-# Validation (commented because generate errors)
+# Validation (commented because generate errors, as expected)
 # Email is required
 #LocalPerson.objects.create(name="Jack")
 

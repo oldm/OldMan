@@ -13,11 +13,11 @@ Mapping objects to **RDF graphs** instead of *table rows* is the core difference
 *Object Relational Mappers* (ORMs).
 
 OldMan is based on three W3C standards:
- 1. RDF as data model;
- 2. SPARQL for querying and updating (persistent) data;
- 3. JSON-LD context for mapping objects and RDF graphs.
+ 1. `RDF <http://www.w3.org/TR/rdf11-concepts/>`_ as data model;
+ 2. `SPARQL <http://www.w3.org/TR/sparql11-overview/>`_ for querying and updating (persistent) data;
+ 3. `JSON-LD context <http://www.w3.org/TR/json-ld/#the-context>`_ for mapping objects and RDF graphs.
 
-OldMan relies on the popular RDFlib Python library.
+OldMan relies on the popular `RDFlib <https://github.com/RDFLib/rdflib/>`_ Python library.
 
 
 Mission
@@ -28,8 +28,7 @@ OldMan has one main objective: help you to **declare your models using RDF tripl
 of programming Python model classes yourself.
 
 However, OldMan does not force you to express all your domain logic in a declarative style.
- * OldMan still relies on Python model classes that are **generated on demand at runtime**.
- * OldMan makes it easy for you to add dynamically plain-old Python methods to these model classes.
+OldMan makes easy for you to add dynamically plain-old Python methods to resource objects.
 
 By adopting a declarative style:
  * You can provide both RDF and JSON data to your clients.
@@ -40,21 +39,17 @@ By adopting a declarative style:
 Examples
 ========
 
-
-.. toctree::
-   :maxdepth: 2
-
-   quickstart
+See `examples/quickstart.py`
 
 
 
 Current core features
 =====================
  * Resource-centric validation based on RDF vocabularies
-     - hydra:requirement, hydra:readOnly and hydra:writeOnly
+     - `Hydra: <http://www.markus-lanthaler.com/hydra/spec/latest/core/>`_ hydra:requirement, hydra:readOnly and hydra:writeOnly
      - Literal validation for common XSD types
      - Literal validation for arbitrary property (e.g. foaf:mbox)
-     - JSON-LD collections (set, list and language maps)
+     - `JSON-LD collections <http://www.w3.org/TR/json-ld/#sets-and-lists>`_ (set, list and language maps)
  * IRI generation for new resources (objects)
  * Inheritance (attributes and Python methods)
  * An attribute can require its value to be a collection (a set, a list or a language map)
