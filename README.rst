@@ -3,7 +3,6 @@ OldMan: Python OLDM
 ===================
 
 .. image:: docs/_static/wiseoldman_small.png
-  :alt: Wise old man from https://openclipart.org/detail/190655/wise-old-man-by-j4p4n-190655
 
 OldMan is a Python *Object Linked Data Mapper* (OLDM), an alternative name for *Object RDF Mapper*.
 
