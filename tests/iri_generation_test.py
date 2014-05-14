@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from rdflib import ConjunctiveGraph, URIRef, RDF, BNode, Graph
 
-from oldman import default_domain
+from oldman import create_dataset
 from oldman.iri import RandomFragmentIriGenerator
 from oldman.exception import OMRequiredBaseIRIError
 from oldman.rest.crud import CRUDController
@@ -27,9 +27,9 @@ context = {
     }
 }
 
-domain = default_domain(schema_graph, default_graph)
-crud_controller = CRUDController(domain)
-model = domain.create_model("MyClass", context, iri_generator=RandomFragmentIriGenerator())
+dataset = create_dataset(schema_graph, default_graph)
+crud_controller = CRUDController(dataset)
+model = dataset.create_model("MyClass", context, iri_generator=RandomFragmentIriGenerator())
 
 
 class DatatypeTest(TestCase):
@@ -61,7 +61,7 @@ class DatatypeTest(TestCase):
         g.add((BNode(), RDF.type, URIRef(EXAMPLE + "MyClass")))
         crud_controller.update(base_iri, g.serialize(format="turtle"), "turtle")
 
-        obj_iri = domain.registry.find_object_from_base_uri(base_iri)
+        obj_iri = dataset.registry.find_object_from_base_uri(base_iri)
         self.assertTrue(obj_iri is not None)
         self.assertTrue(base_iri in obj_iri)
         self.assertTrue('#' in obj_iri)
@@ -77,5 +77,5 @@ class DatatypeTest(TestCase):
         """
         base_iri = "http://example.org/doc3"
         crud_controller.update(base_iri, ttl, "turtle")
-        obj_iri = domain.registry.find_object_from_base_uri(base_iri)
+        obj_iri = dataset.registry.find_object_from_base_uri(base_iri)
         self.assertEquals(obj_iri, base_iri + "#this")

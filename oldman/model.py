@@ -6,7 +6,7 @@ from .exception import OMAttributeAccessError
 
 class Model(object):
 
-    def __init__(self, name, class_iri, om_attributes, context, id_generator, class_types, domain,
+    def __init__(self, name, class_iri, om_attributes, context, id_generator, class_types, dataset,
                  methods=None):
         reserved_names = ["id", "base_iri", "_types", "types"]
         for field in reserved_names:
@@ -18,13 +18,13 @@ class Model(object):
         self._om_attributes = om_attributes
         self._id_generator = id_generator
         self._class_types = class_types
-        self._domain = domain
+        self._dataset = dataset
         self._methods = methods if methods else {}
 
-        registry = domain.registry
+        registry = dataset.registry
         registry.register(self, name)
         #TODO: remove it
-        self.objects = InstanceManager(self, self._domain)
+        self.objects = InstanceManager(self, self._dataset)
 
     @property
     def class_iri(self):
@@ -32,7 +32,7 @@ class Model(object):
 
     @property
     def class_types(self):
-        return self._class_types
+        return list(self._class_types)
 
     @property
     def om_attributes(self):
@@ -80,7 +80,7 @@ class Model(object):
             new_types = kwargs.pop("types")
             types += [t for t in new_types if t not in types]
 
-        return Resource(self._domain, types=types, **kwargs)
+        return Resource(self._dataset, types=types, **kwargs)
 
 def clean_context(context):
     """

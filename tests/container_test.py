@@ -8,7 +8,7 @@ from os import path
 from rdflib import ConjunctiveGraph, URIRef
 import json
 from copy import copy
-from oldman import default_domain
+from oldman import create_dataset
 from oldman.exception import OMRequiredPropertyError, OMAttributeTypeCheckError
 
 default_graph = ConjunctiveGraph()
@@ -115,9 +115,9 @@ context = {
     }
 }
 
-domain = default_domain(schema_graph, default_graph)
+dataset = create_dataset(schema_graph, default_graph)
 # Model class is generated here!
-model = domain.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
+model = dataset.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
 default_list_en = ["w1", "w2"]
 
 

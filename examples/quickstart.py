@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from rdflib import ConjunctiveGraph
-from oldman import default_domain
+from oldman import create_dataset
 
 # In-memory main graph that will be divided into named sub-graphs
 default_graph = ConjunctiveGraph()
@@ -13,10 +13,10 @@ schema_graph.parse("https://gitlab.bcgl.fr/benjamin/oldman/raw/master/examples/q
 context_iri = "https://gitlab.bcgl.fr/benjamin/oldman/raw/master/examples/quickstart_context.jsonld"
 
 #Domain (will generate the model classes)
-domain = default_domain(schema_graph, default_graph)
+dataset = create_dataset(schema_graph, default_graph)
 
 #LocalPerson model
-lp_model = domain.create_model("LocalPerson", context_iri, iri_prefix="http://localhost/persons/",
+lp_model = dataset.create_model("LocalPerson", context_iri, iri_prefix="http://localhost/persons/",
                                iri_fragment="me", incremental_iri=True)
 
 # First object stored in the graph

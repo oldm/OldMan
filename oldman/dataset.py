@@ -8,12 +8,12 @@ from .iri import RandomPrefixedIriGenerator, IncrementalIriGenerator, BlankNodeI
 from oldman.parsing.schema.attribute import OMAttributeExtractor
 
 
-def default_domain(schema_graph, default_graph):
+def create_dataset(schema_graph, default_graph):
     attr_extractor = OMAttributeExtractor()
-    return Domain(attr_extractor, schema_graph, default_graph)
+    return Dataset(attr_extractor, schema_graph, default_graph)
 
 
-class Domain(object):
+class Dataset(object):
 
     def __init__(self, attr_manager, schema_graph, default_graph):
         self._attr_manager = attr_manager

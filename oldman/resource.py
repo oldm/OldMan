@@ -18,23 +18,23 @@ class Resource(object):
 
     existence_query = prepareQuery(u"ASK {?id ?p ?o .}")
 
-    def __init__(self, domain, create=True, base_iri=None, types=None, **kwargs):
+    def __init__(self, dataset, create=True, base_iri=None, types=None, **kwargs):
         """
             Does not save (like Django)
             TODO: rename create into is_new
         """
         #TODO: refactor these methods so that models are sorted
-        models = domain.registry.get_models(types)
-        main_model = domain.registry.select_model(models)
+        models = dataset.registry.get_models(types)
+        main_model = dataset.registry.select_model(models)
         self._models = models
-        self._domain = domain
+        self._dataset = dataset
 
         if "id" in kwargs:
             # Anticipated because used in __hash__
             self._id = kwargs.pop("id")
             if create:
                 #TODO: test the default graph
-                exist = bool(self._domain.default_graph.query(self.existence_query,
+                exist = bool(self._dataset.default_graph.query(self.existence_query,
                                                               initBindings={'id': URIRef(self._id)}))
                 if exist:
                     raise OMUniquenessError("Object %s already exist" % self._id)
@@ -42,8 +42,8 @@ class Resource(object):
             self._id = main_model.generate_iri(base_iri=base_iri)
 
         #TODO: remove (not necessary once models are sorted)
-        #self._types = main_model.class_types
-        self._types = []
+        self._types = list(main_model.class_types)
+        #self._types = []
         for model in models:
             self._types += [t for t in model.class_types if t not in self._types]
         self._types += [t for t in types if t not in self._types]
@@ -53,19 +53,19 @@ class Resource(object):
         self._is_blank_node = is_blank_node(self._id)
 
     @classmethod
-    def load_from_graph(cls, domain, id, subgraph, is_new=True):
+    def load_from_graph(cls, dataset, id, subgraph, is_new=True):
         """
             Loads a new Resource object from a subgraph
         """
         types = list({unicode(t) for t in subgraph.objects(URIRef(id), RDF.type)})
-        instance = cls(domain, id=id, types=types, create=is_new)
+        instance = cls(dataset, id=id, types=types, create=is_new)
         instance.full_update_from_graph(subgraph, is_end_user=True, save=False, initial=True)
         return instance
 
     def __getattr__(self, name):
         for model in self._models:
             if name in model.om_attributes:
-                return model.access_attribute(name).get(self, self._domain)
+                return model.access_attribute(name).get(self, self._dataset)
             method = model.methods.get(name)
             if method is not None:
                 # Make this function be a method (taking self as first parameter)
@@ -73,7 +73,7 @@ class Resource(object):
         raise AttributeError("%s has not attribute %s" % (self, name))
 
     def __setattr__(self, name, value):
-        if name in ["_models", "_id", "_types", "_is_blank_node", "_domain"]:
+        if name in ["_models", "_id", "_types", "_is_blank_node", "_dataset"]:
             self.__dict__[name] = value
             return
 
@@ -159,7 +159,7 @@ class Resource(object):
                 if isinstance(former_values, dict):
                     raise NotImplementedError("Object dicts are not yet supported.")
                 former_values = former_values if isinstance(former_values, (set, list)) else [former_values]
-                former_objects = [self._domain.get(id=v) for v in former_values if v is not None]
+                former_objects = [self._dataset.get(id=v) for v in former_values if v is not None]
                 objects_to_delete += [v for v in former_objects if should_delete_object(v)]
 
         #TODO: only execute once (first save())
@@ -176,7 +176,7 @@ class Resource(object):
             query += u"WHERE {}"
             #print query
             try:
-                self._domain.default_graph.update(query)
+                self._dataset.default_graph.update(query)
             except ParseException as e:
                 raise OMSPARQLParseError(u"%s\n %s" % (query, e))
 
@@ -320,7 +320,7 @@ class Resource(object):
 
     def full_update_from_graph(self, subgraph, is_end_user=True, save=True, initial=False):
         for attr in self._extract_attribute_list():
-            attr.update_from_graph(self, subgraph, self._domain.default_graph, initial=initial)
+            attr.update_from_graph(self, subgraph, self._dataset.default_graph, initial=initial)
         #Types
         if not initial:
             new_types = {unicode(t) for t in subgraph.objects(URIRef(self._id), RDF.type)}

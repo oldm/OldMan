@@ -7,7 +7,7 @@ from unittest import TestCase
 from os import path
 from rdflib import ConjunctiveGraph, URIRef, Literal, Graph, XSD
 import json
-from oldman import default_domain
+from oldman import create_dataset
 from oldman.exception import OMPropertyDefError, OMReadOnlyAttributeError
 
 default_graph = ConjunctiveGraph()
@@ -87,8 +87,8 @@ context = {
     }
 }
 
-domain = default_domain(schema_graph, default_graph)
-lc_model = domain.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
+dataset = create_dataset(schema_graph, default_graph)
+lc_model = dataset.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
 
 
 class PropertyTest(TestCase):
@@ -100,7 +100,7 @@ class PropertyTest(TestCase):
 
     def test_read_and_write_only(self):
         with self.assertRaises(OMPropertyDefError):
-            domain.create_model("BadClass", context, data_graph)
+            dataset.create_model("BadClass", context, data_graph)
 
     def test_write_only(self):
         obj = lc_model.new()

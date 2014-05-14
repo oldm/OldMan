@@ -5,7 +5,7 @@
 
 from unittest import TestCase
 from rdflib import ConjunctiveGraph, URIRef
-from oldman import default_domain
+from oldman import create_dataset
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
@@ -84,23 +84,23 @@ def disclaim2(self):
     return new_disclaim
 
 
-domain = default_domain(schema_graph, default_graph)
+dataset = create_dataset(schema_graph, default_graph)
 # Methods
-domain.add_method(square_value, "square_value", EXAMPLE + "GrandParentClass")
-domain.add_method(print_new_value, "print_new_value", EXAMPLE + "ChildClass")
+dataset.add_method(square_value, "square_value", EXAMPLE + "GrandParentClass")
+dataset.add_method(print_new_value, "print_new_value", EXAMPLE + "ChildClass")
 # Method overloading
-domain.add_method(disclaim1, "disclaim", EXAMPLE + "GrandParentClass")
-domain.add_method(disclaim2, "disclaim", EXAMPLE + "ParentClass")
+dataset.add_method(disclaim1, "disclaim", EXAMPLE + "GrandParentClass")
+dataset.add_method(disclaim2, "disclaim", EXAMPLE + "ParentClass")
 
 # ChildClass is generated before its ancestors!!
 child_prefix = "http://localhost/children/"
 uri_fragment = "this"
 
-child_model = domain.create_model("ChildClass", context, iri_prefix=child_prefix, iri_fragment=uri_fragment,
+child_model = dataset.create_model("ChildClass", context, iri_prefix=child_prefix, iri_fragment=uri_fragment,
                                   incremental_iri=True)
-grand_parent_model = domain.create_model("GrandParentClass", context, iri_prefix="http://localhost/ancestors/",
+grand_parent_model = dataset.create_model("GrandParentClass", context, iri_prefix="http://localhost/ancestors/",
                                          iri_fragment=uri_fragment)
-parent_model = domain.create_model("ParentClass", context, iri_prefix="http://localhost/parents/")
+parent_model = dataset.create_model("ParentClass", context, iri_prefix="http://localhost/parents/")
 
 
 class InstanceTest(TestCase):
@@ -254,17 +254,17 @@ class InstanceTest(TestCase):
         parent_model.objects.clear_cache()
         child_model.objects.clear_cache()
 
-        tom = domain.get(id=tom_uri)
+        tom = dataset.get(id=tom_uri)
         self.assertEquals(tom.new_value, tom_new_value)
         self.assertEquals(tom.disclaim(), new_disclaim)
         self.assertTrue(tom.is_instance_of(child_model))
 
-        jack = domain.get(id=jack_uri)
+        jack = dataset.get(id=jack_uri)
         self.assertEquals(jack.mid_values, jack_mid_values)
         self.assertTrue(jack.is_instance_of(parent_model))
         self.assertFalse(jack.is_instance_of(child_model))
 
-        john = domain.get(id=john_uri)
+        john = dataset.get(id=john_uri)
         self.assertTrue(john.is_instance_of(grand_parent_model))
         self.assertFalse(john.is_instance_of(parent_model))
         self.assertFalse(john.is_instance_of(child_model))

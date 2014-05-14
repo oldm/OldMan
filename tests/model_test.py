@@ -7,7 +7,7 @@ import json
 from rdflib import ConjunctiveGraph, Graph, URIRef, Literal, RDF, XSD
 from rdflib.namespace import FOAF
 
-from oldman import default_domain
+from oldman import create_dataset
 from oldman.attribute import OMAttributeTypeCheckError, OMRequiredPropertyError
 from oldman.exception import OMClassInstanceError, OMAttributeAccessError, OMUniquenessError
 from oldman.exception import OMWrongObjectError, OMObjectNotFoundError, OMHashIriError, OMEditError
@@ -209,14 +209,14 @@ context = {
 }
 
 
-domain = default_domain(schema_graph, default_graph)
+dataset = create_dataset(schema_graph, default_graph)
 # Model classes are generated here!
-lp_model = domain.create_model("LocalPerson", context, iri_prefix="http://localhost/persons/",
+lp_model = dataset.create_model("LocalPerson", context, iri_prefix="http://localhost/persons/",
                                iri_fragment="me")
-rsa_model = domain.create_model("LocalRSAPublicKey", context)
-gpg_model = domain.create_model("LocalGPGPublicKey", context)
+rsa_model = dataset.create_model("LocalRSAPublicKey", context)
+gpg_model = dataset.create_model("LocalGPGPublicKey", context)
 
-crud_controller = CRUDController(domain)
+crud_controller = CRUDController(dataset)
 
 bob_name = "Bob"
 bob_blog = "http://blog.example.com/"
@@ -924,7 +924,7 @@ class ModelTest(TestCase):
         doc = json.loads(crud_controller.get(doc_iri, "json"))
         self.assertEquals(doc["id"], doc_iri)
 
-        obj_iris = domain.registry.find_object_iris(doc_iri)
+        obj_iris = dataset.registry.find_object_iris(doc_iri)
         self.assertEquals({bob_iri, doc_iri}, obj_iris)
 
     def test_bob_controller_delete(self):
