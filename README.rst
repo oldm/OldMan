@@ -2,8 +2,6 @@
 OldMan: Python OLDM
 ===================
 
-.. image:: docs/_static/wiseoldman_small.png
-
 OldMan is a Python *Object Linked Data Mapper* (OLDM), an alternative name for *Object RDF Mapper*.
 
 An OLDM let you access, create and alter objects that represent resources described in RDF
