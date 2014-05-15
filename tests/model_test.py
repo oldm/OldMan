@@ -5,9 +5,10 @@ from os import path
 import json
 
 from rdflib import ConjunctiveGraph, Graph, URIRef, Literal, RDF, XSD
+from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
 from rdflib.namespace import FOAF
 
-from oldman import create_dataset
+from oldman import create_dataset, parse_graph_safely
 from oldman.attribute import OMAttributeTypeCheckError, OMRequiredPropertyError
 from oldman.exception import OMClassInstanceError, OMAttributeAccessError, OMUniquenessError
 from oldman.exception import OMWrongObjectError, OMObjectNotFoundError, OMHashIriError, OMEditError
@@ -16,6 +17,9 @@ from oldman.rest.crud import CRUDController
 
 
 default_graph = ConjunctiveGraph()
+# store = SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
+#                           update_endpoint="http://localhost:3030/test/update")
+#default_graph = ConjunctiveGraph(store)
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
 
 BIO = "http://purl.org/vocab/bio/0.1/"
@@ -71,7 +75,7 @@ local_person_def = {
         }
     ]
 }
-schema_graph.parse(data=json.dumps(local_person_def), format="json-ld")
+parse_graph_safely(schema_graph, data=json.dumps(local_person_def), format="json-ld")
 
 local_rsa_key_def = {
     "@context": [
@@ -100,7 +104,7 @@ local_rsa_key_def = {
         }
     ]
 }
-schema_graph.parse(data=json.dumps(local_rsa_key_def), format="json-ld")
+parse_graph_safely(schema_graph, data=json.dumps(local_rsa_key_def), format="json-ld")
 
 local_gpg_key_def = {
     "@context": [
@@ -125,7 +129,8 @@ local_gpg_key_def = {
         }
     ]
 }
-schema_graph.parse(data=json.dumps(local_gpg_key_def), format="json-ld")
+parse_graph_safely(schema_graph, data=json.dumps(local_gpg_key_def), format="json-ld")
+#print schema_graph.serialize(format="turtle")
 
 context = {
     "@context": {

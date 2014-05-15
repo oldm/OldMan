@@ -10,7 +10,7 @@ import json
 from decimal import Decimal
 from copy import copy
 from datetime import date, datetime, time
-from oldman import create_dataset
+from oldman import create_dataset, parse_graph_safely
 from oldman.exception import OMRequiredPropertyError, OMAttributeTypeCheckError
 
 default_graph = ConjunctiveGraph()
@@ -67,7 +67,7 @@ local_class_def = {
         }
     ]
 }
-schema_graph.parse(data=json.dumps(local_class_def), format="json-ld")
+parse_graph_safely(schema_graph, data=json.dumps(local_class_def), format="json-ld")
 
 context = {
     "@context": {

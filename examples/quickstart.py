@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from rdflib import ConjunctiveGraph
-from oldman import create_dataset
+from oldman import create_dataset, parse_graph_safely
 
 # In-memory main graph that will be divided into named sub-graphs
 default_graph = ConjunctiveGraph()
@@ -8,7 +8,8 @@ default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context("http://localhost/schema")
 
 # Load the schema
-schema_graph.parse("https://gitlab.bcgl.fr/benjamin/oldman/raw/master/examples/quickstart_schema.ttl", format="turtle")
+parse_graph_safely(schema_graph, "https://gitlab.bcgl.fr/benjamin/oldman/raw/master/examples/quickstart_schema.ttl",
+                   format="turtle")
 
 context_iri = "https://gitlab.bcgl.fr/benjamin/oldman/raw/master/examples/quickstart_context.jsonld"
 

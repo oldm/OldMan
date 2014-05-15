@@ -8,7 +8,7 @@ from os import path
 from rdflib import ConjunctiveGraph, URIRef
 import json
 from copy import copy
-from oldman import create_dataset
+from oldman import create_dataset, parse_graph_safely
 from oldman.exception import OMRequiredPropertyError, OMAttributeTypeCheckError
 
 default_graph = ConjunctiveGraph()
@@ -67,7 +67,7 @@ local_person_def = {
 
     ]
 }
-schema_graph.parse(data=json.dumps(local_person_def), format="json-ld")
+parse_graph_safely(schema_graph, data=json.dumps(local_person_def), format="json-ld")
 
 context = {
     "@context": {

@@ -7,7 +7,7 @@ from unittest import TestCase
 from os import path
 from rdflib import ConjunctiveGraph, URIRef, Literal, Graph, XSD
 import json
-from oldman import create_dataset
+from oldman import create_dataset, parse_graph_safely
 from oldman.exception import OMPropertyDefError, OMReadOnlyAttributeError
 
 default_graph = ConjunctiveGraph()
@@ -56,8 +56,8 @@ bad_class_def = {
     ]
 }
 
-schema_graph.parse(data=json.dumps(local_class_def), format="json-ld")
-schema_graph.parse(data=json.dumps(bad_class_def), format="json-ld")
+parse_graph_safely(schema_graph, data=json.dumps(local_class_def), format="json-ld")
+parse_graph_safely(schema_graph, data=json.dumps(bad_class_def), format="json-ld")
 
 
 context = {

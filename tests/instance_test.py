@@ -5,7 +5,7 @@
 
 from unittest import TestCase
 from rdflib import ConjunctiveGraph, URIRef
-from oldman import create_dataset
+from oldman import create_dataset, parse_graph_safely
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
@@ -35,7 +35,7 @@ ex:ChildClass a hydra:Class ;
     ] .
 """ % format(EXAMPLE)
 
-schema_graph.parse(data=schema_ttl, format="turtle")
+parse_graph_safely(schema_graph, data=schema_ttl, format="turtle")
 
 context = {
     "@context": {
