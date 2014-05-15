@@ -14,9 +14,9 @@ class CRUDController(object):
         Generic (does not support the Collection pattern so there is no append method)
     """
 
-    def __init__(self, dataset):
-        self._dataset = dataset
-        self._registry = dataset.model_registry
+    def __init__(self, manager):
+        self._manager = manager
+        self._registry = manager.model_registry
 
     def get(self, base_uri, content_type="text/turtle"):
         """
@@ -133,7 +133,7 @@ class CRUDController(object):
                 obj.full_update_from_graph(graph, save=False)
             except OMClassInstanceError:
                 # New object
-                obj = Resource.load_from_graph(self._dataset, obj_iri, graph, is_new=True)
+                obj = Resource.load_from_graph(self._manager, obj_iri, graph, is_new=True)
 
             objs.append(obj)
         return objs

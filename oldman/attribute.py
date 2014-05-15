@@ -201,7 +201,7 @@ class OMAttribute(object):
         else:
             raise NotImplementedError(u"Untyped JSON-LD value are not (yet?) supported")
 
-    def get(self, instance, dataset):
+    def get(self, instance, manager):
         value = self._data.get(instance, None)
         return value
 
@@ -263,15 +263,15 @@ class ObjectOMAttribute(OMAttribute):
     def __init__(self, metadata, value_format):
         OMAttribute.__init__(self, metadata, value_format)
 
-    def get(self, instance, dataset):
-        iris = OMAttribute.get(self, instance, dataset)
+    def get(self, instance, manager):
+        iris = OMAttribute.get(self, instance, manager)
         if isinstance(iris, (list, set)):
             # Returns a generator
-            return (dataset.get(iri) for iri in iris)
+            return (manager.get(iri) for iri in iris)
         elif isinstance(iris, dict):
             raise NotImplementedError(u"Should we implement it?")
         elif iris is not None:
-            return dataset.get(iris)
+            return manager.get(iris)
         else:
             return None
 
