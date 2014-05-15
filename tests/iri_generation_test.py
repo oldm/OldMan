@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from rdflib import ConjunctiveGraph, URIRef, RDF, BNode, Graph
 
-from oldman import create_dataset
+from oldman import create_resource_manager
 from oldman.iri import RandomFragmentIriGenerator
 from oldman.exception import OMRequiredBaseIRIError
 from oldman.rest.crud import CRUDController
@@ -27,9 +27,9 @@ context = {
     }
 }
 
-dataset = create_dataset(schema_graph, default_graph)
-crud_controller = CRUDController(dataset)
-model = dataset.create_model("MyClass", context, iri_generator=RandomFragmentIriGenerator())
+manager = create_resource_manager(schema_graph, default_graph)
+crud_controller = CRUDController(manager)
+model = manager.create_model("MyClass", context, iri_generator=RandomFragmentIriGenerator())
 
 
 class DatatypeTest(TestCase):
@@ -37,7 +37,7 @@ class DatatypeTest(TestCase):
     def tearDown(self):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
-        model.objects.clear_cache()
+        model.clear_cache()
 
     def test_generation(self):
         base_iri = "http://example.org/doc1"
@@ -45,7 +45,7 @@ class DatatypeTest(TestCase):
         self.assertEquals(obj1.base_iri, base_iri)
         self.assertTrue(base_iri in obj1.id)
 
-        obj2 = model.objects.create(base_iri=base_iri)
+        obj2 = model.create(base_iri=base_iri)
         self.assertEquals(obj2.base_iri, base_iri)
         self.assertTrue(base_iri in obj2.id)
         self.assertNotEquals(obj1.id, obj2.id)
@@ -61,7 +61,7 @@ class DatatypeTest(TestCase):
         g.add((BNode(), RDF.type, URIRef(EXAMPLE + "MyClass")))
         crud_controller.update(base_iri, g.serialize(format="turtle"), "turtle")
 
-        obj_iri = dataset.model_registry.find_object_from_base_uri(base_iri)
+        obj_iri = manager.model_registry.find_object_from_base_uri(base_iri)
         self.assertTrue(obj_iri is not None)
         self.assertTrue(base_iri in obj_iri)
         self.assertTrue('#' in obj_iri)
@@ -77,5 +77,5 @@ class DatatypeTest(TestCase):
         """
         base_iri = "http://example.org/doc3"
         crud_controller.update(base_iri, ttl, "turtle")
-        obj_iri = dataset.model_registry.find_object_from_base_uri(base_iri)
+        obj_iri = manager.model_registry.find_object_from_base_uri(base_iri)
         self.assertEquals(obj_iri, base_iri + "#this")

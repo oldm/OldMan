@@ -67,7 +67,7 @@ class ModelRegistry(object):
 
     def get_object(self, object_iri):
         model = self.find_model(object_iri)
-        return model.objects.get(id=object_iri)
+        return model.get(id=object_iri)
 
     def find_object_iris(self, base_iri):
         if "#" in base_iri:

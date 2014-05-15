@@ -8,7 +8,7 @@ from rdflib import ConjunctiveGraph, Graph, URIRef, Literal, RDF, XSD
 from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
 from rdflib.namespace import FOAF
 
-from oldman import create_dataset, parse_graph_safely
+from oldman import create_resource_manager, parse_graph_safely
 from oldman.attribute import OMAttributeTypeCheckError, OMRequiredPropertyError
 from oldman.exception import OMClassInstanceError, OMAttributeAccessError, OMUniquenessError
 from oldman.exception import OMWrongObjectError, OMObjectNotFoundError, OMHashIriError, OMEditError
@@ -214,14 +214,14 @@ context = {
 }
 
 
-dataset = create_dataset(schema_graph, default_graph)
+manager = create_resource_manager(schema_graph, default_graph)
 # Model classes are generated here!
-lp_model = dataset.create_model("LocalPerson", context, iri_prefix="http://localhost/persons/",
+lp_model = manager.create_model("LocalPerson", context, iri_prefix="http://localhost/persons/",
                                iri_fragment="me")
-rsa_model = dataset.create_model("LocalRSAPublicKey", context)
-gpg_model = dataset.create_model("LocalGPGPublicKey", context)
+rsa_model = manager.create_model("LocalRSAPublicKey", context)
+gpg_model = manager.create_model("LocalGPGPublicKey", context)
 
-crud_controller = CRUDController(dataset)
+crud_controller = CRUDController(manager)
 
 bob_name = "Bob"
 bob_blog = "http://blog.example.com/"
@@ -251,25 +251,25 @@ class ModelTest(TestCase):
     def tearDown(self):
         """ Clears the data graph """
         default_graph.update("CLEAR DEFAULT")
-        lp_model.objects.clear_cache()
-        rsa_model.objects.clear_cache()
+        lp_model.clear_cache()
+        rsa_model.clear_cache()
 
     def create_bob(self):
-        return lp_model.objects.create(name=bob_name, blog=bob_blog, mboxes=bob_emails,
+        return lp_model.create(name=bob_name, blog=bob_blog, mboxes=bob_emails,
                                        short_bio_en=bob_bio_en, short_bio_fr=bob_bio_fr)
 
     def create_alice(self):
-        return lp_model.objects.create(name=alice_name, mboxes={alice_mail}, short_bio_en=alice_bio_en)
+        return lp_model.create(name=alice_name, mboxes={alice_mail}, short_bio_en=alice_bio_en)
 
     def create_john(self):
-        return lp_model.objects.create(name=john_name, mboxes={john_mail}, short_bio_en=john_bio_en)
+        return lp_model.create(name=john_name, mboxes={john_mail}, short_bio_en=john_bio_en)
 
     def create_rsa_key(self):
-        return rsa_model.objects.create(exponent=key_exponent, modulus=key_modulus,
+        return rsa_model.create(exponent=key_exponent, modulus=key_modulus,
                                                 label=key_label)
 
     def create_gpg_key(self):
-        return gpg_model.objects.create(fingerprint=gpg_fingerprint, hex_id=gpg_hex_id)
+        return gpg_model.create(fingerprint=gpg_fingerprint, hex_id=gpg_hex_id)
 
     def test_bio_requirement(self):
         bob = lp_model.new()
@@ -319,8 +319,8 @@ class ModelTest(TestCase):
         bob.name = "You should not retrieve this string"
 
         del bob
-        lp_model.objects.clear_cache()
-        bob = lp_model.objects.get(id=bob_uri)
+        lp_model.clear_cache()
+        bob = lp_model.get(id=bob_uri)
 
         self.assertEquals(bob_name, bob.name)
         self.assertEquals(bob_blog, bob.blog.id)
@@ -372,8 +372,8 @@ class ModelTest(TestCase):
         bob.save()
         bob_uri = bob.id
         del bob
-        lp_model.objects.clear_cache()
-        bob = lp_model.objects.get(id=bob_uri)
+        lp_model.clear_cache()
+        bob = lp_model.get(id=bob_uri)
 
         self.assertEquals(bob.short_bio_en, None)
         self.assertEquals(bob.short_bio_fr, bob_bio_fr)
@@ -397,8 +397,8 @@ class ModelTest(TestCase):
         self.assertEquals(bob.short_bio_en, forbidden_string)
 
         del bob
-        lp_model.objects.clear_cache()
-        bob = lp_model.objects.get(id=bob_id)
+        lp_model.clear_cache()
+        bob = lp_model.get(id=bob_id)
         self.assertEquals(bob.short_bio_en, None)
         self.assertEquals(bob.short_bio_fr, bob_bio_fr)
 
@@ -407,8 +407,8 @@ class ModelTest(TestCase):
         bob.save()
         bob.short_bio_en = "You should not retrieve this string (again)"
 
-        lp_model.objects.clear_cache()
-        bob = lp_model.objects.get(id=bob_id)
+        lp_model.clear_cache()
+        bob = lp_model.get(id=bob_id)
         self.assertEquals(bob.short_bio_en, bob_bio_en_2)
         self.assertEquals(bob.short_bio_fr, bob_bio_fr)
 
@@ -416,9 +416,9 @@ class ModelTest(TestCase):
         rsa_key = self.create_rsa_key()
         rsa_skolemized_iri = rsa_key.id
         del rsa_key
-        rsa_model.objects.clear_cache()
+        rsa_model.clear_cache()
 
-        rsa_key = rsa_model.objects.get(id=rsa_skolemized_iri)
+        rsa_key = rsa_model.get(id=rsa_skolemized_iri)
         self.assertEquals(rsa_key.exponent, key_exponent)
         self.assertEquals(rsa_key.modulus, key_modulus)
         self.assertEquals(rsa_key.label, key_label)
@@ -431,7 +431,7 @@ class ModelTest(TestCase):
             rsa_key.modulus = 235
         rsa_key.modulus = format(235, "x")
         with self.assertRaises(OMRequiredPropertyError):
-            rsa_model.objects.create(exponent=key_exponent)
+            rsa_model.create(exponent=key_exponent)
 
     def test_filter_two_bobs(self):
         #Bob 1
@@ -440,39 +440,39 @@ class ModelTest(TestCase):
         bob2_mail = "bob2@example.org"
         bob2_bio_en = "I am a double."
         # Bob 2
-        lp_model.objects.create(name=bob_name, mboxes={bob2_mail}, short_bio_en=bob2_bio_en)
+        lp_model.create(name=bob_name, mboxes={bob2_mail}, short_bio_en=bob2_bio_en)
 
-        bobs = list(lp_model.objects.filter(name=bob_name))
+        bobs = list(lp_model.filter(name=bob_name))
         self.assertEquals(len(bobs), 2)
         self.assertEquals(bobs[0].name, bobs[1].name)
         self.assertEquals(bobs[0].name, bob_name)
         self.assertNotEquals(bobs[0].mboxes, bobs[1].mboxes)
 
-        bobs2 = set(lp_model.objects.filter(name=bob_name,
+        bobs2 = set(lp_model.filter(name=bob_name,
                                                # mboxes is NOT REQUIRED to be exhaustive
                                                mboxes={bob_email2}))
         self.assertEquals(len(bobs2), 1)
-        bobs3 = set(lp_model.objects.filter(name=bob_name,
+        bobs3 = set(lp_model.filter(name=bob_name,
                                                mboxes={bob_email1, bob_email2}))
         self.assertEquals(bobs2, bobs3)
 
         # Nothing
-        bobs4 = list(lp_model.objects.filter(name=bob_name,
+        bobs4 = list(lp_model.filter(name=bob_name,
                                                 mboxes={bob_email1, bob_email2, bob2_mail}))
         self.assertEquals(len(bobs4), 0)
 
     def test_wrong_filter(self):
         with self.assertRaises(OMAttributeAccessError):
-            lp_model.objects.filter(undeclared_attr="not in datastore")
+            lp_model.filter(undeclared_attr="not in datastore")
 
     def test_set_validation(self):
         with self.assertRaises(OMAttributeTypeCheckError):
             # Mboxes should be a set
-            lp_model.objects.create(name="Lola", mboxes="lola@example.org",
+            lp_model.create(name="Lola", mboxes="lola@example.org",
                                        short_bio_en="Will not exist.")
         with self.assertRaises(OMAttributeTypeCheckError):
             # Mboxes should be a set not a list
-            lp_model.objects.create(name="Lola", mboxes=["lola@example.org"],
+            lp_model.create(name="Lola", mboxes=["lola@example.org"],
                                        short_bio_en="Will not exist.")
 
     def test_children_object_assignment(self):
@@ -489,8 +489,8 @@ class ModelTest(TestCase):
 
         # Force reload from the triplestore
         del bob
-        lp_model.objects.clear_cache()
-        bob = lp_model.objects.get(id=bob_uri)
+        lp_model.clear_cache()
+        bob = lp_model.get(id=bob_uri)
         self.assertEquals(bob_children_ids, [c.id for c in bob.children])
 
     def test_children_uri_assignment(self):
@@ -505,9 +505,9 @@ class ModelTest(TestCase):
 
         # Force reload from the triplestore
         del bob
-        lp_model.objects.clear_cache()
+        lp_model.clear_cache()
 
-        bob = lp_model.objects.get(id=bob_uri)
+        bob = lp_model.get(id=bob_uri)
         self.assertEquals(bob.id, bob_uri)
         self.assertEquals(bob.name, bob_name)
         self.assertEquals(bob_children_uris, [c.id for c in bob.children])
@@ -600,10 +600,10 @@ class ModelTest(TestCase):
 
         partial_uri = u"http://localhost/persons"
         bob_uri = partial_uri + "#bob"
-        bob = lp_model.objects.create(id=bob_uri, name=bob_name, blog=bob_blog, mboxes=bob_emails,
+        bob = lp_model.create(id=bob_uri, name=bob_name, blog=bob_blog, mboxes=bob_emails,
                                          short_bio_en=bob_bio_en, short_bio_fr=bob_bio_fr)
         alice_uri = partial_uri + "#alice"
-        alice = lp_model.objects.create(id=alice_uri, name=alice_name, mboxes={alice_mail},
+        alice = lp_model.create(id=alice_uri, name=alice_name, mboxes={alice_mail},
                                            short_bio_en=alice_bio_en)
         self.assertTrue(bob.in_same_document(alice))
 
@@ -627,10 +627,10 @@ class ModelTest(TestCase):
     def test_friendship_jsonld(self):
         friendship_uri = u"http://localhost/friendship"
         bob_uri = friendship_uri + "#bob"
-        bob = lp_model.objects.create(id=bob_uri, name=bob_name, blog=bob_blog, mboxes=bob_emails,
+        bob = lp_model.create(id=bob_uri, name=bob_name, blog=bob_blog, mboxes=bob_emails,
                                          short_bio_en=bob_bio_en, short_bio_fr=bob_bio_fr)
         alice_uri = friendship_uri + "#alice"
-        alice = lp_model.objects.create(id=alice_uri, name=alice_name, mboxes={alice_mail},
+        alice = lp_model.create(id=alice_uri, name=alice_name, mboxes={alice_mail},
                                            short_bio_en=alice_bio_en)
         bob_friends = {alice}
         bob.friends = bob_friends
@@ -649,10 +649,10 @@ class ModelTest(TestCase):
     def test_friendship_rdf(self):
         friendship_uri = u"http://localhost/friendship"
         bob_uri = friendship_uri + "#bob"
-        bob = lp_model.objects.create(id=bob_uri, name=bob_name, blog=bob_blog, mboxes=bob_emails,
+        bob = lp_model.create(id=bob_uri, name=bob_name, blog=bob_blog, mboxes=bob_emails,
                                          short_bio_en=bob_bio_en, short_bio_fr=bob_bio_fr)
         alice_uri = friendship_uri + "#alice"
-        alice = lp_model.objects.create(id=alice_uri, name=alice_name, mboxes={alice_mail},
+        alice = lp_model.create(id=alice_uri, name=alice_name, mboxes={alice_mail},
                                            short_bio_en=alice_bio_en)
         bob_friends = {alice}
         bob.friends = bob_friends
@@ -675,10 +675,10 @@ class ModelTest(TestCase):
         bob.save()
         del bob
         del rsa_key
-        lp_model.objects.clear_cache()
-        rsa_model.objects.clear_cache()
+        lp_model.clear_cache()
+        rsa_model.clear_cache()
 
-        bob = lp_model.objects.get(id=bob_iri)
+        bob = lp_model.get(id=bob_iri)
         bob_jsonld = json.loads(bob.to_jsonld())
         self.assertEquals(bob_jsonld["name"], bob_name)
         self.assertEquals(bob_jsonld["short_bio_en"], bob_bio_en)
@@ -697,12 +697,12 @@ class ModelTest(TestCase):
 
         # LocalPerson type is missing
         with self.assertRaises(OMClassInstanceError):
-            lp_model.objects.get(id=str(jason_uri))
+            lp_model.get(id=str(jason_uri))
 
         default_graph.add((jason_uri, RDF["type"], URIRef(lp_model.class_iri)))
 
         # Mboxes is still missing
-        jason = lp_model.objects.get(id=str(jason_uri))
+        jason = lp_model.get(id=str(jason_uri))
         self.assertFalse(jason.is_valid())
 
         mboxes = {"jason@example.com", "jason@example.org"}
@@ -714,8 +714,8 @@ class ModelTest(TestCase):
                          format="json-ld")
 
         # Clear the cache (out-of-band update)
-        lp_model.objects.clear_cache()
-        jason = lp_model.objects.get(id=jason_uri)
+        lp_model.clear_cache()
+        jason = lp_model.get(id=jason_uri)
         self.assertEquals(jason.mboxes, mboxes)
         self.assertTrue(jason.is_valid())
 
@@ -727,7 +727,7 @@ class ModelTest(TestCase):
             lp_model.new(id=bob_iri, name=bob_name, mboxes=bob_emails, short_bio_en=u"Will not exist")
 
         with self.assertRaises(OMUniquenessError):
-            lp_model.objects.create(id=bob_iri, name=bob_name, mboxes=bob_emails,
+            lp_model.create(id=bob_iri, name=bob_name, mboxes=bob_emails,
                                        short_bio_en=u"Will not exist")
 
         with self.assertRaises(OMUniquenessError):
@@ -753,8 +753,8 @@ class ModelTest(TestCase):
         self.assertEquals(bob.gpg_key.hex_id, gpg_hex_id)
 
         del bob
-        lp_model.objects.clear_cache()
-        bob = lp_model.objects.get(id=bob_id)
+        lp_model.clear_cache()
+        bob = lp_model.get(id=bob_id)
         self.assertEquals(bob.gpg_key.fingerprint, gpg_fingerprint)
         self.assertEquals(bob.gpg_key.hex_id, gpg_hex_id)
 
@@ -929,7 +929,7 @@ class ModelTest(TestCase):
         doc = json.loads(crud_controller.get(doc_iri, "json"))
         self.assertEquals(doc["id"], doc_iri)
 
-        obj_iris = dataset.model_registry.find_object_iris(doc_iri)
+        obj_iris = manager.model_registry.find_object_iris(doc_iri)
         self.assertEquals({bob_iri, doc_iri}, obj_iris)
 
     def test_bob_controller_delete(self):
@@ -942,14 +942,14 @@ class ModelTest(TestCase):
 
         ask_alice = """ASK {?x foaf:name "%s"^^xsd:string }""" % alice_name
         self.assertFalse(bool(default_graph.query(ask_alice)))
-        lp_model.objects.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
+        lp_model.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
                                    short_bio_en=alice_bio_en)
         self.assertTrue(bool(default_graph.query(ask_alice)))
 
         #John is the base uri (bad practise, only for test convenience)
         ask_john = """ASK {?x foaf:name "%s"^^xsd:string }""" % john_name
         self.assertFalse(bool(default_graph.query(ask_john)))
-        lp_model.objects.create(id=doc_iri, name=john_name, mboxes={john_mail},
+        lp_model.create(id=doc_iri, name=john_name, mboxes={john_mail},
                                    short_bio_en=john_bio_en)
         self.assertTrue(bool(default_graph.query(ask_john)))
 
@@ -974,7 +974,7 @@ class ModelTest(TestCase):
 
         ask_alice = """ASK {?x foaf:name "%s"^^xsd:string }""" % alice_name
         self.assertFalse(bool(default_graph.query(ask_alice)))
-        lp_model.objects.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
+        lp_model.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
                                    short_bio_en=alice_bio_en)
         self.assertTrue(bool(default_graph.query(ask_alice)))
 
@@ -991,7 +991,7 @@ class ModelTest(TestCase):
     def test_controller_put_change_name(self):
         bob = self.create_bob()
         doc_iri = bob.base_iri
-        alice = lp_model.objects.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
+        alice = lp_model.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
                                            short_bio_en=alice_bio_en)
         alice_ref = URIRef(alice.id)
         bob_ref = URIRef(bob.id)
@@ -1030,7 +1030,7 @@ class ModelTest(TestCase):
         jsld_dump = alice.to_jsonld()
 
         del alice
-        lp_model.objects.clear_cache()
+        lp_model.clear_cache()
         self.assertEquals(unicode(default_graph.value(alice_ref, FOAF.name)), alice_name)
 
         crud_controller.update(alice_base_iri, jsld_dump, "application/ld+json")

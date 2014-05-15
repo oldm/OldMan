@@ -7,7 +7,7 @@ from unittest import TestCase
 from os import path
 from rdflib import ConjunctiveGraph, URIRef, Literal, Graph, XSD
 import json
-from oldman import create_dataset, parse_graph_safely
+from oldman import create_resource_manager, parse_graph_safely
 from oldman.exception import OMPropertyDefError, OMReadOnlyAttributeError
 
 default_graph = ConjunctiveGraph()
@@ -87,8 +87,8 @@ context = {
     }
 }
 
-dataset = create_dataset(schema_graph, default_graph)
-lc_model = dataset.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
+manager = create_resource_manager(schema_graph, default_graph)
+lc_model = manager.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
 
 
 class PropertyTest(TestCase):
@@ -96,11 +96,11 @@ class PropertyTest(TestCase):
     def tearDown(self):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
-        lc_model.objects.clear_cache()
+        lc_model.clear_cache()
 
     def test_read_and_write_only(self):
         with self.assertRaises(OMPropertyDefError):
-            dataset.create_model("BadClass", context, data_graph)
+            manager.create_model("BadClass", context, data_graph)
 
     def test_write_only(self):
         obj = lc_model.new()
@@ -127,7 +127,7 @@ class PropertyTest(TestCase):
         self.assertEquals(admin_str, obj.ro_property)
 
         with self.assertRaises(OMReadOnlyAttributeError):
-            lc_model.objects.create(ro_property=end_user_str)
+            lc_model.create(ro_property=end_user_str)
 
     def test_read_only_update(self):
         obj = lc_model.new()

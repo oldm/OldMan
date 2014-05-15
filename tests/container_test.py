@@ -8,7 +8,7 @@ from os import path
 from rdflib import ConjunctiveGraph, URIRef
 import json
 from copy import copy
-from oldman import create_dataset, parse_graph_safely
+from oldman import create_resource_manager, parse_graph_safely
 from oldman.exception import OMRequiredPropertyError, OMAttributeTypeCheckError
 
 default_graph = ConjunctiveGraph()
@@ -115,9 +115,9 @@ context = {
     }
 }
 
-dataset = create_dataset(schema_graph, default_graph)
+manager = create_resource_manager(schema_graph, default_graph)
 # Model class is generated here!
-model = dataset.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
+model = manager.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
 default_list_en = ["w1", "w2"]
 
 
@@ -126,10 +126,10 @@ class ContainerTest(TestCase):
     def tearDown(self):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
-        model.objects.clear_cache()
+        model.clear_cache()
 
     def create_object(self):
-        return model.objects.create(list_en=default_list_en)
+        return model.create(list_en=default_list_en)
 
     def test_basic_list(self):
         obj = self.create_object()
@@ -140,8 +140,8 @@ class ContainerTest(TestCase):
         obj.save()
 
         del obj
-        model.objects.clear_cache()
-        obj = model.objects.get(id=uri)
+        model.clear_cache()
+        obj = model.get(id=uri)
         self.assertEquals(lst, backup_list)
         self.assertEquals(obj.primary_list, lst)
         self.assertNotEquals(obj.primary_list, list(set(lst)))
@@ -156,8 +156,8 @@ class ContainerTest(TestCase):
         obj.save()
 
         del obj
-        model.objects.clear_cache()
-        obj = model.objects.get(id=uri)
+        model.clear_cache()
+        obj = model.get(id=uri)
         self.assertEquals(obj.list_fr, list_fr)
         self.assertEquals(obj.list_en, list_en)
 
@@ -202,8 +202,8 @@ class ContainerTest(TestCase):
         self.assertEquals(obj.bool_list, lst)
         obj.save()
         del obj
-        model.objects.clear_cache()
-        obj = model.objects.get(id=uri)
+        model.clear_cache()
+        obj = model.get(id=uri)
         self.assertEquals(obj.bool_list, lst)
         obj.bool_list = [True]
         obj.save()
@@ -219,8 +219,8 @@ class ContainerTest(TestCase):
         obj.bool_set = bools
         obj.save()
         del obj
-        model.objects.clear_cache()
-        obj = model.objects.get(id=uri)
+        model.clear_cache()
+        obj = model.get(id=uri)
         self.assertEquals(obj.bool_set, bools)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.bool_set = [True]
@@ -235,8 +235,8 @@ class ContainerTest(TestCase):
         obj.lang_map = values
         obj.save()
         del obj
-        model.objects.clear_cache()
-        obj = model.objects.get(id=uri)
+        model.clear_cache()
+        obj = model.get(id=uri)
         self.assertEquals(obj.lang_map, values)
 
         with self.assertRaises(OMAttributeTypeCheckError):

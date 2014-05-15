@@ -134,6 +134,7 @@ class Resource(object):
         for attr in attributes:
             attr.check_validity(self, is_end_user)
         self._save(attributes)
+        return self
 
     def _save(self, attributes):
         """

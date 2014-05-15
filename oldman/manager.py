@@ -8,7 +8,7 @@ from .iri import RandomPrefixedIriGenerator, IncrementalIriGenerator, BlankNodeI
 from oldman.parsing.schema.attribute import OMAttributeExtractor
 
 
-def create_dataset(schema_graph, default_graph):
+def create_resource_manager(schema_graph, default_graph):
     attr_extractor = OMAttributeExtractor()
     return ResourceManager(attr_extractor, schema_graph, default_graph)
 

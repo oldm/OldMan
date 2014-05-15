@@ -129,7 +129,7 @@ class CRUDController(object):
             types = extract_types(obj_iri, graph)
             model = self._registry.select_model(self._registry.get_models(types))
             try:
-                obj = model.objects.get(id=obj_iri)
+                obj = model.get(id=obj_iri)
                 obj.full_update_from_graph(graph, save=False)
             except OMClassInstanceError:
                 # New object
