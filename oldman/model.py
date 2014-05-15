@@ -1,6 +1,5 @@
 from weakref import WeakValueDictionary
 from rdflib import URIRef, Graph
-from rdflib.plugins.sparql import prepareQuery
 from rdflib.plugins.sparql.parser import ParseException
 from .resource import Resource
 from .exception import OMReservedAttributeNameError, OMClassInstanceError, OMSPARQLParseError
@@ -31,7 +30,7 @@ class Model(object):
         #TODO: move cache management away from models
         self._cache = WeakValueDictionary()
         if class_iri:
-            self._check_type_request = prepareQuery(u"ASK {?s a <%s> }" % class_iri)
+            self._check_type_request = u"ASK {?s a <%s> }" % class_iri
         else:
             self._check_type_request = None
 

@@ -17,9 +17,8 @@ from oldman.rest.crud import CRUDController
 
 
 default_graph = ConjunctiveGraph()
-# store = SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
-#                           update_endpoint="http://localhost:3030/test/update")
-#default_graph = ConjunctiveGraph(store)
+#default_graph = ConjunctiveGraph(SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
+#                                                   update_endpoint="http://localhost:3030/test/update"))
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
 
 BIO = "http://purl.org/vocab/bio/0.1/"

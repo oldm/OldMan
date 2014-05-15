@@ -15,8 +15,8 @@ def create_resource_manager(schema_graph, default_graph):
 
 class ResourceManager(object):
 
-    def __init__(self, attr_manager, schema_graph, default_graph):
-        self._attr_manager = attr_manager
+    def __init__(self, attr_extractor, schema_graph, default_graph):
+        self._attr_extractor = attr_extractor
         self._registry = ModelRegistry(default_graph)
         self._schema_graph = schema_graph
         self._default_graph = default_graph
@@ -61,7 +61,7 @@ class ResourceManager(object):
         else:
             class_iri = extract_class_iri(class_name, context)
             ancestry = ClassAncestry(class_iri, self._schema_graph)
-            om_attributes = self._attr_manager.extract(class_iri, ancestry.bottom_up, context,
+            om_attributes = self._attr_extractor.extract(class_iri, ancestry.bottom_up, context,
                                                        self._schema_graph)
         if iri_generator is not None:
             id_generator = iri_generator

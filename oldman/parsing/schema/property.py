@@ -1,5 +1,4 @@
 from rdflib import Namespace, URIRef
-from rdflib.plugins.sparql import prepareQuery
 from oldman.property import OMProperty
 
 
@@ -32,8 +31,7 @@ class HydraPropertyExtractor(OMPropertyExtractor):
            - rdfs:range
     """
 
-    extract_hydra_properties = prepareQuery(
-        u"""
+    extract_hydra_properties = u"""
         SELECT ?p ?required ?readOnly ?writeOnly
         WHERE {
             ?class_uri hydra:supportedProperty ?sp.
@@ -48,7 +46,8 @@ class HydraPropertyExtractor(OMPropertyExtractor):
                 ?sp hydra:writeonly ?writeOnly
             }
         }
-    """, initNs={u'hydra': Namespace(u"http://www.w3.org/ns/hydra/core#")})
+    """
+    ns = {u'hydra': Namespace(u"http://www.w3.org/ns/hydra/core#")}
 
     def update(self, properties, class_uri, type_uris, graph):
         """
@@ -57,7 +56,8 @@ class HydraPropertyExtractor(OMPropertyExtractor):
         prop_params = {}
 
         for type_uri in type_uris:
-            results = graph.query(self.extract_hydra_properties, initBindings={u'class_uri': URIRef(type_uri)})
+            results = graph.query(self.extract_hydra_properties, initNs=self.ns,
+                                  initBindings={u'class_uri': URIRef(type_uri)})
             for property_uri, is_req, ro, wo in results:
                 prop_uri = property_uri.toPython()
                 # Booleans are false by default

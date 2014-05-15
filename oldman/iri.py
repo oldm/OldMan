@@ -1,6 +1,5 @@
 from threading import Lock
 from uuid import uuid1
-from rdflib.plugins.sparql import prepareQuery
 from .exception import OMDataStoreError, OMRequiredBaseIRIError
 
 
@@ -49,12 +48,12 @@ class IncrementalIriGenerator(IriGenerator):
         self._class_iri = class_iri
         self._fragment = fragment
 
-        self._counter_query_req = prepareQuery(u"""
+        self._counter_query_req = u"""
             prefix ldorm: <http://localhost/ldorm#>
             SELECT ?number
             WHERE {
                 ?class_uri ldorm:nextNumber ?number .
-            }""".replace("?class_uri", u"<%s>" % self._class_iri))
+            }""".replace("?class_uri", u"<%s>" % self._class_iri)
 
         self._counter_update_req = u"""
             prefix ldorm: <http://localhost/ldorm#>

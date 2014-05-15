@@ -4,6 +4,9 @@ from oldman import create_resource_manager, parse_graph_safely
 
 # In-memory main graph that will be divided into named sub-graphs
 default_graph = ConjunctiveGraph()
+#from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
+#default_graph = ConjunctiveGraph(SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
+#                                                   update_endpoint="http://localhost:3030/test/update"))
 # Graph containing all the schema RDF triples
 schema_graph = default_graph.get_context("http://localhost/schema")
 

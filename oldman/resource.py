@@ -7,7 +7,6 @@ import json
 from types import GeneratorType
 from rdflib import URIRef, Graph, RDF
 from rdflib.plugins.sparql.parser import ParseException
-from rdflib.plugins.sparql import prepareQuery
 from .property import PropertyType
 from .exception import OMSPARQLParseError
 from .exception import OMAttributeAccessError, OMUniquenessError, OMWrongObjectError, OMEditError
@@ -16,7 +15,7 @@ from oldman.utils.sparql import build_update_query_part
 
 class Resource(object):
 
-    existence_query = prepareQuery(u"ASK {?id ?p ?o .}")
+    existence_query = u"ASK {?id ?p ?o .}"
 
     def __init__(self, dataset, create=True, base_iri=None, types=None, **kwargs):
         """

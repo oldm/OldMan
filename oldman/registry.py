@@ -1,5 +1,4 @@
 from rdflib import RDF, URIRef
-from rdflib.plugins.sparql import prepareQuery
 from .exception import OMSchemaError, OMInternalError, OMObjectNotFoundError, OMHashIriError
 from .exception import AlreadyAllocatedModelError
 
@@ -18,8 +17,6 @@ class ModelRegistry(object):
     """
         All model classes are registered here
     """
-
-    #TODO: replace by a prepareQuery
     base_uri_raw_query = """
         SELECT DISTINCT ?uri
         WHERE {
@@ -153,21 +150,6 @@ class ClassAncestry(object):
         return [parent for parent, _ in self._ancestry_dict.get(class_iri, [])]
 
 
-ANCESTRY_REQUEST = prepareQuery("""
-                                SELECT ?class ?parent ?priority WHERE {
-                                    ?child_class rdfs:subClassOf* ?class.
-                                    ?class rdfs:subClassOf ?parent.
-                                    OPTIONAL {
-                                        ?class <urn:oldman:test:model:ordering:hasPriority> ?p .
-                                        ?p <urn:oldman:test:model:ordering:class> ?parent ;
-                                           <urn:oldman:test:model:ordering:priority> ?priority .
-                                    }.
-                                    FILTER NOT EXISTS { ?class rdfs:subClassOf ?other .
-                                                        ?other rdfs:subClassOf+ ?parent . }
-                                } ORDER BY DESC(?priority)
-                                """)
-
-
 def extract_types(object_iri, graph):
     return {t.toPython() for t in graph.objects(URIRef(object_iri), RDF.type)}
 
@@ -178,7 +160,20 @@ def _extract_ancestry(class_iri, schema_graph):
         of a well-known class
     """
     ancestry_dict = {}
-    results = schema_graph.query(ANCESTRY_REQUEST, initBindings={'child_class': URIRef(class_iri)})
+    request = """
+    SELECT ?class ?parent ?priority WHERE {
+        ?child_class rdfs:subClassOf* ?class.
+        ?class rdfs:subClassOf ?parent.
+        OPTIONAL {
+            ?class <urn:oldman:test:model:ordering:hasPriority> ?p .
+            ?p <urn:oldman:test:model:ordering:class> ?parent ;
+               <urn:oldman:test:model:ordering:priority> ?priority .
+        }.
+        FILTER NOT EXISTS { ?class rdfs:subClassOf ?other .
+                            ?other rdfs:subClassOf+ ?parent . }
+    } ORDER BY DESC(?priority)
+    """
+    results = schema_graph.query(request, initBindings={'child_class': URIRef(class_iri)})
     for c, parent, pr in results:
         priority = pr.toPython() if pr is not None else None
         cls_iri = unicode(c)
