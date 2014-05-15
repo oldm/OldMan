@@ -1,91 +1,110 @@
-from weakref import WeakValueDictionary
-from rdflib import URIRef, Graph
-from rdflib.plugins.sparql import prepareQuery
-from rdflib.plugins.sparql.parser import ParseException
-from .exception import OMClassInstanceError, OMSPARQLParseError
-from .resource import Resource
-from oldman.utils.sparql import build_query_part
+import json
+from urlparse import urlparse
+from rdflib import Graph
+from .model import Model
+from .registry import ModelRegistry, ClassAncestry
+from .exception import OMUndeclaredClassNameError
+from .iri import RandomPrefixedIriGenerator, IncrementalIriGenerator, BlankNodeIriGenerator
+from oldman.parsing.schema.attribute import OMAttributeExtractor
 
 
-class InstanceManager(object):
-    def __init__(self, model, dataset):
-        self._model = model
-        self._cache = WeakValueDictionary()
-        self._dataset = dataset
-        class_iri = model.class_iri
-        if class_iri:
-            self._check_type_request = prepareQuery(u"ASK {?s a <%s> }" % class_iri)
+def create_dataset(schema_graph, default_graph):
+    attr_extractor = OMAttributeExtractor()
+    return ResourceManager(attr_extractor, schema_graph, default_graph)
+
+
+class ResourceManager(object):
+
+    def __init__(self, attr_manager, schema_graph, default_graph):
+        self._attr_manager = attr_manager
+        self._registry = ModelRegistry(default_graph)
+        self._schema_graph = schema_graph
+        self._default_graph = default_graph
+        self._methods = {}
+        # Registered with the "None" key
+        self._create_model("Thing", {u"@context": {}}, untyped=True,
+                           iri_prefix=u"http://localhost/.well-known/genid/default/")
+
+    @property
+    def model_registry(self):
+        return self._registry
+
+    @property
+    def default_graph(self):
+        return self._default_graph
+
+    def add_method(self, method, name, class_iri):
+        """
+            TODO: Warns when a method is overwritten
+        """
+        if class_iri in self._methods:
+            self._methods[class_iri][name] = method
         else:
-            self._check_type_request = None
+            self._methods[class_iri] = {name: method}
 
-    def create(self, **kwargs):
+    def create_model(self, class_name, context, iri_prefix=None,
+                     iri_fragment=None, iri_generator=None, incremental_iri=False):
         """
-            Creates a new instance and saves it
+            Generates a model class
         """
-        #TODO: improve it
-        instance = Resource(self._dataset, types=self._model.class_types, **kwargs)
-        #instance = self._model(**kwargs)
-        instance.save()
-        return instance
+        return self._create_model(class_name, context, iri_prefix=iri_prefix, iri_fragment=iri_fragment,
+                                  iri_generator=iri_generator, incremental_uri=incremental_iri)
 
-    def clear_cache(self):
-        """ Clears its cache """
-        self._cache.clear()
+    def _create_model(self, class_name, context, iri_prefix=None, iri_fragment=None,
+                      iri_generator=None, untyped=False, incremental_uri=False):
 
-    def filter(self, **kwargs):
-        if "id" in kwargs:
-            return self.get(**kwargs)
+        # Only for the DefaultModel
+        if untyped:
+            class_iri = None
+            ancestry = ClassAncestry(class_iri, self._schema_graph)
+            om_attributes = {}
+        else:
+            class_iri = extract_class_iri(class_name, context)
+            ancestry = ClassAncestry(class_iri, self._schema_graph)
+            om_attributes = self._attr_manager.extract(class_iri, ancestry.bottom_up, context,
+                                                       self._schema_graph)
+        if iri_generator is not None:
+            id_generator = iri_generator
+        elif iri_prefix is not None:
+            if incremental_uri:
+                id_generator = IncrementalIriGenerator(iri_prefix, self._default_graph,
+                                                       class_iri, fragment=iri_fragment)
+            else:
+                id_generator = RandomPrefixedIriGenerator(iri_prefix, fragment=iri_fragment)
+        else:
+            id_generator = BlankNodeIriGenerator()
 
-        lines = u""
-        for name, value in kwargs.iteritems():
-            # May raise a LDAttributeAccessError
-            attr = self._model.access_attribute(name)
-            value = kwargs[name]
-            if value:
-                lines += attr.serialize_values_into_lines(value)
+        methods = {}
+        for m_dict in [self._methods.get(t, {}) for t in ancestry.top_down]:
+            methods.update(m_dict)
+        model = Model(class_name, class_iri, om_attributes, context,
+                      id_generator, ancestry.bottom_up, self, methods=methods)
 
-        query = build_query_part(u"SELECT ?s WHERE", u"?s", lines)
-        #print query
-        try:
-            results = self._dataset.default_graph.query(query)
-        except ParseException as e:
-            raise OMSPARQLParseError(u"%s\n %s" % (query, e))
+        return model
 
-        # Generator expression
-        return (self.get(id=str(r)) for r, in results)
+    def new(self, *args, **kwargs):
+        """
+            New resource
+        """
+        raise NotImplementedError("TODO: implement it")
 
     def get(self, id=None, **kwargs):
-        if id:
-            return self._get_by_id(id)
+        """Get a resource """
+        if id is not None:
+            return self._registry.get_object(id)
+        raise NotImplementedError("TODO: implement it")
 
-        # First found
-        for instance in self.filter(**kwargs):
-            return instance
 
-        return None
+def extract_class_iri(class_name, context):
+    """
+        Extracts the class URI as the type of a blank node
+    """
+    g = Graph().parse(data=json.dumps({u"@type": class_name}),
+                      context=context, format="json-ld")
+    class_iri = unicode(g.objects().next())
 
-    def _get_by_id(self, id):
-        instance = self._cache.get(id)
-        if instance:
-            #print "%s found in the cache" % instance
-            return instance
-        instance_graph = Graph()
-        iri = URIRef(id)
-        instance_graph += self._dataset.default_graph.triples((iri, None, None))
-        if self._check_type_request and not self._dataset.default_graph.query(self._check_type_request,
-                                                                      initBindings={'s': iri}):
-            raise OMClassInstanceError(u"%s is not an instance of %s" % (id, self._model.class_iri))
-        return self._new_instance(id, instance_graph)
-
-    def get_any(self, id):
-        """ Finds a object from any model class """
-        return self._dataset.get(id=id)
-
-    def _new_instance(self, id, instance_graph):
-        #print "Instance graph: %s" % instance_graph.serialize(format="turtle")
-        if len(instance_graph) == 0:
-            instance = self._model.new(id=id)
-        else:
-            instance = Resource.load_from_graph(self._dataset, id, instance_graph, is_new=False)
-        self._cache[id] = instance
-        return instance
+    # Check the URI
+    result = urlparse(class_iri)
+    if result.scheme == u"file":
+        raise OMUndeclaredClassNameError(u"Deduced URI %s is not a valid HTTP URL" % class_iri)
+    return class_iri
