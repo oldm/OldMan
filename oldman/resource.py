@@ -23,29 +23,20 @@ class Resource(object):
             TODO: rename create into is_new
         """
         #TODO: refactor these methods so that models are sorted
-        models = manager.model_registry.get_models(types)
-        main_model = manager.model_registry.select_model(models)
-        self._models = models
+        self._models, self._types = manager.model_registry.find_models_and_types(types)
+        main_model = self._models[0]
         self._manager = manager
 
         if "id" in kwargs:
             # Anticipated because used in __hash__
             self._id = kwargs.pop("id")
             if create:
-                #TODO: test the default graph
                 exist = bool(self._manager.default_graph.query(self.existence_query,
-                                                              initBindings={'id': URIRef(self._id)}))
+                                                               initBindings={'id': URIRef(self._id)}))
                 if exist:
                     raise OMUniquenessError("Object %s already exist" % self._id)
         else:
             self._id = main_model.generate_iri(base_iri=base_iri)
-
-        #TODO: remove (not necessary once models are sorted)
-        self._types = list(main_model.class_types)
-        #self._types = []
-        for model in models:
-            self._types += [t for t in model.class_types if t not in self._types]
-        self._types += [t for t in types if t not in self._types]
 
         for k, v in kwargs.iteritems():
             setattr(self, k, v)
@@ -82,6 +73,8 @@ class Resource(object):
                 model.access_attribute(name).set(self, value)
                 found = True
         if not found:
+            print "Models: %s" % [m.name for m in self._models]
+            print "Types: %s" % self._types
             raise AttributeError("%s has not attribute %s" % (self, name))
 
     @property

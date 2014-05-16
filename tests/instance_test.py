@@ -109,9 +109,7 @@ class InstanceTest(TestCase):
         """ Clears the data graph """
         default_graph.update("CLEAR DEFAULT")
         child_model.reset_counter()
-        child_model.clear_cache()
-        parent_model.clear_cache()
-        grand_parent_model.clear_cache()
+        manager.clear_resource_cache()
 
     def test_types(self):
         john = grand_parent_model.new()
@@ -132,7 +130,7 @@ class InstanceTest(TestCase):
         with self.assertRaises(AttributeError):
             john.new_value = "not saved (again)"
         del john
-        grand_parent_model.clear_cache()
+        manager.clear_resource_cache()
         john = grand_parent_model.get(id=uri)
         self.assertEquals(john.old_number_value, old_value)
         with self.assertRaises(AttributeError):
@@ -151,7 +149,7 @@ class InstanceTest(TestCase):
             jack.new_value = "not saved"
         jack.save()
         del jack
-        parent_model.clear_cache()
+        manager.clear_resource_cache()
         jack = parent_model.get(id=uri)
         self.assertEquals(jack.mid_values, mid_values)
         self.assertEquals(jack.old_number_value, old_value)
@@ -169,7 +167,7 @@ class InstanceTest(TestCase):
         tom.new_value = new_value
         tom.save()
         del tom
-        child_model.clear_cache()
+        manager.clear_resource_cache()
         tom = child_model.get(id=uri)
         self.assertEquals(tom.new_value, new_value)
         self.assertEquals(tom.mid_values, mid_values)
@@ -250,9 +248,7 @@ class InstanceTest(TestCase):
         del john
         del jack
         del tom
-        grand_parent_model.clear_cache()
-        parent_model.clear_cache()
-        child_model.clear_cache()
+        manager.clear_resource_cache()
 
         tom = manager.get(id=tom_uri)
         self.assertEquals(tom.new_value, tom_new_value)

@@ -126,7 +126,7 @@ class ContainerTest(TestCase):
     def tearDown(self):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
-        model.clear_cache()
+        manager.clear_resource_cache()
 
     def create_object(self):
         return model.create(list_en=default_list_en)
@@ -140,7 +140,7 @@ class ContainerTest(TestCase):
         obj.save()
 
         del obj
-        model.clear_cache()
+        manager.clear_resource_cache()
         obj = model.get(id=uri)
         self.assertEquals(lst, backup_list)
         self.assertEquals(obj.primary_list, lst)
@@ -156,7 +156,7 @@ class ContainerTest(TestCase):
         obj.save()
 
         del obj
-        model.clear_cache()
+        manager.clear_resource_cache()
         obj = model.get(id=uri)
         self.assertEquals(obj.list_fr, list_fr)
         self.assertEquals(obj.list_en, list_en)
@@ -202,7 +202,7 @@ class ContainerTest(TestCase):
         self.assertEquals(obj.bool_list, lst)
         obj.save()
         del obj
-        model.clear_cache()
+        manager.clear_resource_cache()
         obj = model.get(id=uri)
         self.assertEquals(obj.bool_list, lst)
         obj.bool_list = [True]
@@ -219,7 +219,7 @@ class ContainerTest(TestCase):
         obj.bool_set = bools
         obj.save()
         del obj
-        model.clear_cache()
+        manager.clear_resource_cache()
         obj = model.get(id=uri)
         self.assertEquals(obj.bool_set, bools)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -235,7 +235,7 @@ class ContainerTest(TestCase):
         obj.lang_map = values
         obj.save()
         del obj
-        model.clear_cache()
+        manager.clear_resource_cache()
         obj = model.get(id=uri)
         self.assertEquals(obj.lang_map, values)
 

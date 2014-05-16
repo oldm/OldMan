@@ -37,7 +37,7 @@ class DatatypeTest(TestCase):
     def tearDown(self):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
-        model.clear_cache()
+        manager.clear_resource_cache()
 
     def test_generation(self):
         base_iri = "http://example.org/doc1"
@@ -61,7 +61,7 @@ class DatatypeTest(TestCase):
         g.add((BNode(), RDF.type, URIRef(EXAMPLE + "MyClass")))
         crud_controller.update(base_iri, g.serialize(format="turtle"), "turtle")
 
-        obj_iri = manager.model_registry.find_object_from_base_uri(base_iri)
+        obj_iri = manager.model_registry.find_resource_from_base_uri(base_iri)
         self.assertTrue(obj_iri is not None)
         self.assertTrue(base_iri in obj_iri)
         self.assertTrue('#' in obj_iri)
@@ -77,5 +77,5 @@ class DatatypeTest(TestCase):
         """
         base_iri = "http://example.org/doc3"
         crud_controller.update(base_iri, ttl, "turtle")
-        obj_iri = manager.model_registry.find_object_from_base_uri(base_iri)
+        obj_iri = manager.model_registry.find_resource_from_base_uri(base_iri)
         self.assertEquals(obj_iri, base_iri + "#this")

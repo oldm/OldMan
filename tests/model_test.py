@@ -250,8 +250,7 @@ class ModelTest(TestCase):
     def tearDown(self):
         """ Clears the data graph """
         default_graph.update("CLEAR DEFAULT")
-        lp_model.clear_cache()
-        rsa_model.clear_cache()
+        manager.clear_resource_cache()
 
     def create_bob(self):
         return lp_model.create(name=bob_name, blog=bob_blog, mboxes=bob_emails,
@@ -318,7 +317,7 @@ class ModelTest(TestCase):
         bob.name = "You should not retrieve this string"
 
         del bob
-        lp_model.clear_cache()
+        manager.clear_resource_cache()
         bob = lp_model.get(id=bob_uri)
 
         self.assertEquals(bob_name, bob.name)
@@ -371,7 +370,7 @@ class ModelTest(TestCase):
         bob.save()
         bob_uri = bob.id
         del bob
-        lp_model.clear_cache()
+        manager.clear_resource_cache()
         bob = lp_model.get(id=bob_uri)
 
         self.assertEquals(bob.short_bio_en, None)
@@ -396,7 +395,7 @@ class ModelTest(TestCase):
         self.assertEquals(bob.short_bio_en, forbidden_string)
 
         del bob
-        lp_model.clear_cache()
+        manager.clear_resource_cache()
         bob = lp_model.get(id=bob_id)
         self.assertEquals(bob.short_bio_en, None)
         self.assertEquals(bob.short_bio_fr, bob_bio_fr)
@@ -406,7 +405,7 @@ class ModelTest(TestCase):
         bob.save()
         bob.short_bio_en = "You should not retrieve this string (again)"
 
-        lp_model.clear_cache()
+        manager.clear_resource_cache()
         bob = lp_model.get(id=bob_id)
         self.assertEquals(bob.short_bio_en, bob_bio_en_2)
         self.assertEquals(bob.short_bio_fr, bob_bio_fr)
@@ -415,7 +414,7 @@ class ModelTest(TestCase):
         rsa_key = self.create_rsa_key()
         rsa_skolemized_iri = rsa_key.id
         del rsa_key
-        rsa_model.clear_cache()
+        manager.clear_resource_cache()
 
         rsa_key = rsa_model.get(id=rsa_skolemized_iri)
         self.assertEquals(rsa_key.exponent, key_exponent)
@@ -488,7 +487,7 @@ class ModelTest(TestCase):
 
         # Force reload from the triplestore
         del bob
-        lp_model.clear_cache()
+        manager.clear_resource_cache()
         bob = lp_model.get(id=bob_uri)
         self.assertEquals(bob_children_ids, [c.id for c in bob.children])
 
@@ -504,7 +503,7 @@ class ModelTest(TestCase):
 
         # Force reload from the triplestore
         del bob
-        lp_model.clear_cache()
+        manager.clear_resource_cache()
 
         bob = lp_model.get(id=bob_uri)
         self.assertEquals(bob.id, bob_uri)
@@ -548,7 +547,7 @@ class ModelTest(TestCase):
         self.assertEquals(set(bob_json["mboxes"]), bob_emails)
         self.assertEquals(bob_json["short_bio_en"], bob_bio_en)
         self.assertEquals(bob_json["short_bio_fr"], bob_bio_fr)
-        self.assertEquals(bob_json["types"], lp_model.class_types)
+        self.assertEquals(bob_json["types"], lp_model.ancestry_iris)
 
     def test_bob_jsonld(self):
         bob = self.create_bob()
@@ -560,7 +559,7 @@ class ModelTest(TestCase):
         self.assertEquals(bob_jsonld["short_bio_fr"], bob_bio_fr)
         self.assertTrue("@context" in bob_jsonld)
         self.assertEquals(bob_jsonld["@context"], context["@context"])
-        self.assertEquals(bob_jsonld["types"], lp_model.class_types)
+        self.assertEquals(bob_jsonld["types"], lp_model.ancestry_iris)
 
     def test_rsa_jsonld(self):
         rsa_key = self.create_rsa_key()
@@ -674,8 +673,7 @@ class ModelTest(TestCase):
         bob.save()
         del bob
         del rsa_key
-        lp_model.clear_cache()
-        rsa_model.clear_cache()
+        manager.clear_resource_cache()
 
         bob = lp_model.get(id=bob_iri)
         bob_jsonld = json.loads(bob.to_jsonld())
@@ -713,7 +711,7 @@ class ModelTest(TestCase):
                          format="json-ld")
 
         # Clear the cache (out-of-band update)
-        lp_model.clear_cache()
+        manager.clear_resource_cache()
         jason = lp_model.get(id=jason_uri)
         self.assertEquals(jason.mboxes, mboxes)
         self.assertTrue(jason.is_valid())
@@ -752,7 +750,7 @@ class ModelTest(TestCase):
         self.assertEquals(bob.gpg_key.hex_id, gpg_hex_id)
 
         del bob
-        lp_model.clear_cache()
+        manager.clear_resource_cache()
         bob = lp_model.get(id=bob_id)
         self.assertEquals(bob.gpg_key.fingerprint, gpg_fingerprint)
         self.assertEquals(bob.gpg_key.hex_id, gpg_hex_id)
@@ -928,7 +926,7 @@ class ModelTest(TestCase):
         doc = json.loads(crud_controller.get(doc_iri, "json"))
         self.assertEquals(doc["id"], doc_iri)
 
-        obj_iris = manager.model_registry.find_object_iris(doc_iri)
+        obj_iris = manager.model_registry.find_resource_iris(doc_iri)
         self.assertEquals({bob_iri, doc_iri}, obj_iris)
 
     def test_bob_controller_delete(self):
@@ -1029,7 +1027,7 @@ class ModelTest(TestCase):
         jsld_dump = alice.to_jsonld()
 
         del alice
-        lp_model.clear_cache()
+        manager.clear_resource_cache()
         self.assertEquals(unicode(default_graph.value(alice_ref, FOAF.name)), alice_name)
 
         crud_controller.update(alice_base_iri, jsld_dump, "application/ld+json")
@@ -1080,13 +1078,13 @@ class ModelTest(TestCase):
         bob = lp_model.new(name=bob_name, blog=bob_blog, mboxes=bob_emails, short_bio_en=bob_bio_en,
                           short_bio_fr=bob_bio_fr, types=additional_types)
         bob.save()
-        self.assertEquals(set(bob.types), set(lp_model.class_types + additional_types))
-        self.assertTrue(prof_type not in lp_model.class_types)
+        self.assertEquals(set(bob.types), set(lp_model.ancestry_iris + additional_types))
+        self.assertTrue(prof_type not in lp_model.ancestry_iris)
 
         additional_types += [researcher_type]
         bob.add_type(researcher_type)
-        self.assertEquals(set(bob.types), set(lp_model.class_types + additional_types))
-        self.assertTrue(researcher_type not in lp_model.class_types)
+        self.assertEquals(set(bob.types), set(lp_model.ancestry_iris + additional_types))
+        self.assertTrue(researcher_type not in lp_model.ancestry_iris)
 
     def test_alice_json_additional_types(self):
         alice = self.create_alice()
@@ -1094,7 +1092,7 @@ class ModelTest(TestCase):
         additional_types = [prof_type, researcher_type]
         dct["types"] += additional_types
         alice.full_update(dct)
-        self.assertEquals(set(alice.types), set(lp_model.class_types + additional_types))
+        self.assertEquals(set(alice.types), set(lp_model.ancestry_iris + additional_types))
         alice.full_update(dct)
         self.assertEquals(len(alice.types), len(set(alice.types)))
 
@@ -1107,4 +1105,4 @@ class ModelTest(TestCase):
         for t in additional_types:
             graph.add((alice_ref, RDF.type, URIRef(t)))
         alice.full_update_from_graph(graph)
-        self.assertEquals(set(alice.types), set(lp_model.class_types + additional_types))
+        self.assertEquals(set(alice.types), set(lp_model.ancestry_iris + additional_types))

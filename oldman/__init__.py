@@ -3,7 +3,7 @@
 """
 
 from rdflib.plugin import register, Parser, Serializer
-from .manager import create_resource_manager
+from .management import create_resource_manager
 from .utils.sparql import parse_graph_safely
 
 register('json-ld', Parser, 'rdflib_jsonld.parser', 'JsonLDParser')

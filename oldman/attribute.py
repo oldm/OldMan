@@ -267,11 +267,11 @@ class ObjectOMAttribute(OMAttribute):
         iris = OMAttribute.get(self, instance, manager)
         if isinstance(iris, (list, set)):
             # Returns a generator
-            return (manager.get(iri) for iri in iris)
+            return (manager.get(id=iri) for iri in iris)
         elif isinstance(iris, dict):
             raise NotImplementedError(u"Should we implement it?")
         elif iris is not None:
-            return manager.get(iris)
+            return manager.get(id=iris)
         else:
             return None
 

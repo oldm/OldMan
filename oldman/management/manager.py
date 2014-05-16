@@ -1,11 +1,17 @@
 import json
 from urlparse import urlparse
 from rdflib import Graph
-from .model import Model
-from .registry import ModelRegistry, ClassAncestry
-from .exception import OMUndeclaredClassNameError
-from .iri import RandomPrefixedIriGenerator, IncrementalIriGenerator, BlankNodeIriGenerator
+from oldman.model import Model
+from oldman.resource import Resource
+from oldman.exception import OMUndeclaredClassNameError
+from oldman.iri import RandomPrefixedIriGenerator, IncrementalIriGenerator, BlankNodeIriGenerator
 from oldman.parsing.schema.attribute import OMAttributeExtractor
+from .registry import ModelRegistry
+from .ancestry import ClassAncestry
+from .finder import Finder
+
+
+DEFAULT_MODEL_NAME = "Thing"
 
 
 def create_resource_manager(schema_graph, default_graph):
@@ -17,12 +23,13 @@ class ResourceManager(object):
 
     def __init__(self, attr_extractor, schema_graph, default_graph):
         self._attr_extractor = attr_extractor
-        self._registry = ModelRegistry(default_graph)
+        self._registry = ModelRegistry(default_graph, DEFAULT_MODEL_NAME)
         self._schema_graph = schema_graph
         self._default_graph = default_graph
         self._methods = {}
         # Registered with the "None" key
-        self._create_model("Thing", {u"@context": {}}, untyped=True,
+        self._finder = Finder(self)
+        self._create_model(DEFAULT_MODEL_NAME, {u"@context": {}}, untyped=True,
                            iri_prefix=u"http://localhost/.well-known/genid/default/")
 
     @property
@@ -62,7 +69,7 @@ class ResourceManager(object):
             class_iri = extract_class_iri(class_name, context)
             ancestry = ClassAncestry(class_iri, self._schema_graph)
             om_attributes = self._attr_extractor.extract(class_iri, ancestry.bottom_up, context,
-                                                       self._schema_graph)
+                                                         self._schema_graph)
         if iri_generator is not None:
             id_generator = iri_generator
         elif iri_prefix is not None:
@@ -82,17 +89,27 @@ class ResourceManager(object):
 
         return model
 
-    def new(self, *args, **kwargs):
+    def new(self, **kwargs):
         """
             New resource
         """
-        raise NotImplementedError("TODO: implement it")
+        return Resource(self, **kwargs)
+
+    def create(self, **kwargs):
+        """
+            Creates a new resource and saves it
+        """
+        return self.new(**kwargs).save()
 
     def get(self, id=None, **kwargs):
         """Get a resource """
-        if id is not None:
-            return self._registry.get_object(id)
-        raise NotImplementedError("TODO: implement it")
+        return self._finder.get(id=id, **kwargs)
+
+    def filter(self, **kwargs):
+        return self._finder.filter(**kwargs)
+
+    def clear_resource_cache(self):
+        self._finder.clear_cache()
 
 
 def extract_class_iri(class_name, context):
