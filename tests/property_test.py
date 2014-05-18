@@ -65,7 +65,7 @@ context = {
         "ex": EXAMPLE,
         "xsd": "http://www.w3.org/2001/XMLSchema#",
         "id": "@id",
-        "type": "@type",
+        "types": "@type",
         "LocalClass": "ex:LocalClass",
         "BadClass": "ex:BadClass",
         "required_property": {
@@ -153,7 +153,7 @@ class PropertyTest(TestCase):
         obj.save(is_end_user=False)
 
         graph = Graph()
-        graph.parse(data=obj.to_rdf("xml"), format="xml")
+        graph.parse(data=obj.to_rdf("nt"), format="nt")
         obj.full_update_from_graph(graph)
         self.assertEquals(obj.ro_property, admin_str)
 
@@ -161,7 +161,7 @@ class PropertyTest(TestCase):
         graph.remove((obj_iri, ro_prop, Literal(admin_str, datatype=XSD.string)))
         str2 = "Writing a read-only property"
         graph.add((obj_iri, ro_prop, Literal(str2, datatype=XSD.string)))
-        print graph.serialize(format="turtle")
+        #print graph.serialize(format="turtle")
         with self.assertRaises(OMReadOnlyAttributeError):
             obj.full_update_from_graph(graph)
         obj.full_update_from_graph(graph, is_end_user=False)

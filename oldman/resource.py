@@ -187,7 +187,7 @@ class Resource(object):
         ignored_iris.add(self._id)
 
         dct = {attr.name: self._convert_value(getattr(self, attr.name), ignored_iris, remove_none_values,
-                                         include_different_contexts)
+                                              include_different_contexts)
                for attr in self._extract_attribute_list()
                if not attr.is_write_only}
         # filter None values
@@ -196,8 +196,8 @@ class Resource(object):
 
         if not self.is_blank_node():
             dct["id"] = self._id
-        if self.types and len(self.types) > 0:
-            dct["types"] = list(self.types)
+        if self._types and len(self._types) > 0:
+            dct["types"] = list(self._types)
         return dct
 
     def to_json(self, remove_none_values=True):
