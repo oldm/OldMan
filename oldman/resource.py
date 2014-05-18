@@ -117,7 +117,7 @@ class Resource(object):
         return self._is_blank_node
 
     def is_instance_of(self, model):
-        return model in self._models
+        return model.class_iri in self._types
 
     def save(self, is_end_user=True):
         # Checks
