@@ -11,15 +11,16 @@ from rdflib.namespace import FOAF
 from oldman import create_resource_manager, parse_graph_safely
 from oldman.attribute import OMAttributeTypeCheckError, OMRequiredPropertyError
 from oldman.exception import OMClassInstanceError, OMAttributeAccessError, OMUniquenessError
-from oldman.exception import OMWrongObjectError, OMObjectNotFoundError, OMHashIriError, OMEditError
-from oldman.exception import OMDifferentBaseIRIError, OMForbiddenSkolemizedIRIError
+from oldman.exception import OMWrongResourceError, OMObjectNotFoundError, OMHashIriError, OMEditError
+from oldman.exception import OMDifferentBaseIRIError, OMForbiddenSkolemizedIRIError, OMUnauthorizedTypeChangeError
 from oldman.rest.crud import CRUDController
 
 
 default_graph = ConjunctiveGraph()
 #default_graph = ConjunctiveGraph(SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
 #                                                   update_endpoint="http://localhost:3030/test/update"))
-schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
+#schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
+schema_graph = Graph()
 
 BIO = "http://purl.org/vocab/bio/0.1/"
 REL = "http://purl.org/vocab/relationship/"
@@ -212,6 +213,9 @@ context = {
     }
 }
 
+# Retrieve namespaces when the two graphs are independent
+for prefix, namespace in schema_graph.namespace_manager.namespaces():
+    default_graph.namespace_manager.bind(prefix, namespace)
 
 manager = create_resource_manager(schema_graph, default_graph)
 # Model classes are generated here!
@@ -254,7 +258,7 @@ class ModelTest(TestCase):
 
     def create_bob(self):
         return lp_model.create(name=bob_name, blog=bob_blog, mboxes=bob_emails,
-                                       short_bio_en=bob_bio_en, short_bio_fr=bob_bio_fr)
+                               short_bio_en=bob_bio_en, short_bio_fr=bob_bio_fr)
 
     def create_alice(self):
         return lp_model.create(name=alice_name, mboxes={alice_mail}, short_bio_en=alice_bio_en)
@@ -263,8 +267,7 @@ class ModelTest(TestCase):
         return lp_model.create(name=john_name, mboxes={john_mail}, short_bio_en=john_bio_en)
 
     def create_rsa_key(self):
-        return rsa_model.create(exponent=key_exponent, modulus=key_modulus,
-                                                label=key_label)
+        return rsa_model.create(exponent=key_exponent, modulus=key_modulus, label=key_label)
 
     def create_gpg_key(self):
         return gpg_model.create(fingerprint=gpg_fingerprint, hex_id=gpg_hex_id)
@@ -291,8 +294,7 @@ class ModelTest(TestCase):
 
         # Check the triplestore
         type_request = """SELECT ?t WHERE {?x a ?t }"""
-        retrieved_types = {str(r) for r, in default_graph.query(type_request,
-                                                             initBindings={'x': URIRef(bob.id)})}
+        retrieved_types = {str(r) for r, in default_graph.query(type_request, initBindings={'x': URIRef(bob.id)})}
         self.assertEquals(set(expected_types), retrieved_types)
 
     def test_bob_in_triplestore(self):
@@ -861,13 +863,13 @@ class ModelTest(TestCase):
     def test_wrong_update(self):
         bob = self.create_bob()
         alice = self.create_alice()
-        with self.assertRaises(OMWrongObjectError):
+        with self.assertRaises(OMWrongResourceError):
             bob.full_update(alice.to_dict())
 
         bob_dict = bob.to_dict()
         #Missing IRI
         bob_dict.pop("id")
-        with self.assertRaises(OMWrongObjectError):
+        with self.assertRaises(OMWrongResourceError):
             bob.full_update(bob_dict)
 
         bob_dict = bob.to_dict()
@@ -989,7 +991,7 @@ class ModelTest(TestCase):
         bob = self.create_bob()
         doc_iri = bob.base_iri
         alice = lp_model.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
-                                           short_bio_en=alice_bio_en)
+                                short_bio_en=alice_bio_en)
         alice_ref = URIRef(alice.id)
         bob_ref = URIRef(bob.id)
         new_alice_name = alice_name + " A."
@@ -1002,6 +1004,7 @@ class ModelTest(TestCase):
         g1.remove((bob_ref, FOAF.name, Literal(bob_name, datatype=XSD.string)))
         g1.add((bob_ref, FOAF.name, Literal(new_bob_name, datatype=XSD.string)))
 
+        print g1.serialize(format="turtle")
         crud_controller.update(doc_iri, g1.serialize(format="turtle"), "turtle")
         self.assertEquals({unicode(o) for o in default_graph.objects(alice_ref, FOAF.name)}, {new_alice_name})
         self.assertEquals({unicode(o) for o in default_graph.objects(bob_ref, FOAF.name)}, {new_bob_name})
@@ -1076,7 +1079,7 @@ class ModelTest(TestCase):
     def test_bob_additional_types(self):
         additional_types = [prof_type]
         bob = lp_model.new(name=bob_name, blog=bob_blog, mboxes=bob_emails, short_bio_en=bob_bio_en,
-                          short_bio_fr=bob_bio_fr, types=additional_types)
+                           short_bio_fr=bob_bio_fr, types=additional_types)
         bob.save()
         self.assertEquals(set(bob.types), set(lp_model.ancestry_iris + additional_types))
         self.assertTrue(prof_type not in lp_model.ancestry_iris)
@@ -1086,23 +1089,56 @@ class ModelTest(TestCase):
         self.assertEquals(set(bob.types), set(lp_model.ancestry_iris + additional_types))
         self.assertTrue(researcher_type not in lp_model.ancestry_iris)
 
-    def test_alice_json_additional_types(self):
+    def test_alice_json_update_types(self):
         alice = self.create_alice()
         dct = alice.to_dict()
+
+        # New types
         additional_types = [prof_type, researcher_type]
         dct["types"] += additional_types
-        alice.full_update(dct)
+        with self.assertRaises(OMUnauthorizedTypeChangeError):
+            alice.full_update(dct)
+        alice.full_update(dct, allow_new_type=True)
         self.assertEquals(set(alice.types), set(lp_model.ancestry_iris + additional_types))
         alice.full_update(dct)
         self.assertEquals(len(alice.types), len(set(alice.types)))
 
-    def test_alice_rdf_additional_types(self):
+        # Removal of these additional types
+        dct = alice.to_dict()
+        dct["types"] = lp_model.ancestry_iris
+        with self.assertRaises(OMUnauthorizedTypeChangeError):
+            alice.full_update(dct)
+        alice.full_update(dct, allow_type_removal=True)
+        self.assertEquals(set(alice.types), set(lp_model.ancestry_iris))
+
+
+    def test_alice_rdf_update_types(self):
         alice = self.create_alice()
         alice_ref = URIRef(alice.id)
+        alice_iri = alice.id
 
-        graph = Graph().parse(data=alice.to_rdf("turtle"), format="turtle")
+        g1 = Graph().parse(data=alice.to_rdf("turtle"), format="turtle")
+
+        # New types
+        g2 = Graph().parse(data=g1.serialize())
         additional_types = [prof_type, researcher_type]
         for t in additional_types:
-            graph.add((alice_ref, RDF.type, URIRef(t)))
-        alice.full_update_from_graph(graph)
+            g2.add((alice_ref, RDF.type, URIRef(t)))
+
+        with self.assertRaises(OMUnauthorizedTypeChangeError):
+            alice.full_update_from_graph(g2)
+        alice.full_update_from_graph(g2, allow_new_type=True)
+
+        del alice
+        manager.clear_resource_cache()
+        alice = lp_model.get(id=alice_iri)
         self.assertEquals(set(alice.types), set(lp_model.ancestry_iris + additional_types))
+
+        # Remove these new types
+        with self.assertRaises(OMUnauthorizedTypeChangeError):
+            alice.full_update_from_graph(g1)
+        alice.full_update_from_graph(g1, allow_type_removal=True)
+        del alice
+        manager.clear_resource_cache()
+        alice = lp_model.get(id=alice_iri)
+        self.assertEquals(set(alice.types), set(lp_model.ancestry_iris))

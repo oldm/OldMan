@@ -117,7 +117,7 @@ class OMUniquenessError(OMEditError):
     pass
 
 
-class OMWrongObjectError(OMEditError):
+class OMWrongResourceError(OMEditError):
     """
         Not updating the right object
     """
@@ -146,6 +146,13 @@ class OMRequiredBaseIRIError(OMEditError):
     pass
 
 
+class OMUnauthorizedTypeChangeError(OMEditError):
+    """
+        When updating a resource with new types without explicit authorization
+    """
+    pass
+
+
 class OMAccessError(OMUserError):
     """
         Error when accessing objects
@@ -162,7 +169,7 @@ class OMAttributeAccessError(OMAccessError):
 
 class OMClassInstanceError(OMAccessError):
     """
-        The object is not an instance of the expected model class
+        The object is not an instance of the expected RDFS class
     """
     pass
 

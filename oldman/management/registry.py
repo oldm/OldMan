@@ -66,7 +66,9 @@ class ModelRegistry(object):
             type_set = set(type_set)
         cache_entry = self._type_set_cache.get(tuple(type_set))
         if cache_entry is not None:
-            return cache_entry
+            leaf_models, types = cache_entry
+            # Protection against mutation
+            return list(leaf_models), list(types)
 
         leaf_models = self._find_leaf_models(type_set)
         leaf_model_iris = [m.class_iri for m in leaf_models]
@@ -76,10 +78,11 @@ class ModelRegistry(object):
         types = leaf_model_iris + list(independent_class_iris) + list(ancestry_class_iris)
         pair = (leaf_models, types)
         self._type_set_cache[tuple(type_set)] = pair
-
         # If type_set was not exhaustive
         self._type_set_cache[tuple(set(types))] = pair
-        return pair
+
+        # Protection against mutation
+        return list(leaf_models), list(types)
 
     def _find_leaf_models(self, type_set):
         leaf_models = []
@@ -87,7 +90,7 @@ class ModelRegistry(object):
             descendants = self._model_descendants.get(type_iri)
             if (descendants is not None) and (len(descendants.intersection(type_set)) == 0):
                 model = self._model_classes[type_iri]
-                assert(model.class_iri ==  type_iri)
+                assert(model.class_iri == type_iri)
                 leaf_models.append(model)
 
         if len(leaf_models) == 0:

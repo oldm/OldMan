@@ -8,8 +8,8 @@ from types import GeneratorType
 from rdflib import URIRef, Graph, RDF
 from rdflib.plugins.sparql.parser import ParseException
 from .property import PropertyType
-from .exception import OMSPARQLParseError
-from .exception import OMAttributeAccessError, OMUniquenessError, OMWrongObjectError, OMEditError
+from .exception import OMSPARQLParseError, OMUnauthorizedTypeChangeError
+from .exception import OMAttributeAccessError, OMUniquenessError, OMWrongResourceError, OMEditError
 from oldman.utils.sparql import build_update_query_part
 
 
@@ -22,10 +22,12 @@ class Resource(object):
             Does not save (like Django)
             TODO: rename create into is_new
         """
-        #TODO: refactor these methods so that models are sorted
-        self._models, self._types = manager.model_registry.find_models_and_types(types)
+        self._models, new_types = manager.model_registry.find_models_and_types(types)
         main_model = self._models[0]
         self._manager = manager
+
+        self._former_types = set()
+        self._change_types(new_types)
 
         if "id" in kwargs:
             # Anticipated because used in __hash__
@@ -63,7 +65,8 @@ class Resource(object):
         raise AttributeError("%s has not attribute %s" % (self, name))
 
     def __setattr__(self, name, value):
-        if name in ["_models", "_id", "_types", "_is_blank_node", "_manager"]:
+        if name in ["_models", "_id", "_types", "_is_blank_node", "_manager",
+                    "_former_types"]:
             self.__dict__[name] = value
             return
 
@@ -79,7 +82,7 @@ class Resource(object):
 
     @property
     def types(self):
-        return self._types
+        return list(self._types)
 
     @property
     def id(self):
@@ -155,24 +158,28 @@ class Resource(object):
                 former_objects = [self._manager.get(id=v) for v in former_values if v is not None]
                 objects_to_delete += [v for v in former_objects if should_delete_object(v)]
 
-        #TODO: only execute once (first save())
-        types = self.types
-        if former_lines == u"" and len(types) > 0:
-            type_line = u"<%s> a" % self._id
-            for t in types:
-                type_line += u" <%s>," % t
-            new_lines = type_line[:-1] + " . \n" + new_lines
+        if self._former_types is not None:
+            types = set(self._types)
+            # New type
+            for t in types.difference(self._former_types):
+                type_line = u"<%s> a <%s> .\n" % (self._id, t)
+                new_lines += type_line
+            # Removed type
+            for t in self._former_types.difference(types):
+                type_line = u"<%s> a <%s> .\n" % (self._id, t)
+                former_lines += type_line
 
         query = build_update_query_part(u"DELETE", self._id, former_lines)
         query += build_update_query_part(u"INSERT", self._id, new_lines)
         if len(query) > 0:
             query += u"WHERE {}"
-            #print query
+            print query
             try:
                 self._manager.default_graph.update(query)
             except ParseException as e:
                 raise OMSPARQLParseError(u"%s\n %s" % (query, e))
 
+        self._former_types = None
         for obj in objects_to_delete:
             obj.delete()
 
@@ -271,7 +278,7 @@ class Resource(object):
             setattr(self, attr.name, None)
         self._save(attributes)
 
-    def full_update(self, full_dict, is_end_user=True):
+    def full_update(self, full_dict, is_end_user=True, allow_new_type=False, allow_type_removal=False):
         """
             JSON-LD containers are supported.
             Flat rather than deep: no nested object structure (only their IRI).
@@ -281,15 +288,23 @@ class Resource(object):
         """
         #if not self.is_blank_node() and "id" not in full_dict:
         if "id" not in full_dict:
-            raise OMWrongObjectError("Cannot update an object without IRI")
+            raise OMWrongResourceError("Cannot update an object without IRI")
         elif full_dict["id"] != self._id:
-            raise OMWrongObjectError("Wrong IRI %s (%s was expected)" % (full_dict["id"], self._id))
+            raise OMWrongResourceError("Wrong IRI %s (%s was expected)" % (full_dict["id"], self._id))
 
         attributes = self._extract_attribute_list()
         attr_names = [a.name for a in attributes]
         for key in full_dict:
             if key not in attr_names and key not in ["@context", "id", "types"]:
                 raise OMAttributeAccessError("%s is not an attribute of %s" % (key, self._id))
+
+        # Type change management
+        if "types" in full_dict:
+            try:
+                new_types = set(full_dict["types"])
+            except TypeError:
+                raise OMEditError("'types' attribute is not a list, a set or a string but is %s " % new_types)
+            self._check_and_update_types(new_types, allow_new_type, allow_type_removal)
 
         for attr in attributes:
             value = full_dict.get(attr.name)
@@ -298,30 +313,53 @@ class Resource(object):
                 value = set(value)
             attr.set(self, value)
 
-        if "types" in full_dict:
-            new_types = full_dict["types"]
-            if isinstance(new_types, (list, str)):
-                self._types += [t for t in new_types if t not in self._types]
-            elif isinstance(new_types, str):
-                new_type = new_types
-                if not new_type in self._types:
-                    self._types.append(new_type)
-            else:
-                raise OMEditError("'types' attribute is not a list, a set or a string but is %s " % new_types)
-
         self.save(is_end_user)
 
-    def full_update_from_graph(self, subgraph, is_end_user=True, save=True, initial=False):
+    def full_update_from_graph(self, subgraph, is_end_user=True, save=True, initial=False,
+                               allow_new_type=False, allow_type_removal=False):
         for attr in self._extract_attribute_list():
             attr.update_from_graph(self, subgraph, self._manager.default_graph, initial=initial)
         #Types
         if not initial:
             new_types = {unicode(t) for t in subgraph.objects(URIRef(self._id), RDF.type)}
-            self._types += [t for t in new_types if t not in self._types]
+            self._check_and_update_types(new_types, allow_new_type, allow_type_removal)
 
         if save:
             self.save(is_end_user)
 
+    def _check_and_update_types(self, new_types, allow_new_type, allow_type_removal):
+        current_types = set(self._types)
+        if new_types == current_types:
+            return
+        change = False
+
+        # Appending new types
+        additional_types = new_types.difference(current_types)
+        if len(additional_types) > 0:
+            if not allow_new_type:
+                raise OMUnauthorizedTypeChangeError("Adding %s to %s has not been allowed"
+                                                    % (additional_types, self._id))
+            change = True
+
+        # Removal
+        missing_types = current_types.difference(new_types)
+        if len(missing_types) > 0:
+            implicit_types = {t for m in self._models for t in m.ancestry_iris}.difference(
+                {m.class_iri for m in self._models})
+            removed_types = missing_types.difference(implicit_types)
+            if len(removed_types) > 0:
+                if not allow_type_removal:
+                    raise OMUnauthorizedTypeChangeError("Removing %s to %s has not been allowed"
+                                                        % (removed_types, self._id))
+                change = True
+        if change:
+            self._models, types = self._manager.model_registry.find_models_and_types(new_types)
+            self._change_types(types)
+
+    def _change_types(self, new_types):
+        if self._former_types is None:
+            self._former_types = set(self._types)
+        self._types = new_types
 
 def is_blank_node(iri):
     # External skolemized blank nodes are not considered as blank nodes
