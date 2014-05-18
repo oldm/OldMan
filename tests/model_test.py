@@ -694,13 +694,15 @@ class ModelTest(TestCase):
         default_graph.add((jason_uri, URIRef(FOAF + "name"), Literal("Jason")))
         default_graph.add((jason_uri, URIRef(BIO + "olb"), Literal("Jason was a warrior", lang="en")))
 
-        # LocalPerson type is missing
+        # LocalPerson and Person types are missing
         with self.assertRaises(OMClassInstanceError):
             lp_model.get(id=str(jason_uri))
 
-        default_graph.add((jason_uri, RDF["type"], URIRef(lp_model.class_iri)))
+        for class_iri in lp_model.ancestry_iris:
+            default_graph.add((jason_uri, RDF.type, URIRef(class_iri)))
 
         # Mboxes is still missing
+        manager.clear_resource_cache()
         jason = lp_model.get(id=str(jason_uri))
         self.assertFalse(jason.is_valid())
 
@@ -709,8 +711,7 @@ class ModelTest(TestCase):
                                           "@type": ["LocalPerson", "Person"],
                                           # Required
                                           "mboxes": list(mboxes)}),
-                         context=context,
-                         format="json-ld")
+                         context=context, format="json-ld")
 
         # Clear the cache (out-of-band update)
         manager.clear_resource_cache()
@@ -726,18 +727,15 @@ class ModelTest(TestCase):
             lp_model.new(id=bob_iri, name=bob_name, mboxes=bob_emails, short_bio_en=u"Will not exist")
 
         with self.assertRaises(OMUniquenessError):
-            lp_model.create(id=bob_iri, name=bob_name, mboxes=bob_emails,
-                                       short_bio_en=u"Will not exist")
+            lp_model.create(id=bob_iri, name=bob_name, mboxes=bob_emails, short_bio_en=u"Will not exist")
 
         with self.assertRaises(OMUniquenessError):
-            lp_model.new(id=bob_iri, name=bob_name, mboxes=bob_emails,
-                        short_bio_en=u"Will not exist", create=True)
+            lp_model.new(id=bob_iri, name=bob_name, mboxes=bob_emails, short_bio_en=u"Will not exist", create=True)
 
         # Forces the creation (by claiming your are not)
         # Dangerous!
         short_bio_en = u"Is forced to exist"
-        bob2 = lp_model.new(id=bob_iri, name=bob_name, mboxes=bob_emails,
-                           short_bio_en=short_bio_en, create=False)
+        bob2 = lp_model.new(id=bob_iri, name=bob_name, mboxes=bob_emails, short_bio_en=short_bio_en, create=False)
         self.assertEquals(bob2.short_bio_en, short_bio_en)
 
     def test_gpg_key(self):

@@ -3,7 +3,7 @@ from rdflib import URIRef, Graph
 from rdflib.plugins.sparql.parser import ParseException
 from oldman.resource import Resource
 from oldman.utils.sparql import build_query_part
-from oldman.exception import OMSPARQLParseError, OMAttributeAccessError
+from oldman.exception import OMSPARQLParseError, OMAttributeAccessError, OMClassInstanceError
 
 
 class Finder(object):
@@ -50,7 +50,13 @@ class Finder(object):
 
     def get(self, id=None, **kwargs):
         if id:
-            return self._get_by_id(id)
+            resource = self._get_by_id(id)
+            types = set(kwargs.get("types", []))
+            if not types.issubset(resource.types):
+                missing_types = types.difference(resource.types)
+                raise OMClassInstanceError("%s found, but is not instance of %s" % (id, missing_types))
+            #TODO: warn that attributes should not be given with the id
+            return resource
 
         # First found
         for resource in self.filter(**kwargs):
