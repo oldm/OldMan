@@ -22,12 +22,10 @@ class Resource(object):
             Does not save (like Django)
             TODO: rename create into is_new
         """
-        self._models, new_types = manager.model_registry.find_models_and_types(types)
+        self._models, self._types = manager.model_registry.find_models_and_types(types)
+        self._former_types = set(self._types) if not create else set()
         main_model = self._models[0]
         self._manager = manager
-
-        self._former_types = set()
-        self._change_types(new_types)
 
         if "id" in kwargs:
             # Anticipated because used in __hash__
@@ -76,8 +74,6 @@ class Resource(object):
                 model.access_attribute(name).set(self, value)
                 found = True
         if not found:
-            print "Models: %s" % [m.name for m in self._models]
-            print "Types: %s" % self._types
             raise AttributeError("%s has not attribute %s" % (self, name))
 
     @property
@@ -133,12 +129,7 @@ class Resource(object):
 
     def _save(self, attributes):
         """
-            TODO:
-                - Warns if there is some non-descriptor ("Attribute") attributes (will not be saved)
-                - Saves descriptor attributes
         """
-
-        #TODO: Warns
         objects_to_delete = []
         former_lines = u""
         new_lines = u""
@@ -173,7 +164,7 @@ class Resource(object):
         query += build_update_query_part(u"INSERT", self._id, new_lines)
         if len(query) > 0:
             query += u"WHERE {}"
-            print query
+            #print query
             try:
                 self._manager.default_graph.update(query)
             except ParseException as e:
@@ -278,7 +269,8 @@ class Resource(object):
             setattr(self, attr.name, None)
         self._save(attributes)
 
-    def full_update(self, full_dict, is_end_user=True, allow_new_type=False, allow_type_removal=False):
+    def full_update(self, full_dict, is_end_user=True, allow_new_type=False, allow_type_removal=False,
+                    save=True):
         """
             JSON-LD containers are supported.
             Flat rather than deep: no nested object structure (only their IRI).
@@ -313,7 +305,8 @@ class Resource(object):
                 value = set(value)
             attr.set(self, value)
 
-        self.save(is_end_user)
+        if save:
+            self.save(is_end_user)
 
     def full_update_from_graph(self, subgraph, is_end_user=True, save=True, initial=False,
                                allow_new_type=False, allow_type_removal=False):
