@@ -39,7 +39,7 @@ class CRUDController(object):
             if obj is not None:
                 obj.delete()
 
-    def update(self, base_uri, new_document, content_type):
+    def update(self, base_uri, new_document, content_type, allow_new_type=False, allow_type_removal=False):
         """
             A little bit more than an usual HTTP PUT: is able to give to some blank nodes of this representation.
         """
@@ -53,9 +53,9 @@ class CRUDController(object):
         #RDF graph
         else:
             graph.parse(data=new_document, format=content_type, publicID=base_uri)
-        self._update_graph(base_uri, graph)
+        self._update_graph(base_uri, graph, allow_new_type, allow_type_removal)
 
-    def _update_graph(self, base_iri, graph):
+    def _update_graph(self, base_iri, graph, allow_new_type, allow_type_removal):
         """
             Cannot create non-blank objects with a difference base_uris (security reasons)
         """
@@ -66,10 +66,10 @@ class CRUDController(object):
         other_subjects = subjects.difference(bnode_subjects)
 
         #Blank nodes (may obtain a regular IRI)
-        objs = self._create_anonymous_objects(base_iri, graph, bnode_subjects)
+        objs = self._create_anonymous_objects(base_iri, graph, bnode_subjects, allow_new_type, allow_type_removal)
 
         #Objects with an existing IRI
-        objs += self._create_regular_resources(base_iri, graph, other_subjects)
+        objs += self._create_regular_resources(base_iri, graph, other_subjects, allow_new_type, allow_type_removal)
 
         #Check validity before saving
         #May raise a LDEditError
@@ -88,7 +88,7 @@ class CRUDController(object):
             if obj is not None:
                 obj.delete()
 
-    def _create_anonymous_objects(self, base_iri, graph, bnode_subjects):
+    def _create_anonymous_objects(self, base_iri, graph, bnode_subjects, allow_new_type, allow_type_removal):
         resources = []
         # Only former b-nodes
         dependent_objs = []
@@ -97,7 +97,8 @@ class CRUDController(object):
             types = {unicode(t) for t in graph.objects(bnode, RDF.type)}
             resource = self._manager.new(base_iri=base_iri, types=types)
             alter_bnode_triples(graph, bnode, URIRef(resource.id))
-            resource.full_update_from_graph(graph, save=False)
+            resource.full_update_from_graph(graph, save=False, allow_new_type=allow_new_type,
+                                            allow_type_removal=allow_type_removal)
             resources.append(resource)
 
             deps = {o for _, p, o in graph.triples((bnode, None, None))
@@ -115,7 +116,7 @@ class CRUDController(object):
 
         return resources
 
-    def _create_regular_resources(self, base_iri, graph, other_subjects):
+    def _create_regular_resources(self, base_iri, graph, other_subjects, allow_new_type, allow_type_removal):
         resources = []
         for iri in [unicode(s) for s in other_subjects]:
             if is_blank_node(iri):
@@ -128,7 +129,8 @@ class CRUDController(object):
             #model = self._registry.select_model(self._registry.get_models(types))
             try:
                 resource = self._manager.get(id=iri)
-                resource.full_update_from_graph(graph, save=False)
+                resource.full_update_from_graph(graph, save=False, allow_new_type=allow_new_type,
+                                                allow_type_removal=allow_type_removal)
             except OMClassInstanceError:
                 # New object
                 resource = Resource.load_from_graph(self._manager, iri, graph, is_new=True)

@@ -76,6 +76,6 @@ class DatatypeTest(TestCase):
         <#this> rdf:type <http://localhost/vocab#MyClass> .
         """
         base_iri = "http://example.org/doc3"
-        crud_controller.update(base_iri, ttl, "turtle")
+        crud_controller.update(base_iri, ttl, "turtle", allow_new_type=True)
         obj_iri = manager.model_registry.find_resource_from_base_uri(base_iri)
         self.assertEquals(obj_iri, base_iri + "#this")
