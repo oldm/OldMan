@@ -1179,3 +1179,21 @@ class ModelTest(TestCase):
         }"""
         # The names are used as IRIs (legal)
         self.assertEquals({r.id for r in manager.sparql_filter(r3)}, {alice_name, bob_name, john_name})
+
+    def test_no_filter_get(self):
+        self.assertEquals(manager.get(), None)
+        alice = self.create_alice()
+        # Unique object
+        self.assertEquals(manager.get().id, alice.id)
+
+    def test_empty_filter(self):
+        """
+            No filtering arguments -> all()
+        """
+        self.assertEquals(list(manager.filter()), [])
+        alice = self.create_alice()
+        # Unique object
+        self.assertEquals(list(manager.filter())[0].id, alice.id)
+
+        bob = self.create_bob()
+        self.assertEquals({r.id for r in manager.filter()}, {alice.id, bob.id})

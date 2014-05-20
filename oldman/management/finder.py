@@ -21,24 +21,28 @@ class Finder(object):
         if "id" in kwargs:
             return self.get(**kwargs)
 
-        type_set = set(kwargs.get("types", []))
-        models, _ = self._manager.model_registry.find_models_and_types(type_set)
+        if len(kwargs) == 0:
+            #TODO: warn
+            query = u"SELECT DISTINCT ?s WHERE { ?s ?p ?o }"
+        else:
+            type_set = set(kwargs.get("types", []))
+            models, _ = self._manager.model_registry.find_models_and_types(type_set)
 
-        lines = u""
-        for name, value in kwargs.iteritems():
-            if name == "types":
-                if not isinstance(value, (set, list)):
-                    value = [value]
-                for type_iri in value:
-                    lines += u"?s a <%s> ." % type_iri
-                continue
-            # May raise a OMAttributeAccessError
-            attr = find_attribute(models, name)
-            value = kwargs[name]
-            if value:
-                lines += attr.serialize_values_into_lines(value)
+            lines = u""
+            for name, value in kwargs.iteritems():
+                if name == "types":
+                    if not isinstance(value, (set, list)):
+                        value = [value]
+                    for type_iri in value:
+                        lines += u"?s a <%s> ." % type_iri
+                    continue
+                # May raise a OMAttributeAccessError
+                attr = find_attribute(models, name)
+                value = kwargs[name]
+                if value:
+                    lines += attr.serialize_values_into_lines(value)
 
-        query = build_query_part(u"SELECT ?s WHERE", u"?s", lines)
+            query = build_query_part(u"SELECT ?s WHERE", u"?s", lines)
         #print query
         try:
             results = self._manager.union_graph.query(query)
@@ -68,6 +72,17 @@ class Finder(object):
                 raise OMClassInstanceError("%s found, but is not instance of %s" % (id, missing_types))
             #TODO: warn that attributes should not be given with the id
             return resource
+        elif len(kwargs) == 0:
+            #TODO: warn
+            query = u"SELECT ?s WHERE { ?s ?p ?o } LIMIT 1"
+            try:
+                results = self._manager.union_graph.query(query)
+            except ParseException as e:
+                raise OMSPARQLParseError(u"%s\n %s" % (query, e))
+            for r, in results:
+                return self._get_by_id(unicode(r))
+            # If no resource in the union graph
+            return None
 
         # First found
         for resource in self.filter(**kwargs):
@@ -82,7 +97,6 @@ class Finder(object):
             return resource
         resource_graph = Graph()
         iri = URIRef(id)
-        #TODO: is it expensive?
         resource_graph += self._manager.union_graph.triples((iri, None, None))
         return self._new_resource_object(id, resource_graph)
 
