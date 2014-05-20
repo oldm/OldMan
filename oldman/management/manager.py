@@ -121,6 +121,9 @@ class ResourceManager(object):
     def filter(self, **kwargs):
         return self._finder.filter(**kwargs)
 
+    def sparql_filter(self, query):
+        return self._finder.sparql_filter(query)
+
     def clear_resource_cache(self):
         self._finder.clear_cache()
 

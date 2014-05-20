@@ -365,4 +365,4 @@ def should_delete_object(obj):
     """
         TODO: make sure these blank nodes are not referenced somewhere else
     """
-    return obj.is_blank_node()
+    return obj is not None and obj.is_blank_node()

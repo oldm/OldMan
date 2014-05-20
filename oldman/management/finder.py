@@ -46,9 +46,20 @@ class Finder(object):
             raise OMSPARQLParseError(u"%s\n %s" % (query, e))
 
         # Generator expression
-        return (self.get(id=str(r)) for r, in results)
+        return (self.get(id=unicode(r[0])) for r in results)
+
+    def sparql_filter(self, query):
+        try:
+            results = self._manager.union_graph.query(query)
+        except ParseException as e:
+            raise OMSPARQLParseError(u"%s\n %s" % (query, e))
+        return (self.get(id=unicode(r[0])) for r in results)
 
     def get(self, id=None, **kwargs):
+        """
+            When an id (IRI) is given, a Resource object is always returned.
+            None is returned when no id has been given and no resource has been found.
+        """
         if id:
             resource = self._get_by_id(id)
             types = set(kwargs.get("types", []))
@@ -76,7 +87,7 @@ class Finder(object):
         return self._new_resource_object(id, resource_graph)
 
     def _new_resource_object(self, id, resource_graph):
-        resource = Resource.load_from_graph(self._manager, id, resource_graph, is_new=False)
+        resource = Resource.load_from_graph(self._manager, id, resource_graph, is_new=(len(resource_graph) == 0))
         self._cache[id] = resource
         return resource
 

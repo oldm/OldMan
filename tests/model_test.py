@@ -1158,3 +1158,24 @@ class ModelTest(TestCase):
 
         ids = {alice.id, bob.id, john.id}
         self.assertEquals({r.id for r in lp_model.all()}, ids)
+
+    def test_sparql_filter(self):
+        alice = self.create_alice()
+        bob = self.create_bob()
+        john = self.create_john()
+        ids = {alice.id, bob.id, john.id}
+
+        r1 = "SELECT ?s WHERE { ?s a foaf:Person }"
+        self.assertEquals({r.id for r in manager.sparql_filter(r1)}, ids)
+
+        r2 = """SELECT ?s WHERE {
+            ?s a foaf:Person ;
+               foaf:name "%s"^^xsd:string .
+        }""" % alice_name
+        self.assertEquals({r.id for r in manager.sparql_filter(r2)}, {alice.id})
+
+        r3 = """SELECT ?name ?s WHERE {
+            ?s foaf:name ?name .
+        }"""
+        # The names are used as IRIs (legal)
+        self.assertEquals({r.id for r in manager.sparql_filter(r3)}, {alice_name, bob_name, john_name})
