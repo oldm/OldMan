@@ -160,10 +160,11 @@ class Resource(object):
                 type_line = u"<%s> a <%s> .\n" % (self._id, t)
                 former_lines += type_line
 
-        query = build_update_query_part(u"DELETE", self._id, former_lines)
-        query += build_update_query_part(u"INSERT", self._id, new_lines)
+        query = build_update_query_part(u"DELETE DATA", self._id, former_lines)
         if len(query) > 0:
-            query += u"WHERE {}"
+            query += u" ;"
+        query += build_update_query_part(u"INSERT DATA", self._id, new_lines)
+        if len(query) > 0:
             #print query
             try:
                 self._manager.data_graph.update(query)

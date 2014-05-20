@@ -16,11 +16,12 @@ from oldman.exception import OMDifferentBaseIRIError, OMForbiddenSkolemizedIRIEr
 from oldman.rest.crud import CRUDController
 
 
-default_graph = ConjunctiveGraph(SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
-                                                   update_endpoint="http://localhost:3030/test/update"))
-#default_graph = ConjunctiveGraph()
+#default_graph = ConjunctiveGraph(SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
+#                                                   update_endpoint="http://localhost:3030/test/update"))
+default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
 data_graph = default_graph.get_context(URIRef("http://localhost/data"))
+
 
 BIO = "http://purl.org/vocab/bio/0.1/"
 REL = "http://purl.org/vocab/relationship/"
@@ -213,7 +214,6 @@ context = {
     }
 }
 
-#default_graph.namespace_manager.bind("xsd", XSD)
 default_graph.namespace_manager.bind("foaf", FOAF)
 default_graph.namespace_manager.bind("wot", WOT)
 default_graph.namespace_manager.bind("rel", REL)
@@ -255,6 +255,7 @@ researcher_type = MY_VOC + "Researcher"
 ask_fingerprint = """ASK { ?x wot:fingerprint ?y }"""
 #ask_modulus = """ASK {?x cert:modulus "%s"^^xsd:hexBinary }""" % key_modulus
 ask_modulus = """ASK {?x cert:modulus ?y }"""
+
 
 class ModelTest(TestCase):
 
@@ -1118,7 +1119,6 @@ class ModelTest(TestCase):
             alice.full_update(dct)
         alice.full_update(dct, allow_type_removal=True)
         self.assertEquals(set(alice.types), set(lp_model.ancestry_iris))
-
 
     def test_alice_rdf_update_types(self):
         alice = self.create_alice()
