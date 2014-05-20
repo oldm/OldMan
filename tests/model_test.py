@@ -16,11 +16,10 @@ from oldman.exception import OMDifferentBaseIRIError, OMForbiddenSkolemizedIRIEr
 from oldman.rest.crud import CRUDController
 
 
-default_graph = ConjunctiveGraph()
-#default_graph = ConjunctiveGraph(SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
-#                                                   update_endpoint="http://localhost:3030/test/update"))
-#schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
-schema_graph = Graph()
+default_graph = ConjunctiveGraph(SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
+                                                   update_endpoint="http://localhost:3030/test/update"))
+#default_graph = ConjunctiveGraph()
+schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
 data_graph = default_graph.get_context(URIRef("http://localhost/data"))
 
 BIO = "http://purl.org/vocab/bio/0.1/"
@@ -214,9 +213,11 @@ context = {
     }
 }
 
-# Retrieve namespaces when the two graphs are independent
-for prefix, namespace in schema_graph.namespace_manager.namespaces():
-    data_graph.namespace_manager.bind(prefix, namespace)
+#default_graph.namespace_manager.bind("xsd", XSD)
+default_graph.namespace_manager.bind("foaf", FOAF)
+default_graph.namespace_manager.bind("wot", WOT)
+default_graph.namespace_manager.bind("rel", REL)
+default_graph.namespace_manager.bind("cert", CERT)
 
 manager = create_resource_manager(schema_graph, data_graph)
 # Model classes are generated here!
@@ -249,12 +250,17 @@ gpg_hex_id = "002640e2"
 prof_type = MY_VOC + "Professor"
 researcher_type = MY_VOC + "Researcher"
 
+# xsd:hexBinary behaves strangely in Fuseki. Not supported by SPARQL? http://www.w3.org/2011/rdf-wg/wiki/XSD_Datatypes
+#ask_fingerprint = """ASK { ?x wot:fingerprint "%s"^^xsd:hexBinary }""" % gpg_fingerprint
+ask_fingerprint = """ASK { ?x wot:fingerprint ?y }"""
+#ask_modulus = """ASK {?x cert:modulus "%s"^^xsd:hexBinary }""" % key_modulus
+ask_modulus = """ASK {?x cert:modulus ?y }"""
 
 class ModelTest(TestCase):
 
     def tearDown(self):
         """ Clears the data graph """
-        data_graph.update("CLEAR DEFAULT")
+        default_graph.update("CLEAR GRAPH <%s>" % data_graph.identifier)
         manager.clear_resource_cache()
 
     def create_bob(self):
@@ -299,7 +305,7 @@ class ModelTest(TestCase):
         self.assertEquals(set(expected_types), retrieved_types)
 
     def test_bob_in_triplestore(self):
-        request = """ASK {?x foaf:name "%s"^^xsd:string }""" % bob_name
+        request = """ASK { ?x foaf:name "%s"^^xsd:string }""" % bob_name
         self.assertFalse(bool(data_graph.query(request)))
         self.create_bob()
         self.assertTrue(bool(data_graph.query(request)))
@@ -524,6 +530,7 @@ class ModelTest(TestCase):
 
     def test_children_list(self):
         bob = self.create_bob()
+        bob_iri = bob.id
         alice = self.create_alice()
         john = self.create_john()
 
@@ -541,6 +548,12 @@ class ModelTest(TestCase):
         #print default_graph.serialize(format="turtle")
         # No guarantee about the order
         self.assertEquals(set(children_found), set([c.id for c in bob_children]))
+
+        bob_children_iris = [c.id for c in bob_children]
+        del bob
+        manager.clear_resource_cache()
+        bob = manager.get(id=bob_iri)
+        self.assertEquals([c.id for c in bob.children], bob_children_iris)
 
     def test_bob_json(self):
         bob = self.create_bob()
@@ -765,7 +778,6 @@ class ModelTest(TestCase):
         self.assertFalse(bool(data_graph.query(request)))
 
     def test_delete_rsa_but_no_alice(self):
-        ask_modulus = """ASK {?x cert:modulus "%s"^^xsd:hexBinary }""" % key_modulus
         ask_alice = """ASK {?x foaf:name "%s"^^xsd:string }""" % alice_name
         self.assertFalse(bool(data_graph.query(ask_modulus)))
         self.assertFalse(bool(data_graph.query(ask_alice)))
@@ -786,7 +798,6 @@ class ModelTest(TestCase):
         self.assertTrue(bool(data_graph.query(ask_alice)))
 
     def test_rsa_key_removal(self):
-        ask_modulus = """ASK {?x cert:modulus "%s"^^xsd:hexBinary }""" % key_modulus
         self.assertFalse(bool(data_graph.query(ask_modulus)))
 
         bob = self.create_bob()
@@ -800,7 +811,6 @@ class ModelTest(TestCase):
         self.assertFalse(bool(data_graph.query(ask_modulus)))
 
     def test_gpg_key_removal(self):
-        ask_fingerprint = """ASK {?x wot:fingerprint "%s"^^xsd:hexBinary }""" % gpg_fingerprint
         bob = self.create_bob()
         self.assertFalse(bool(data_graph.query(ask_fingerprint)))
         bob.gpg_key = self.create_gpg_key()
@@ -812,7 +822,6 @@ class ModelTest(TestCase):
         self.assertFalse(bool(data_graph.query(ask_fingerprint)))
 
     def test_delete_gpg(self):
-        ask_fingerprint = """ASK {?x wot:fingerprint "%s"^^xsd:hexBinary }""" % gpg_fingerprint
         self.assertFalse(bool(data_graph.query(ask_fingerprint)))
 
         bob = self.create_bob()
@@ -840,9 +849,10 @@ class ModelTest(TestCase):
 
     def test_bob_gpg_update(self):
         bob = self.create_bob()
-        ask_fingerprint = """ASK {?x wot:fingerprint "%s"^^xsd:hexBinary }""" % gpg_fingerprint
         self.assertFalse(bool(data_graph.query(ask_fingerprint)))
         bob.gpg_key = self.create_gpg_key()
+        bob.save()
+        #self.assertTrue(bool(default_graph.query("""ASK { GRAPH ?g {?x wot:fingerprint "%s"^^xsd:hexBinary } }""" % gpg_fingerprint)))
         self.assertTrue(bool(data_graph.query(ask_fingerprint)))
         bob_dict = bob.to_dict()
 
