@@ -1150,3 +1150,11 @@ class ModelTest(TestCase):
         manager.clear_resource_cache()
         alice = lp_model.get(id=alice_iri)
         self.assertEquals(set(alice.types), set(lp_model.ancestry_iris))
+
+    def test_model_all(self):
+        alice = self.create_alice()
+        bob = self.create_bob()
+        john = self.create_john()
+
+        ids = {alice.id, bob.id, john.id}
+        self.assertEquals({r.id for r in lp_model.all()}, ids)

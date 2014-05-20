@@ -89,6 +89,9 @@ class Model(object):
         kwargs = self._update_kwargs_types(kwargs)
         return self._manager.get(**kwargs)
 
+    def all(self):
+        return self.filter(types=[self._class_iri])
+
     def _update_kwargs_types(self, kwargs):
         types = list(self._class_types)
         if "types" in kwargs:
