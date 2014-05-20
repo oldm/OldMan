@@ -1013,7 +1013,6 @@ class ModelTest(TestCase):
         g1.remove((bob_ref, FOAF.name, Literal(bob_name, datatype=XSD.string)))
         g1.add((bob_ref, FOAF.name, Literal(new_bob_name, datatype=XSD.string)))
 
-        print g1.serialize(format="turtle")
         crud_controller.update(doc_iri, g1.serialize(format="turtle"), "turtle")
         self.assertEquals({unicode(o) for o in data_graph.objects(alice_ref, FOAF.name)}, {new_alice_name})
         self.assertEquals({unicode(o) for o in data_graph.objects(bob_ref, FOAF.name)}, {new_bob_name})

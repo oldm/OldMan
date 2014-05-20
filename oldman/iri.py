@@ -19,7 +19,7 @@ class RandomPrefixedIriGenerator(IriGenerator):
         self._fragment = fragment
 
     def generate(self, **kwargs):
-        partial_iri = u"%s%s" % (self._prefix, uuid1().hex)
+        partial_iri = skolemize(prefix=self._prefix)
         if self._fragment is not None:
             return u"%s#%s" % (partial_iri, self._fragment)
         return partial_iri
@@ -110,3 +110,7 @@ class RandomFragmentIriGenerator(IriGenerator):
         if '#' in base_iri:
             raise OMRequiredBaseIRIError(u"%s is not a valid base IRI" % base_iri)
         return u"%s#%s" % (base_iri, uuid1().hex)
+
+
+def skolemize(prefix=u"http://localhost/.well-known/genid/"):
+    return u"%s%s" % (prefix, uuid1().hex)
