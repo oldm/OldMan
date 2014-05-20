@@ -10,6 +10,7 @@ default_graph = ConjunctiveGraph()
 
 # Graph containing all the schema RDF triples
 schema_graph = default_graph.get_context("http://localhost/schema")
+data_graph = default_graph.get_context("http://localhost/data")
 
 # Load the schema
 parse_graph_safely(schema_graph, "https://gitlab.bcgl.fr/benjamin/oldman/raw/master/examples/quickstart_schema.ttl",
@@ -18,7 +19,7 @@ parse_graph_safely(schema_graph, "https://gitlab.bcgl.fr/benjamin/oldman/raw/mas
 context_iri = "https://gitlab.bcgl.fr/benjamin/oldman/raw/master/examples/quickstart_context.jsonld"
 
 #Resource manager (will generate the model objects)
-manager = create_resource_manager(schema_graph, default_graph)
+manager = create_resource_manager(schema_graph, data_graph)
 
 #LocalPerson model
 lp_model = manager.create_model("LocalPerson", context_iri, iri_prefix="http://localhost/persons/",

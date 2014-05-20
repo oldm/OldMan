@@ -27,7 +27,7 @@ context = {
     }
 }
 
-manager = create_resource_manager(schema_graph, default_graph)
+manager = create_resource_manager(schema_graph, data_graph)
 crud_controller = CRUDController(manager)
 model = manager.create_model("MyClass", context, iri_generator=RandomFragmentIriGenerator())
 

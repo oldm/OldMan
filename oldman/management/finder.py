@@ -41,7 +41,7 @@ class Finder(object):
         query = build_query_part(u"SELECT ?s WHERE", u"?s", lines)
         #print query
         try:
-            results = self._manager.default_graph.query(query)
+            results = self._manager.union_graph.query(query)
         except ParseException as e:
             raise OMSPARQLParseError(u"%s\n %s" % (query, e))
 
@@ -72,7 +72,7 @@ class Finder(object):
         resource_graph = Graph()
         iri = URIRef(id)
         #TODO: is it expensive?
-        resource_graph += self._manager.default_graph.triples((iri, None, None))
+        resource_graph += self._manager.union_graph.triples((iri, None, None))
         return self._new_resource_object(id, resource_graph)
 
     def _new_resource_object(self, id, resource_graph):

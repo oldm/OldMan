@@ -31,7 +31,7 @@ class Resource(object):
             # Anticipated because used in __hash__
             self._id = kwargs.pop("id")
             if create:
-                exist = bool(self._manager.default_graph.query(self.existence_query,
+                exist = bool(self._manager.union_graph.query(self.existence_query,
                                                                initBindings={'id': URIRef(self._id)}))
                 if exist:
                     raise OMUniquenessError("Object %s already exist" % self._id)
@@ -166,7 +166,7 @@ class Resource(object):
             query += u"WHERE {}"
             #print query
             try:
-                self._manager.default_graph.update(query)
+                self._manager.data_graph.update(query)
             except ParseException as e:
                 raise OMSPARQLParseError(u"%s\n %s" % (query, e))
 
@@ -311,7 +311,7 @@ class Resource(object):
     def full_update_from_graph(self, subgraph, is_end_user=True, save=True, initial=False,
                                allow_new_type=False, allow_type_removal=False):
         for attr in self._extract_attribute_list():
-            attr.update_from_graph(self, subgraph, self._manager.default_graph, initial=initial)
+            attr.update_from_graph(self, subgraph, self._manager.data_graph, initial=initial)
         #Types
         if not initial:
             new_types = {unicode(t) for t in subgraph.objects(URIRef(self._id), RDF.type)}

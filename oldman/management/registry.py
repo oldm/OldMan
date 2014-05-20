@@ -14,18 +14,14 @@ class ModelRegistry(object):
             FILTER (REGEX(STR(?uri), CONCAT(?base, "#")) || (STR(?uri) = ?base) )
          } """
 
-    def __init__(self, default_graph, default_model_name):
+    def __init__(self, manager, default_model_name):
         self._model_classes = {}
         self._model_names = {}
-        self._default_graph = default_graph
+        self._manager = manager
         self._default_model_name = default_model_name
         #Only IRIs in this dict
         self._model_descendants = {}
         self._type_set_cache = {}
-
-    @property
-    def default_graph(self):
-        return self._default_graph
 
     def register(self, model, short_name):
         class_iri = model.class_iri
@@ -108,7 +104,7 @@ class ModelRegistry(object):
         if "#" in base_iri:
             raise OMHashIriError("%s is not a base IRI" % base_iri)
         query = self.base_uri_raw_query.replace("?base", '"%s"' % base_iri)
-        return {unicode(u) for u, in self._default_graph.query(query)}
+        return {unicode(u) for u, in self._manager.union_graph.query(query)}
 
     def find_resource_from_base_uri(self, base_iri):
         obj_iris = self.find_resource_iris(base_iri)

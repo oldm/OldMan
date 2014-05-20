@@ -147,7 +147,7 @@ context = {
     }
 }
 
-manager = create_resource_manager(schema_graph, default_graph)
+manager = create_resource_manager(schema_graph, data_graph)
 lc_model = manager.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
 default_list_en = ["w1", "w2"]
 

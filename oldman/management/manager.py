@@ -14,21 +14,28 @@ from .finder import Finder
 DEFAULT_MODEL_NAME = "Thing"
 
 
-def create_resource_manager(schema_graph, default_graph):
+def create_resource_manager(schema_graph, data_graph, union_graph=None):
+    """
+        By default, union_graph = data_graph
+    """
     attr_extractor = OMAttributeExtractor()
-    return ResourceManager(attr_extractor, schema_graph, default_graph)
+    return ResourceManager(attr_extractor, schema_graph, data_graph, union_graph)
 
 
 class ResourceManager(object):
 
-    def __init__(self, attr_extractor, schema_graph, default_graph):
+    def __init__(self, attr_extractor, schema_graph, data_graph, union_graph=None):
+        """
+            By default, union_graph = data_graph
+        """
         self._attr_extractor = attr_extractor
-        self._registry = ModelRegistry(default_graph, DEFAULT_MODEL_NAME)
         self._schema_graph = schema_graph
-        self._default_graph = default_graph
+        self._union_graph = union_graph if union_graph is not None else data_graph
+        self._data_graph = data_graph
         self._methods = {}
-        # Registered with the "None" key
+        self._registry = ModelRegistry(self, DEFAULT_MODEL_NAME)
         self._finder = Finder(self)
+        # Registered with the "None" key
         self._create_model(DEFAULT_MODEL_NAME, {u"@context": {}}, untyped=True,
                            iri_prefix=u"http://localhost/.well-known/genid/default/")
 
@@ -37,8 +44,14 @@ class ResourceManager(object):
         return self._registry
 
     @property
-    def default_graph(self):
-        return self._default_graph
+    def data_graph(self):
+        """  Graph where resource data is added (by default) """
+        return self._data_graph
+
+    @property
+    def union_graph(self):
+        """ Union of all the data graphs (one or more) """
+        return self._union_graph
 
     def add_method(self, method, name, class_iri):
         """
@@ -74,7 +87,7 @@ class ResourceManager(object):
             id_generator = iri_generator
         elif iri_prefix is not None:
             if incremental_uri:
-                id_generator = IncrementalIriGenerator(iri_prefix, self._default_graph,
+                id_generator = IncrementalIriGenerator(iri_prefix, self._data_graph,
                                                        class_iri, fragment=iri_fragment)
             else:
                 id_generator = RandomPrefixedIriGenerator(iri_prefix, fragment=iri_fragment)

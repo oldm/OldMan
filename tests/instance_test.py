@@ -9,6 +9,7 @@ from oldman import create_resource_manager, parse_graph_safely
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
+data_graph = default_graph.get_context(URIRef("http://localhost/data"))
 
 EXAMPLE = "http://localhost/vocab#"
 
@@ -84,7 +85,7 @@ def disclaim2(self):
     return new_disclaim
 
 
-manager = create_resource_manager(schema_graph, default_graph)
+manager = create_resource_manager(schema_graph, data_graph)
 # Methods
 manager.add_method(square_value, "square_value", EXAMPLE + "GrandParentClass")
 manager.add_method(print_new_value, "print_new_value", EXAMPLE + "ChildClass")
@@ -107,7 +108,7 @@ class InstanceTest(TestCase):
 
     def tearDown(self):
         """ Clears the data graph """
-        default_graph.update("CLEAR DEFAULT")
+        data_graph.update("CLEAR DEFAULT")
         child_model.reset_counter()
         manager.clear_resource_cache()
 
