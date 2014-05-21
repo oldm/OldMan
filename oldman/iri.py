@@ -49,22 +49,22 @@ class IncrementalIriGenerator(IriGenerator):
         self._fragment = fragment
 
         self._counter_query_req = u"""
-            prefix ldorm: <http://localhost/ldorm#>
+            PREFIX oldman: <urn:oldman:>
             SELECT ?number
             WHERE {
-                ?class_uri ldorm:nextNumber ?number .
+                ?class_uri oldman:nextNumber ?number .
             }""".replace("?class_uri", u"<%s>" % self._class_iri)
 
         self._counter_update_req = u"""
-            prefix ldorm: <http://localhost/ldorm#>
+            PREFIX oldman: <urn:oldman:>
             DELETE {
-                ?class_uri ldorm:nextNumber ?current .
+                ?class_uri oldman:nextNumber ?current .
             }
             INSERT {
-                ?class_uri ldorm:nextNumber ?next .
+                ?class_uri oldman:nextNumber ?next .
             }
             WHERE {
-                ?class_uri ldorm:nextNumber ?current .
+                ?class_uri oldman:nextNumber ?current .
                 BIND (?current+1 AS ?next)
             }""".replace("?class_uri", "<%s>" % self._class_iri)
 
@@ -77,9 +77,9 @@ class IncrementalIriGenerator(IriGenerator):
 
     def reset_counter(self):
         self._graph.update(u"""
-            prefix ldorm: <http://localhost/ldorm#>
+            PREFIX oldman: <urn:oldman:>
             INSERT {
-                <%s> ldorm:nextNumber 0 .
+                <%s> oldman:nextNumber 0 .
                 } WHERE {}""" % self._class_iri)
 
     def generate(self, **kwargs):

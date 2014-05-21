@@ -44,9 +44,9 @@ def _extract_ancestry(class_iri, schema_graph):
         ?child_class rdfs:subClassOf* ?class.
         ?class rdfs:subClassOf ?parent.
         OPTIONAL {
-            ?class <urn:oldman:test:model:ordering:hasPriority> ?p .
-            ?p <urn:oldman:test:model:ordering:class> ?parent ;
-               <urn:oldman:test:model:ordering:priority> ?priority .
+            ?class <urn:oldman:model:ordering:hasPriority> ?p .
+            ?p <urn:oldman:model:ordering:class> ?parent ;
+               <urn:oldman:model:ordering:priority> ?priority .
         }.
         FILTER NOT EXISTS { ?class rdfs:subClassOf ?other .
                             ?other rdfs:subClassOf+ ?parent . }
