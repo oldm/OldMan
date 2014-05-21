@@ -1,3 +1,4 @@
+import logging
 from rdflib_jsonld.context import Context, UNDEF
 
 
@@ -33,7 +34,8 @@ class JsonLdContextAttributeMdExtractor(OMAttributeMdExtractor):
                 # Not declared (worst case)
                 elif len(property_uri) == 0:
                     name = graph.qname(property_uri).replace(":", "_")
-                    print u"No short name found for property %s. QName %s used instead" % (property_uri, name)
+                    logger = logging.getLogger(__name__)
+                    logger.warn(u"No short name found for property %s. QName %s used instead" % (property_uri, name))
                     property.add_attribute_metadata(name)
 
     def _update_property(self, property, term):

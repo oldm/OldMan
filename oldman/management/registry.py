@@ -1,3 +1,4 @@
+import logging
 from rdflib import RDF, URIRef
 from oldman.exception import OMSchemaError, OMInternalError, OMObjectNotFoundError, OMHashIriError
 from oldman.exception import AlreadyAllocatedModelError
@@ -22,10 +23,11 @@ class ModelRegistry(object):
         #Only IRIs in this dict
         self._model_descendants = {}
         self._type_set_cache = {}
+        self._logger = logging.getLogger(__name__)
 
     def register(self, model, short_name):
         class_iri = model.class_iri
-        #print "Register %s %s" % (class_iri, short_name)
+        self._logger.info("Register model %s (%s)" % (short_name, class_iri))
         if class_iri in self._model_classes:
             raise AlreadyAllocatedModelError("%s is already allocated to %s" %
                                              (class_iri, self._model_classes[class_iri]))
@@ -97,7 +99,8 @@ class ModelRegistry(object):
         """
             TODO: propose some vocabulary to give priorities
         """
-        #TODO: warn that the order is arbitrary
+        if len(leaf_models) > 1:
+            self._logger.warn(u"Arbitrary order between leaf models %s" % [m.name for m in leaf_models])
         return leaf_models
 
     def find_resource_iris(self, base_iri):

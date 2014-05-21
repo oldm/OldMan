@@ -1,4 +1,5 @@
 from enum import Enum
+import logging
 from .attribute import OMAttributeMetadata, OMAttribute, ObjectOMAttribute
 from .exception import OMAlreadyDeclaredDatatypeError, OMPropertyDefTypeError
 from .exception import OMAlreadyGeneratedAttributeError, OMInternalError, OMPropertyDefError
@@ -140,11 +141,13 @@ class OMProperty(object):
                 self.type = PropertyType.DatatypeProperty
                 if (not jsonld_type in self._ranges) and len(self._ranges) >=1:
                     raise OMAlreadyDeclaredDatatypeError("Attribute %s cannot have a different datatype"
-                                                       "(%s) than the property's one (%s)" % (name, jsonld_type,
-                                                       list(self._ranges)[0]))
+                                                         "(%s) than the property's one (%s)" % (name, jsonld_type,
+                                                                                                list(self._ranges)[0]))
         # If no datatype defined, use the property one
         else:
-            #TODO: warns because this is a bad practice
+            logger = logging.getLogger(__name__)
+            if language is None:
+                logger.warn("No datatype defined in the JSON-LD context for the attribute %s" % name)
             #(harder to parse for a JSON-LD client)
             if self.type == PropertyType.ObjectProperty:
                 jsonld_type = "@id"

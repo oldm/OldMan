@@ -1,3 +1,4 @@
+import logging
 from collections import namedtuple
 from weakref import WeakKeyDictionary
 from rdflib import Literal
@@ -253,8 +254,8 @@ class OMAttribute(object):
 
     def _check_container(self, value):
         if not self.container:
-            #TODO: replaces by a log alert
-            print u"Warning: no container declared for %s" % self.name
+            logger = logging.getLogger(__name__)
+            logger.warn("No container declared for %s" % self.name)
 
             # List declaration is required (default: set)
             # TODO: what about dict?

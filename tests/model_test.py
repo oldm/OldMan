@@ -3,6 +3,7 @@
 from unittest import TestCase
 from os import path
 import json
+import logging.config
 
 from rdflib import ConjunctiveGraph, Graph, URIRef, Literal, RDF, XSD
 from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
@@ -14,6 +15,9 @@ from oldman.exception import OMClassInstanceError, OMAttributeAccessError, OMUni
 from oldman.exception import OMWrongResourceError, OMObjectNotFoundError, OMHashIriError, OMEditError
 from oldman.exception import OMDifferentBaseIRIError, OMForbiddenSkolemizedIRIError, OMUnauthorizedTypeChangeError
 from oldman.rest.crud import CRUDController
+
+
+logging.config.fileConfig(path.join(path.dirname(__file__),'logging.ini'))
 
 
 #default_graph = ConjunctiveGraph(SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",

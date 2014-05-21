@@ -1,4 +1,5 @@
 from weakref import WeakValueDictionary
+import logging
 from rdflib import URIRef, Graph
 from rdflib.plugins.sparql.parser import ParseException
 from oldman.resource import Resource
@@ -12,6 +13,7 @@ class Finder(object):
         self._cache = WeakValueDictionary()
         # if class_iri:
         #     self._check_type_request = u"ASK {?s a <%s> }" % class_iri
+        self._logger = logging.getLogger(__name__)
 
     def clear_cache(self):
         """ Clears its cache """
@@ -22,7 +24,7 @@ class Finder(object):
             return self.get(**kwargs)
 
         if len(kwargs) == 0:
-            #TODO: warn
+            self._logger.warn(u"filter() called without parameter. Returns every resource of the union graph.")
             query = u"SELECT DISTINCT ?s WHERE { ?s ?p ?o }"
         else:
             type_set = set(kwargs.get("types", []))
@@ -43,7 +45,6 @@ class Finder(object):
                     lines += attr.serialize_values_into_lines(value)
 
             query = build_query_part(u"SELECT ?s WHERE", u"?s", lines)
-        #print query
         try:
             results = self._manager.union_graph.query(query)
         except ParseException as e:
@@ -73,7 +74,7 @@ class Finder(object):
             #TODO: warn that attributes should not be given with the id
             return resource
         elif len(kwargs) == 0:
-            #TODO: warn
+            self._logger.warn(u"get() called without parameter. Returns the first resounce found in the union graph.")
             query = u"SELECT ?s WHERE { ?s ?p ?o } LIMIT 1"
             try:
                 results = self._manager.union_graph.query(query)
@@ -93,7 +94,7 @@ class Finder(object):
     def _get_by_id(self, id):
         resource = self._cache.get(id)
         if resource:
-            #print "%s found in the cache" % resource
+            self._logger.debug("%s found in the cache" % resource)
             return resource
         resource_graph = Graph()
         iri = URIRef(id)
@@ -110,4 +111,4 @@ def find_attribute(models, name):
     for m in models:
         if name in m.om_attributes:
             return m.access_attribute(name)
-    raise OMAttributeAccessError("%s not found in models %s " % (name, [m.name for m in models]))
+    raise OMAttributeAccessError(u"%s not found in models %s " % (name, [m.name for m in models]))

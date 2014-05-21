@@ -3,6 +3,7 @@
 """
 from functools import partial
 from urlparse import urlparse
+import logging
 import json
 from types import GeneratorType
 from rdflib import URIRef, Graph, RDF
@@ -11,9 +12,6 @@ from .property import PropertyType
 from .exception import OMSPARQLParseError, OMUnauthorizedTypeChangeError
 from .exception import OMAttributeAccessError, OMUniquenessError, OMWrongResourceError, OMEditError
 from oldman.utils.sparql import build_update_query_part
-
-
-logger = logging.getLogger(__name__)
 
 
 class Resource(object):
@@ -167,7 +165,8 @@ class Resource(object):
             query += u" ;"
         query += build_update_query_part(u"INSERT DATA", self._id, new_lines)
         if len(query) > 0:
-            #print query
+            logger = logging.getLogger(__name__)
+            logger.debug("Query: %s" % query)
             try:
                 self._manager.data_graph.update(query)
             except ParseException as e:
