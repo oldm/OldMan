@@ -13,26 +13,28 @@ from .exception import OMAttributeAccessError, OMUniquenessError, OMWrongResourc
 from oldman.utils.sparql import build_update_query_part
 
 
+logger = logging.getLogger(__name__)
+
+
 class Resource(object):
 
     existence_query = u"ASK {?id ?p ?o .}"
 
-    def __init__(self, manager, create=True, base_iri=None, types=None, **kwargs):
+    def __init__(self, manager, is_new=True, base_iri=None, types=None, **kwargs):
         """
             Does not save (like Django)
-            TODO: rename create into is_new
         """
         self._models, self._types = manager.model_registry.find_models_and_types(types)
-        self._former_types = set(self._types) if not create else set()
+        self._former_types = set(self._types) if not is_new else set()
         main_model = self._models[0]
         self._manager = manager
 
         if "id" in kwargs:
             # Anticipated because used in __hash__
             self._id = kwargs.pop("id")
-            if create:
+            if is_new:
                 exist = bool(self._manager.union_graph.query(self.existence_query,
-                                                               initBindings={'id': URIRef(self._id)}))
+                                                             initBindings={'id': URIRef(self._id)}))
                 if exist:
                     raise OMUniquenessError("Object %s already exist" % self._id)
         else:
@@ -48,7 +50,7 @@ class Resource(object):
             Loads a new Resource object from a subgraph
         """
         types = list({unicode(t) for t in subgraph.objects(URIRef(id), RDF.type)})
-        instance = cls(manager, id=id, types=types, create=is_new)
+        instance = cls(manager, id=id, types=types, is_new=is_new)
         instance.full_update_from_graph(subgraph, is_end_user=True, save=False, initial=True)
         return instance
 

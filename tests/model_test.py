@@ -750,7 +750,7 @@ class ModelTest(TestCase):
         # Forces the creation (by claiming your are not)
         # Dangerous!
         short_bio_en = u"Is forced to exist"
-        bob2 = lp_model.new(id=bob_iri, name=bob_name, mboxes=bob_emails, short_bio_en=short_bio_en, create=False)
+        bob2 = lp_model.new(id=bob_iri, name=bob_name, mboxes=bob_emails, short_bio_en=short_bio_en, is_new=False)
         self.assertEquals(bob2.short_bio_en, short_bio_en)
 
     def test_gpg_key(self):
