@@ -6,8 +6,10 @@ Subpackages
 
 .. toctree::
 
+    oldman.management
     oldman.parsing
     oldman.rest
+    oldman.utils
     oldman.validation
 
 Submodules
@@ -29,26 +31,10 @@ oldman.exception module
     :undoc-members:
     :show-inheritance:
 
-oldman.factory module
----------------------
-
-.. automodule:: oldman.factory
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 oldman.iri module
 -----------------
 
 .. automodule:: oldman.iri
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-oldman.manager module
----------------------
-
-.. automodule:: oldman.manager
     :members:
     :undoc-members:
     :show-inheritance:
@@ -69,10 +55,18 @@ oldman.property module
     :undoc-members:
     :show-inheritance:
 
-oldman.registry module
+oldman.resource module
 ----------------------
 
-.. automodule:: oldman.registry
+.. automodule:: oldman.resource
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+oldman.vocabulary module
+------------------------
+
+.. automodule:: oldman.vocabulary
     :members:
     :undoc-members:
     :show-inheritance:

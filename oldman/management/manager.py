@@ -18,9 +18,8 @@ DEFAULT_MODEL_NAME = "Thing"
 class ResourceManager(object):
     """The `resource_manager` is the central object of this OLDM.
 
-    It gives access to the graphs, creates :class:`~oldman.model.Model` objects
-    and retrieves :class:`~oldman.resource.Resource` objects.
-    It also manages the resource cache.
+    It gives access to the graphs and creates :class:`~oldman.model.Model` objects.
+    It also creates, retrieves and caches :class:`~oldman.resource.Resource` objects.
 
     Internally, it owns a :class:`~oldman.management.finder.Finder` object
     and a :class:`~oldman.management.registry.ModelRegistry` object.
@@ -147,9 +146,9 @@ class ResourceManager(object):
         methods = {}
         for m_dict in [self._methods.get(t, {}) for t in ancestry.top_down]:
             methods.update(m_dict)
-        model = Model(class_name_or_iri, class_iri, om_attributes, context,
-                      id_generator, ancestry.bottom_up, self, methods=methods)
-        self._registry.register(model, class_name_or_iri, is_default=is_default)
+        model = Model(self, class_name_or_iri, class_iri, ancestry.bottom_up, context, om_attributes,
+                      id_generator, methods=methods)
+        self._registry.register(model, is_default=is_default)
         return model
 
     def new(self, id=None, types=None, base_iri=None, **kwargs):

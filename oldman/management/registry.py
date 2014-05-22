@@ -22,21 +22,20 @@ class ModelRegistry(object):
         self._type_set_cache = {}
         self._logger = logging.getLogger(__name__)
 
-    def register(self, model, short_name, is_default=False):
+    def register(self, model, is_default=False):
         """Registers a :class:`~oldman.model.Model` object.
 
         :param model: the :class:`~oldman.model.Model` object to register.
-        :param short_name: class IRI or JSON-LD term referring to this class IRI.
         :param is_default: If `True`, sets the model as the default model. Defaults to `False`.
         """
         class_iri = model.class_iri
-        self._logger.info("Register model %s (%s)" % (short_name, class_iri))
+        self._logger.info("Register model %s (%s)" % (model.name, class_iri))
         if class_iri in self._model_classes:
             raise AlreadyAllocatedModelError(u"%s is already allocated to %s" %
                                              (class_iri, self._model_classes[class_iri]))
-        if short_name in self._model_names:
+        if model.name in self._model_names:
             raise AlreadyAllocatedModelError(u"%s is already allocated to %s" %
-                                             (short_name, self._model_names[short_name].class_iri))
+                                             (model.name, self._model_names[model.name].class_iri))
         sub_model_iris = set()
         # The new is not yet in this list
         for m in self._model_classes.values():
@@ -45,14 +44,14 @@ class ModelRegistry(object):
 
         self._model_descendants[class_iri] = sub_model_iris
         self._model_classes[class_iri] = model
-        self._model_names[short_name] = model
+        self._model_names[model.name] = model
         # Clears the cache
         self._type_set_cache = {}
 
         if is_default:
             if self._default_model_name is not None:
-                self._logger.warn(u"Default model name overwritten: %s" % short_name)
-            self._default_model_name = short_name
+                self._logger.warn(u"Default model name overwritten: %s" % model.name)
+            self._default_model_name = model.name
 
     def unregister(self, model):
         """Un-registers a :class:`~oldman.model.Model` object.

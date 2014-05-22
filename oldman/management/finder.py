@@ -46,7 +46,7 @@ class Finder(object):
         :param base_iri: base IRI of filtered resources. Defaults to `None`.
         :return: A generator of :class:`~oldman.resource.Resource` objects.
         """
-        if "id" in kwargs:
+        if kwargs.get("id") is not None:
             return self.get(**kwargs)
 
         elif base_iri is not None:
@@ -64,6 +64,8 @@ class Finder(object):
                 lines += u"?s a <%s> ." % type_iri
 
             for name, value in kwargs.iteritems():
+                if name == "id":
+                    continue
                 # May raise a OMAttributeAccessError
                 attr = _find_attribute(models, name)
                 value = kwargs[name]
@@ -120,6 +122,7 @@ class Finder(object):
             return resource
 
         elif base_iri is not None:
+            #TODO: fix it!!! Should also consider types.
             return self._get_from_base_iri(base_iri)
 
         elif len(kwargs) == 0:
@@ -135,7 +138,7 @@ class Finder(object):
             return None
 
         # First found
-        for resource in self.filter(**kwargs):
+        for resource in self.filter(types=types, base_iri=base_iri, **kwargs):
             return resource
 
         return None
