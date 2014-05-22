@@ -22,6 +22,9 @@ class ResourceManager(object):
     and retrieves :class:`~oldman.resource.Resource` objects.
     It also manages the resource cache.
 
+    Internally, it owns a :class:`~oldman.management.finder.Finder` object
+    and a :class:`~oldman.management.registry.ModelRegistry` object.
+
     :param schema_graph: :class:`rdflib.Graph` object containing all the schema triples. May be independent of
                          `union_graph`.
     :param data_graph: :class:`rdflib.Graph` object where all the non-schema resources are stored by default.
@@ -42,17 +45,17 @@ class ResourceManager(object):
         self._union_graph = union_graph if union_graph is not None else data_graph
         self._data_graph = data_graph
         self._methods = {}
-        self._registry = ModelRegistry(self, DEFAULT_MODEL_NAME)
+        self._registry = ModelRegistry()
         self._finder = Finder(self)
         self._logger = logging.getLogger(__name__)
 
         # Registered with the "None" key
         self._create_model(DEFAULT_MODEL_NAME, {u"@context": {}}, untyped=True,
-                           iri_prefix=u"http://localhost/.well-known/genid/default/")
+                           iri_prefix=u"http://localhost/.well-known/genid/default/", is_default=True)
 
     @property
     def data_graph(self):
-        """ :class:`rdflib.Graph` attribute where all the non-schema resources are stored by default."""
+        """:class:`rdflib.Graph` attribute where all the non-schema resources are stored by default."""
         return self._data_graph
 
     @property
@@ -64,7 +67,7 @@ class ResourceManager(object):
         return self._union_graph
 
     def declare_method(self, method, name, class_iri):
-        """Attach a method to the :class:`~oldman.resource.Resource` that are instances of a given RDFS class.
+        """Attaches a method to the :class:`~oldman.resource.Resource` objects that are instances of a given RDFS class.
 
         Like in Object-Oriented Programming, this method can be overwritten by attaching a homonymous
         method to a class that has an higher inheritance priority (such as a sub-class).
@@ -85,21 +88,23 @@ class ResourceManager(object):
         else:
             self._methods[class_iri] = {name: method}
 
-    def create_model(self, class_name, context, iri_generator=None, iri_prefix=None,
+    def create_model(self, class_name_or_iri, context, iri_generator=None, iri_prefix=None,
                      iri_fragment=None, incremental_iri=False):
-        """Create a :class:`~oldman.model.Model` object.
+        """Creates a :class:`~oldman.model.Model` object.
 
         To create it, they are three elements to consider:
-          1. Its class IRI which can be retrieved from `class_name`;
+
+          1. Its class IRI which can be retrieved from `class_name_or_iri`;
           2. Its JSON-LD context for mapping :class:`~oldman.attribute.OMAttribute` values to RDF triples;
           3. The :class:`~oldman.iri.IriGenerator` object that generates IRIs from new
              :class:`~oldman.resource.Resource` objects.
 
         The :class:`~oldman.iri.IriGenerator` object is either:
+
           * directly given: `iri_generator`;
           * created from the parameters `iri_prefix`, `iri_fragment` and `incremental_iri`.
 
-        :param class_name: Name of the class IRI as declared in the JSON-LD context.
+        :param class_name_or_iri: IRI or JSON-LD term of a RDFS class.
         :param context: `dict`, `list` or `IRI` that represents the JSON-LD context .
         :param iri_generator: :class:`~oldman.iri.IriGenerator` object. If given, other `iri_*` parameters are
                ignored.
@@ -110,12 +115,13 @@ class ResourceManager(object):
         :param incremental_iri: If `True` an :class:`~oldman.iri.IncrementalIriGenerator` is created instead of a
                :class:`~oldman.iri.RandomPrefixedIriGenerator`. Defaults to `False`.
                Has no effect if `iri_prefix` is not given.
+        :return: A new :class:`~oldman.model.Model` object.
         """
-        return self._create_model(class_name, context, iri_generator=iri_generator, iri_prefix=iri_prefix,
+        return self._create_model(class_name_or_iri, context, iri_generator=iri_generator, iri_prefix=iri_prefix,
                                   iri_fragment=iri_fragment, incremental_uri=incremental_iri)
 
-    def _create_model(self, class_name, context, iri_prefix=None, iri_fragment=None,
-                      iri_generator=None, untyped=False, incremental_uri=False):
+    def _create_model(self, class_name_or_iri, context, iri_prefix=None, iri_fragment=None,
+                      iri_generator=None, untyped=False, incremental_uri=False, is_default=False):
 
         # Only for the DefaultModel
         if untyped:
@@ -123,7 +129,7 @@ class ResourceManager(object):
             ancestry = ClassAncestry(class_iri, self._schema_graph)
             om_attributes = {}
         else:
-            class_iri = _extract_class_iri(class_name, context)
+            class_iri = _extract_class_iri(class_name_or_iri, context)
             ancestry = ClassAncestry(class_iri, self._schema_graph)
             om_attributes = self._attr_extractor.extract(class_iri, ancestry.bottom_up, context,
                                                          self._schema_graph)
@@ -141,37 +147,53 @@ class ResourceManager(object):
         methods = {}
         for m_dict in [self._methods.get(t, {}) for t in ancestry.top_down]:
             methods.update(m_dict)
-        model = Model(class_name, class_iri, om_attributes, context,
+        model = Model(class_name_or_iri, class_iri, om_attributes, context,
                       id_generator, ancestry.bottom_up, self, methods=methods)
-        self._registry.register(model, class_name)
+        self._registry.register(model, class_name_or_iri, is_default=is_default)
         return model
 
-    def new(self, **kwargs):
-        """
-            New resource
-        """
-        return Resource(self, **kwargs)
+    def new(self, id=None, types=None, base_iri=None, **kwargs):
+        """Creates a new :class:`~oldman.resource.Resource` object **without saving it** in the `data_graph`.
 
-    def create(self, **kwargs):
-        """
-            Creates a new resource and saves it
-        """
-        return self.new(**kwargs).save()
+        The `kwargs` dict can contains regular attribute key-values that will be assigned to
+        :class:`~oldman.attribute.OMAttribute` objects.
 
-    def get(self, id=None, base_iri=None, **kwargs):
-        """Get a resource """
-        return self._finder.get(id=id, base_iri=base_iri, **kwargs)
+        :param id: IRI of the new resource. Defaults to `None`.
+                   If not given, the IRI is generated by the IRI generator of the main model.
+        :param types: IRIs of RDFS classes the resource is instance of. Defaults to `None`.
+                      Note that these IRIs are used to find the models of the resource
+                      (see :func:`~oldman.management.manager.ResourceManager.find_models_and_types` for more details).
+        :param base_iri: base IRI that MAY be considered when generating an IRI for the new resource.
+                         Defaults to `None`. Ignored if `id` is given.
+        :return: A new :class:`~oldman.resource.Resource` object.
+        """
+        return Resource(self, id=id, types=types, base_iri=base_iri, **kwargs)
 
-    def filter(self, base_iri=None, **kwargs):
-        return self._finder.filter(base_iri=base_iri, **kwargs)
+    def create(self, id=None, types=None, base_iri=None, **kwargs):
+        """Creates a new resource and save it in the `data_graph`.
+
+        See :func:`~oldman.management.manager.ResourceManager.new` for more details.
+        """
+        return self.new(id=id, types=types, base_iri=base_iri, **kwargs).save()
+
+    def get(self, id=None, types=None, base_iri=None, **kwargs):
+        """See :func:`oldman.management.finder.Finder.get`."""
+        return self._finder.get(id=id, types=types, base_iri=base_iri, **kwargs)
+
+    def filter(self, types=None, base_iri=None, **kwargs):
+        """See :func:`oldman.management.finder.Finder.filter`."""
+        return self._finder.filter(types=types, base_iri=base_iri, **kwargs)
 
     def sparql_filter(self, query):
+        """See :func:`oldman.management.finder.Finder.sparql_filter`."""
         return self._finder.sparql_filter(query)
 
     def clear_resource_cache(self):
+        """See :func:`oldman.management.finder.Finder.clear_cache`."""
         self._finder.clear_cache()
 
     def find_models_and_types(self, type_set):
+        """See :func:`oldman.management.registry.ModelRegistry.find_models_and_types`."""
         return self._registry.find_models_and_types(type_set)
 
 

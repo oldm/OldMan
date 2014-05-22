@@ -18,7 +18,7 @@ class Resource(object):
 
     existence_query = u"ASK {?id ?p ?o .}"
 
-    def __init__(self, manager, is_new=True, base_iri=None, types=None, **kwargs):
+    def __init__(self, manager, id=None, types=None, base_iri=None, is_new=True, **kwargs):
         """
             Does not save (like Django)
         """
@@ -27,9 +27,9 @@ class Resource(object):
         main_model = self._models[0]
         self._manager = manager
 
-        if "id" in kwargs:
+        if id is not None:
             # Anticipated because used in __hash__
-            self._id = kwargs.pop("id")
+            self._id = id
             if is_new:
                 exist = bool(self._manager.union_graph.query(self.existence_query,
                                                              initBindings={'id': URIRef(self._id)}))

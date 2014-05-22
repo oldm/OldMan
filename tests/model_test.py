@@ -225,7 +225,9 @@ default_graph.namespace_manager.bind("cert", CERT)
 
 manager = ResourceManager(schema_graph, data_graph)
 # Model classes are generated here!
-lp_model = manager.create_model("LocalPerson", context, iri_prefix="http://localhost/persons/",
+#lp_name_or_iri = "LocalPerson"
+lp_name_or_iri = MY_VOC + "LocalPerson"
+lp_model = manager.create_model(lp_name_or_iri, context, iri_prefix="http://localhost/persons/",
                                iri_fragment="me")
 rsa_model = manager.create_model("LocalRSAPublicKey", context)
 gpg_model = manager.create_model("LocalGPGPublicKey", context)

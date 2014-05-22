@@ -1,31 +1,41 @@
 import logging
 from rdflib import RDF, URIRef
-from oldman.exception import AlreadyAllocatedModelError
+from oldman.exception import AlreadyAllocatedModelError, OMInternalError
 
 
 class ModelRegistry(object):
-    """
-        All model classes are registered here
+    """ A :class:`~oldman.management.registry.ModelRegistry` object registers
+        the :class:`~oldman.model.Model` objects.
+
+        Its main function is to find and order models from a set of class IRIs
+        (this ordering is crucial when creating new :class:`~oldman.resource.Resource` objects).
+        See :func:`~oldman.management.registry.ModelRegistry.find_models_and_types` for more details.
+
     """
 
-    def __init__(self, manager, default_model_name):
+    def __init__(self):
         self._model_classes = {}
         self._model_names = {}
-        self._manager = manager
-        self._default_model_name = default_model_name
+        self._default_model_name = None
         #Only IRIs in this dict
         self._model_descendants = {}
         self._type_set_cache = {}
         self._logger = logging.getLogger(__name__)
 
-    def register(self, model, short_name):
+    def register(self, model, short_name, is_default=False):
+        """Registers a :class:`~oldman.model.Model` object.
+
+        :param model: the :class:`~oldman.model.Model` object to register.
+        :param short_name: class IRI or JSON-LD term referring to this class IRI.
+        :param is_default: If `True`, sets the model as the default model. Defaults to `False`.
+        """
         class_iri = model.class_iri
         self._logger.info("Register model %s (%s)" % (short_name, class_iri))
         if class_iri in self._model_classes:
-            raise AlreadyAllocatedModelError("%s is already allocated to %s" %
+            raise AlreadyAllocatedModelError(u"%s is already allocated to %s" %
                                              (class_iri, self._model_classes[class_iri]))
         if short_name in self._model_names:
-            raise AlreadyAllocatedModelError("%s is already allocated to %s" %
+            raise AlreadyAllocatedModelError(u"%s is already allocated to %s" %
                                              (short_name, self._model_names[short_name].class_iri))
         sub_model_iris = set()
         # The new is not yet in this list
@@ -39,7 +49,16 @@ class ModelRegistry(object):
         # Clears the cache
         self._type_set_cache = {}
 
+        if is_default:
+            if self._default_model_name is not None:
+                self._logger.warn(u"Default model name overwritten: %s" % short_name)
+            self._default_model_name = short_name
+
     def unregister(self, model):
+        """Un-registers a :class:`~oldman.model.Model` object.
+
+        :param model: the :class:`~oldman.model.Model` object to remove from the registry.
+        """
         self._model_classes.pop(model.class_iri)
         self._model_descendants.pop(model.class_iri)
         self._model_names.pop(model.name)
@@ -47,10 +66,33 @@ class ModelRegistry(object):
         self._type_set_cache = {}
 
     def get_model(self, class_iri):
+        """Gets a :class:`~oldman.model.Model` object.
+
+        :param class_iri: IRI of a RDFS class
+        :return: A :class:`~oldman.model.Model` object or `None` if not found
+        """
         return self._model_classes.get(class_iri)
 
     def find_models_and_types(self, type_set):
+        """Finds the leaf models from a set of class IRIs and orders them.
+        Also returns an ordered list of the RDFS class IRIs that
+        come from `type_set` or were deduced from it.
+
+        Leaf model ordering is important because it determines:
+
+           1. the IRI generator to use (the one of the first model);
+           2. method inheritance priorities between leaf models.
+
+        Resulting orderings are cached.
+
+        :param type_set: Set of RDFS class IRIs.
+        :return: An ordered list of leaf :class:`~oldman.model.Model` objects
+                 and an ordered list of RDFS class IRIs.
+        """
         if len(type_set) == 0:
+            if self._default_model_name is None:
+                raise OMInternalError(u"No default model defined!")
+
             return [self._model_names[self._default_model_name]], []
 
         if isinstance(type_set, list):
@@ -89,9 +131,7 @@ class ModelRegistry(object):
         return self._sort_leaf_models(leaf_models)
 
     def _sort_leaf_models(self, leaf_models):
-        """
-            TODO: propose some vocabulary to give priorities
-        """
+        """TODO: propose some vocabulary to give priorities."""
         if len(leaf_models) > 1:
             self._logger.warn(u"Arbitrary order between leaf models %s" % [m.name for m in leaf_models])
         return leaf_models

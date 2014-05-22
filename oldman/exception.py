@@ -188,6 +188,11 @@ class OMHashIriError(OMAccessError):
     pass
 
 
+class OMSPARQLError(OMAccessError):
+    """ Invalid SPARQL query given """
+    pass
+
+
 class OMInternalError(OMError):
     """ Do not expect it """
     pass

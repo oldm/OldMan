@@ -3,6 +3,11 @@ from oldman.exception import OMInternalError
 
 
 class ClassAncestry(object):
+    """Ancestry of a given RDFS class.
+
+    :param child_class_iri: IRI of the child RDFS class.
+    :param schema_graph: :class:`rdflib.Graph` object contains all the schema triples.
+    """
     def __init__(self, child_class_iri, schema_graph):
         self._child_class_iri = child_class_iri
         if child_class_iri is None:
@@ -14,22 +19,27 @@ class ClassAncestry(object):
 
     @property
     def child(self):
+        """Child of the ancestry."""
         return self._child_class_iri
 
     @property
     def bottom_up(self):
-        """
-            Starting from the child
-        """
+        """Ancestry list starting from the child."""
         return self._bottom_up_list
 
     @property
     def top_down(self):
+        """Reverse of the `bottom_up` attribute."""
         chrono = list(self._bottom_up_list)
         chrono.reverse()
         return chrono
 
     def parents(self, class_iri):
+        """Finds the parents of a given class in the ancestry.
+
+        :param class_iri: IRI of the RDFS class.
+        :return: List of class IRIs
+        """
         return [parent for parent, _ in self._ancestry_dict.get(class_iri, [])]
 
 
@@ -39,7 +49,7 @@ def _extract_ancestry(class_iri, schema_graph):
         of a well-known class
     """
     ancestry_dict = {}
-    request = """
+    request = u"""
     SELECT ?class ?parent ?priority WHERE {
         ?child_class rdfs:subClassOf* ?class.
         ?class rdfs:subClassOf ?parent.
