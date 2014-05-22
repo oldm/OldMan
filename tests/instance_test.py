@@ -5,7 +5,7 @@
 
 from unittest import TestCase
 from rdflib import ConjunctiveGraph, URIRef
-from oldman import create_resource_manager, parse_graph_safely
+from oldman import ResourceManager, parse_graph_safely
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
@@ -85,13 +85,13 @@ def disclaim2(self):
     return new_disclaim
 
 
-manager = create_resource_manager(schema_graph, data_graph)
+manager = ResourceManager(schema_graph, data_graph)
 # Methods
-manager.add_method(square_value, "square_value", EXAMPLE + "GrandParentClass")
-manager.add_method(print_new_value, "print_new_value", EXAMPLE + "ChildClass")
+manager.declare_method(square_value, "square_value", EXAMPLE + "GrandParentClass")
+manager.declare_method(print_new_value, "print_new_value", EXAMPLE + "ChildClass")
 # Method overloading
-manager.add_method(disclaim1, "disclaim", EXAMPLE + "GrandParentClass")
-manager.add_method(disclaim2, "disclaim", EXAMPLE + "ParentClass")
+manager.declare_method(disclaim1, "disclaim", EXAMPLE + "GrandParentClass")
+manager.declare_method(disclaim2, "disclaim", EXAMPLE + "ParentClass")
 
 # ChildClass is generated before its ancestors!!
 child_prefix = "http://localhost/children/"

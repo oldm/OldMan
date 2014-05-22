@@ -22,7 +22,7 @@ class Resource(object):
         """
             Does not save (like Django)
         """
-        self._models, self._types = manager.model_registry.find_models_and_types(types)
+        self._models, self._types = manager.find_models_and_types(types)
         self._former_types = set(self._types) if not is_new else set()
         main_model = self._models[0]
         self._manager = manager
@@ -348,7 +348,7 @@ class Resource(object):
                                                         % (removed_types, self._id))
                 change = True
         if change:
-            self._models, types = self._manager.model_registry.find_models_and_types(new_types)
+            self._models, types = self._manager.find_models_and_types(new_types)
             self._change_types(types)
 
     def _change_types(self, new_types):

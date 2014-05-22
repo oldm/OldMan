@@ -1,9 +1,12 @@
 """
-    OldMan: Python OLDM
+    OldMan
+    ~~~~~~
+
+    Object Linked Data Mapper (OLDM)
 """
 
 from rdflib.plugin import register, Parser, Serializer
-from .management import create_resource_manager
+from .management.manager import ResourceManager
 from .utils.sparql import parse_graph_safely
 
 register('json-ld', Parser, 'rdflib_jsonld.parser', 'JsonLDParser')

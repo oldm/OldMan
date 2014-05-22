@@ -10,7 +10,7 @@ import json
 from decimal import Decimal
 from copy import copy
 from datetime import date, datetime, time
-from oldman import create_resource_manager, parse_graph_safely
+from oldman import ResourceManager, parse_graph_safely
 from oldman.exception import OMRequiredPropertyError, OMAttributeTypeCheckError
 
 default_graph = ConjunctiveGraph()
@@ -147,7 +147,7 @@ context = {
     }
 }
 
-manager = create_resource_manager(schema_graph, data_graph)
+manager = ResourceManager(schema_graph, data_graph)
 lc_model = manager.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
 default_list_en = ["w1", "w2"]
 

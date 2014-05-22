@@ -4,15 +4,29 @@
 
     RDF vocabulary specific to OldMan.
 
-    TODO: replace these URNs by URLs
+    TODO: replace these URNs by URLs.
+
+    .. admonition:: Parent model prioritization
+
+        In RDF, a class is often the child of multiple classes. When the code inherited
+        from these classes (common practise in Object-Oriented Programming) is conflicting,
+        arbitration is necessary.
+
+        In this library, we provide a RDF vocabulary to declare priorities for each parent
+        of a given child class. A priority statement is declared as follows: ::
+
+            ?cls <urn:oldman:model:ordering:hasPriority> [
+                <urn:oldman:model:ordering:class> ?parent1 ;
+                <urn:oldman:model:ordering:priority> 2
+            ].
+
+        By default, when no priority is declared for a pair (child, parent),
+        its priority value is set to 0.
 """
 
-#    ?cls <urn:oldman:model:ordering:hasPriority> [
-#        <urn:oldman:model:ordering:class> ?parent1 ;
-#        <urn:oldman:model:ordering:priority> 2
-#    ].
 MODEL_HAS_PRIORITY_IRI = "urn:oldman:model:ordering:hasPriority"
 MODEL_PRIORITY_CLASS_IRI = "urn:oldman:model:ordering:class"
 MODEL_PRIORITY_IRI = "urn:oldman:model:ordering:priority"
 
+#: Used to increment IRIs
 NEXT_NUMBER_IRI = "urn:oldman:nextNumber"

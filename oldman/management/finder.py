@@ -5,9 +5,18 @@ from rdflib.plugins.sparql.parser import ParseException
 from oldman.resource import Resource
 from oldman.utils.sparql import build_query_part
 from oldman.exception import OMSPARQLParseError, OMAttributeAccessError, OMClassInstanceError
+from oldman.exception import OMHashIriError, OMObjectNotFoundError
 
 
 class Finder(object):
+
+    base_uri_raw_query = """
+        SELECT DISTINCT ?uri
+        WHERE {
+            ?uri ?p ?o .
+            FILTER (REGEX(STR(?uri), CONCAT(?base, "#")) || (STR(?uri) = ?base) )
+         } """
+
     def __init__(self, manager):
         self._manager = manager
         self._cache = WeakValueDictionary()
@@ -19,16 +28,19 @@ class Finder(object):
         """ Clears its cache """
         self._cache.clear()
 
-    def filter(self, **kwargs):
+    def filter(self, base_iri=None, **kwargs):
         if "id" in kwargs:
             return self.get(**kwargs)
 
-        if len(kwargs) == 0:
+        elif base_iri is not None:
+            return self._filter_base_iri(base_iri)
+
+        elif len(kwargs) == 0:
             self._logger.warn(u"filter() called without parameter. Returns every resource of the union graph.")
             query = u"SELECT DISTINCT ?s WHERE { ?s ?p ?o }"
         else:
             type_set = set(kwargs.get("types", []))
-            models, _ = self._manager.model_registry.find_models_and_types(type_set)
+            models, _ = self._manager.find_models_and_types(type_set)
 
             lines = u""
             for name, value in kwargs.iteritems():
@@ -60,12 +72,12 @@ class Finder(object):
             raise OMSPARQLParseError(u"%s\n %s" % (query, e))
         return (self.get(id=unicode(r[0])) for r in results)
 
-    def get(self, id=None, **kwargs):
+    def get(self, id=None, base_iri=None, **kwargs):
         """
             When an id (IRI) is given, a Resource object is always returned.
             None is returned when no id has been given and no resource has been found.
         """
-        if id:
+        if id is not None:
             resource = self._get_by_id(id)
             types = set(kwargs.get("types", []))
             if not types.issubset(resource.types):
@@ -73,8 +85,12 @@ class Finder(object):
                 raise OMClassInstanceError("%s found, but is not instance of %s" % (id, missing_types))
             #TODO: warn that attributes should not be given with the id
             return resource
+
+        elif base_iri is not None:
+            return self._get_from_base_iri(base_iri)
+
         elif len(kwargs) == 0:
-            self._logger.warn(u"get() called without parameter. Returns the first resounce found in the union graph.")
+            self._logger.warn(u"get() called without parameter. Returns the first resource found in the union graph.")
             query = u"SELECT ?s WHERE { ?s ?p ?o } LIMIT 1"
             try:
                 results = self._manager.union_graph.query(query)
@@ -105,6 +121,26 @@ class Finder(object):
         resource = Resource.load_from_graph(self._manager, id, resource_graph, is_new=(len(resource_graph) == 0))
         self._cache[id] = resource
         return resource
+
+    def _filter_base_iri(self, base_iri):
+        if "#" in base_iri:
+            raise OMHashIriError(u"%s is not a base IRI" % base_iri)
+        query = self.base_uri_raw_query.replace(u"?base", u'"%s"' % base_iri)
+        # Generator
+        return (self.get(id=unicode(result[0])) for result in self._manager.union_graph.query(query))
+
+    def _get_from_base_iri(self, base_iri):
+        resources = list(self._filter_base_iri(base_iri))
+        if len(resources) == 0:
+            raise OMObjectNotFoundError(u"No resource with base iri %s" % base_iri)
+        elif len(resources) > 1:
+            for r in resources:
+                if r.id == base_iri:
+                    return r
+            # TODO: avoid such arbitrary selection
+            self._logger.warn(u"Multiple resources have the same base_uri: %s\n. "
+                              u"The first one is selected." % resources)
+        return resources[0]
 
 
 def find_attribute(models, name):

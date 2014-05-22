@@ -15,45 +15,41 @@ class CRUDController(object):
 
     def __init__(self, manager):
         self._manager = manager
-        self._registry = manager.model_registry
 
-    def get(self, base_uri, content_type="text/turtle"):
+    def get(self, base_iri, content_type="text/turtle"):
         """
             HTTP GET.
             May raise an ObjectNotFoundError
         """
-        obj_uri = self._registry.find_resource_from_base_uri(base_uri)
-        obj = self._manager.get(obj_uri)
+        resource = self._manager.get(base_iri=base_iri)
 
         if content_type in _JSON_TYPES:
-            return obj.to_json()
+            return resource.to_json()
         elif content_type in _JSON_LD_TYPES:
-            return obj.to_jsonld()
+            return resource.to_jsonld()
         # Try as a RDF mime-type (may not be supported)
         else:
-            return obj.to_rdf(content_type)
+            return resource.to_rdf(content_type)
 
-    def delete(self, base_uri):
-        for obj_iri in self._registry.find_resource_iris(base_uri):
-            obj = self._manager.get(id=obj_iri)
-            if obj is not None:
-                obj.delete()
+    def delete(self, base_iri):
+        for resource in self._manager.filter(base_iri=base_iri):
+            if resource is not None:
+                resource.delete()
 
-    def update(self, base_uri, new_document, content_type, allow_new_type=False, allow_type_removal=False):
+    def update(self, base_iri, new_document, content_type, allow_new_type=False, allow_type_removal=False):
         """
             A little bit more than an usual HTTP PUT: is able to give to some blank nodes of this representation.
         """
         graph = Graph()
         #TODO: manage parsing exceptions
         if content_type in _JSON_TYPES:
-            iri = self._registry.find_resource_from_base_uri(base_uri)
-            resource = self._manager.get(id=iri)
-            graph.parse(data=new_document, format="json-ld", publicID=base_uri,
+            resource = self._manager.get(base_iri=base_iri)
+            graph.parse(data=new_document, format="json-ld", publicID=base_iri,
                         context=resource.context)
         #RDF graph
         else:
-            graph.parse(data=new_document, format=content_type, publicID=base_uri)
-        self._update_graph(base_uri, graph, allow_new_type, allow_type_removal)
+            graph.parse(data=new_document, format=content_type, publicID=base_iri)
+        self._update_graph(base_iri, graph, allow_new_type, allow_type_removal)
 
     def _update_graph(self, base_iri, graph, allow_new_type, allow_type_removal):
         """
@@ -66,27 +62,28 @@ class CRUDController(object):
         other_subjects = subjects.difference(bnode_subjects)
 
         #Blank nodes (may obtain a regular IRI)
-        objs = self._create_anonymous_objects(base_iri, graph, bnode_subjects, allow_new_type, allow_type_removal)
+        resources = self._create_anonymous_objects(base_iri, graph, bnode_subjects, allow_new_type, allow_type_removal)
 
         #Objects with an existing IRI
-        objs += self._create_regular_resources(base_iri, graph, other_subjects, allow_new_type, allow_type_removal)
+        resources += self._create_regular_resources(base_iri, graph, other_subjects, allow_new_type, allow_type_removal)
 
         #Check validity before saving
         #May raise a LDEditError
-        for obj in objs:
-            obj.check_validity()
+        for r in resources:
+            r.check_validity()
 
         #TODO: improve it as a transaction (really necessary?)
-        for obj in objs:
-            obj.save()
+        for r in resources:
+            r.save()
 
         #Delete omitted resources
-        all_obj_iris = set(self._registry.find_resource_iris(base_iri))
-        obj_iris_to_remove = all_obj_iris.difference({obj.id for obj in objs})
-        for obj_iri in obj_iris_to_remove:
-            obj = self._manager.get(id=obj_iri)
-            if obj is not None:
-                obj.delete()
+        all_resource_iris = {r.id for r in self._manager.filter(base_iri=base_iri)}
+        resource_iris_to_remove = all_resource_iris.difference({r.id for r in resources})
+        for iri in resource_iris_to_remove:
+            # Cheap because already in the resource cache
+            r = self._manager.get(id=iri)
+            if r is not None:
+                r.delete()
 
     def _create_anonymous_objects(self, base_iri, graph, bnode_subjects, allow_new_type, allow_type_removal):
         resources = []
@@ -107,7 +104,7 @@ class CRUDController(object):
                 dependent_objs.append(resource)
 
             if (not resource.is_blank_node()) and resource.base_iri != base_iri:
-                raise OMDifferentBaseIRIError("%s is not the base IRI of %s" % (base_iri, resource.id))
+                raise OMDifferentBaseIRIError(u"%s is not the base IRI of %s" % (base_iri, resource.id))
 
         #When some Bnodes are interconnected
         for resource in dependent_objs:
@@ -120,13 +117,11 @@ class CRUDController(object):
         resources = []
         for iri in [unicode(s) for s in other_subjects]:
             if is_blank_node(iri):
-                raise OMForbiddenSkolemizedIRIError("Skolemized IRI like %s are not allowed when updating a resource."
+                raise OMForbiddenSkolemizedIRIError(u"Skolemized IRI like %s are not allowed when updating a resource."
                                                     % iri)
             elif iri.split("#")[0] != base_iri:
-                raise OMDifferentBaseIRIError("%s is not the base IRI of %s" % (base_iri, iri))
+                raise OMDifferentBaseIRIError(u"%s is not the base IRI of %s" % (base_iri, iri))
 
-            #types = extract_types(iri, graph)
-            #model = self._registry.select_model(self._registry.get_models(types))
             try:
                 resource = self._manager.get(id=iri)
                 resource.full_update_from_graph(graph, save=False, allow_new_type=allow_new_type,

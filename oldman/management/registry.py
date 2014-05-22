@@ -1,6 +1,5 @@
 import logging
 from rdflib import RDF, URIRef
-from oldman.exception import OMSchemaError, OMInternalError, OMObjectNotFoundError, OMHashIriError
 from oldman.exception import AlreadyAllocatedModelError
 
 
@@ -8,12 +7,6 @@ class ModelRegistry(object):
     """
         All model classes are registered here
     """
-    base_uri_raw_query = """
-        SELECT DISTINCT ?uri
-        WHERE {
-            ?uri ?p ?o .
-            FILTER (REGEX(STR(?uri), CONCAT(?base, "#")) || (STR(?uri) = ?base) )
-         } """
 
     def __init__(self, manager, default_model_name):
         self._model_classes = {}
@@ -102,23 +95,3 @@ class ModelRegistry(object):
         if len(leaf_models) > 1:
             self._logger.warn(u"Arbitrary order between leaf models %s" % [m.name for m in leaf_models])
         return leaf_models
-
-    def find_resource_iris(self, base_iri):
-        if "#" in base_iri:
-            raise OMHashIriError("%s is not a base IRI" % base_iri)
-        query = self.base_uri_raw_query.replace("?base", '"%s"' % base_iri)
-        return {unicode(u) for u, in self._manager.union_graph.query(query)}
-
-    def find_resource_from_base_uri(self, base_iri):
-        obj_iris = self.find_resource_iris(base_iri)
-        if len(obj_iris) == 0:
-            raise OMObjectNotFoundError("No object with base uri %s" % base_iri)
-        elif len(obj_iris) > 1:
-            if base_iri in obj_iris:
-                return base_iri
-            # Warning
-            import sys
-            sys.stderr.write("Multiple objects have the same base_uri: %s\n. "
-                             "The first one is selected." % obj_iris)
-            # TODO: avoid such arbitrary selection
-        return list(obj_iris)[0]

@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from rdflib import ConjunctiveGraph, URIRef, RDF, BNode, Graph
 
-from oldman import create_resource_manager
+from oldman import ResourceManager
 from oldman.iri import RandomFragmentIriGenerator
 from oldman.exception import OMRequiredBaseIRIError
 from oldman.rest.crud import CRUDController
@@ -27,7 +27,7 @@ context = {
     }
 }
 
-manager = create_resource_manager(schema_graph, data_graph)
+manager = ResourceManager(schema_graph, data_graph)
 crud_controller = CRUDController(manager)
 model = manager.create_model("MyClass", context, iri_generator=RandomFragmentIriGenerator())
 
@@ -61,10 +61,10 @@ class DatatypeTest(TestCase):
         g.add((BNode(), RDF.type, URIRef(EXAMPLE + "MyClass")))
         crud_controller.update(base_iri, g.serialize(format="turtle"), "turtle")
 
-        obj_iri = manager.model_registry.find_resource_from_base_uri(base_iri)
-        self.assertTrue(obj_iri is not None)
-        self.assertTrue(base_iri in obj_iri)
-        self.assertTrue('#' in obj_iri)
+        resource = manager.get(base_iri=base_iri)
+        self.assertTrue(resource is not None)
+        self.assertTrue(base_iri in resource.id)
+        self.assertTrue('#' in resource.id)
 
     def test_relative_iri(self):
         """
@@ -77,5 +77,5 @@ class DatatypeTest(TestCase):
         """
         base_iri = "http://example.org/doc3"
         crud_controller.update(base_iri, ttl, "turtle", allow_new_type=True)
-        obj_iri = manager.model_registry.find_resource_from_base_uri(base_iri)
-        self.assertEquals(obj_iri, base_iri + "#this")
+        resource = manager.get(base_iri=base_iri)
+        self.assertEquals(resource.id, base_iri + "#this")

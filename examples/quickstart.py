@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from rdflib import ConjunctiveGraph
-from oldman import create_resource_manager, parse_graph_safely
+from oldman import ResourceManager, parse_graph_safely
 
 #from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
 #default_graph = ConjunctiveGraph(SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
@@ -20,7 +20,7 @@ parse_graph_safely(schema_graph, "https://gitlab.bcgl.fr/benjamin/oldman/raw/mas
 context_iri = "https://gitlab.bcgl.fr/benjamin/oldman/raw/master/examples/quickstart_context.jsonld"
 
 #Resource manager (will generate the model objects)
-manager = create_resource_manager(schema_graph, data_graph)
+manager = ResourceManager(schema_graph, data_graph)
 
 #LocalPerson model
 lp_model = manager.create_model("LocalPerson", context_iri, iri_prefix="http://localhost/persons/",

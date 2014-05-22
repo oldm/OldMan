@@ -11,7 +11,9 @@ from oldman.property import PropertyType
 
 
 class OMAttributeExtractor(object):
-    """ Extracts LDAttribute objects for a given class.
+    """
+       Extracts :class:`oldman.attribute.OMAttribute` objects from the schema and the JSON-LD context.
+
 
         Extensible in two ways:
             1. Property extractors (new RDF vocabularies)

@@ -9,7 +9,7 @@ from rdflib import ConjunctiveGraph, Graph, URIRef, Literal, RDF, XSD
 from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
 from rdflib.namespace import FOAF
 
-from oldman import create_resource_manager, parse_graph_safely
+from oldman import ResourceManager, parse_graph_safely
 from oldman.attribute import OMAttributeTypeCheckError, OMRequiredPropertyError
 from oldman.exception import OMClassInstanceError, OMAttributeAccessError, OMUniquenessError
 from oldman.exception import OMWrongResourceError, OMObjectNotFoundError, OMHashIriError, OMEditError
@@ -223,7 +223,7 @@ default_graph.namespace_manager.bind("wot", WOT)
 default_graph.namespace_manager.bind("rel", REL)
 default_graph.namespace_manager.bind("cert", CERT)
 
-manager = create_resource_manager(schema_graph, data_graph)
+manager = ResourceManager(schema_graph, data_graph)
 # Model classes are generated here!
 lp_model = manager.create_model("LocalPerson", context, iri_prefix="http://localhost/persons/",
                                iri_fragment="me")
@@ -942,8 +942,8 @@ class ModelTest(TestCase):
         doc = json.loads(crud_controller.get(doc_iri, "json"))
         self.assertEquals(doc["id"], doc_iri)
 
-        obj_iris = manager.model_registry.find_resource_iris(doc_iri)
-        self.assertEquals({bob_iri, doc_iri}, obj_iris)
+        resources = manager.filter(base_iri=doc_iri)
+        self.assertEquals({bob_iri, doc_iri}, {r.id for r in resources})
 
     def test_bob_controller_delete(self):
         ask_bob = """ASK {?x foaf:name "%s"^^xsd:string }""" % bob_name

@@ -18,8 +18,6 @@ class Model(object):
         self._manager = manager
         self._methods = methods if methods else {}
 
-        manager.model_registry.register(self, name)
-
     @property
     def name(self):
         return self._name

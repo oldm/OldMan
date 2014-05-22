@@ -7,7 +7,7 @@ from unittest import TestCase
 from os import path
 from rdflib import ConjunctiveGraph, URIRef, Literal, Graph, XSD
 import json
-from oldman import create_resource_manager, parse_graph_safely
+from oldman import ResourceManager, parse_graph_safely
 from oldman.exception import OMPropertyDefError, OMReadOnlyAttributeError
 
 default_graph = ConjunctiveGraph()
@@ -87,7 +87,7 @@ context = {
     }
 }
 
-manager = create_resource_manager(schema_graph, data_graph)
+manager = ResourceManager(schema_graph, data_graph)
 lc_model = manager.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
 
 
