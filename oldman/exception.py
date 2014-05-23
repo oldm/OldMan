@@ -161,8 +161,8 @@ class OMAccessError(OMUserError):
 
 
 class OMAttributeAccessError(OMAccessError):
-    """
-        When such an attribute does not exist (is not supported)
+    """When such an attribute cannot be identified
+        (is not supported or no model has been found).
     """
     pass
 
@@ -182,14 +182,12 @@ class OMObjectNotFoundError(OMAccessError):
 
 
 class OMHashIriError(OMAccessError):
-    """
-        A hash IRI has been given instead of a base IRI
-    """
+    """A hash IRI has been given instead of a base IRI."""
     pass
 
 
 class OMSPARQLError(OMAccessError):
-    """ Invalid SPARQL query given """
+    """Invalid SPARQL query given."""
     pass
 
 

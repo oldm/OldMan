@@ -166,6 +166,10 @@ class ResourceManager(object):
                          Defaults to `None`. Ignored if `id` is given.
         :return: A new :class:`~oldman.resource.Resource` object.
         """
+        if (types is None or len(types) == 0) and len(kwargs) == 0:
+            name = id if id is not None else ""
+            self._logger.info(u"""New resource %s has no type nor attribute.
+            As such, nothing is stored in the data graph.""" % name)
         return Resource(self, id=id, types=types, base_iri=base_iri, **kwargs)
 
     def create(self, id=None, types=None, base_iri=None, **kwargs):

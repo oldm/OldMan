@@ -275,8 +275,8 @@ def create_alice():
     return lp_model.create(name=alice_name, mboxes={alice_mail}, short_bio_en=alice_bio_en)
 
 
-def create_john():
-    return lp_model.create(name=john_name, mboxes={john_mail}, short_bio_en=john_bio_en)
+def create_john(id=None):
+    return lp_model.create(id=id, name=john_name, mboxes={john_mail}, short_bio_en=john_bio_en)
 
 
 def create_rsa_key():

@@ -88,7 +88,7 @@ class ModelRegistry(object):
         :return: An ordered list of leaf :class:`~oldman.model.Model` objects
                  and an ordered list of RDFS class IRIs.
         """
-        if len(type_set) == 0:
+        if type_set is None or len(type_set) == 0:
             if self._default_model_name is None:
                 raise OMInternalError(u"No default model defined!")
 

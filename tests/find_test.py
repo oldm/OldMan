@@ -84,3 +84,29 @@ class FindTest(unittest.TestCase):
 
         bob = create_bob()
         self.assertEquals({r.id for r in manager.filter()}, {alice.id, bob.id})
+
+    def test_filter_base_iri_types_and_names(self):
+        bob = create_bob()
+        doc_iri = bob.base_iri
+        alice = lp_model.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
+                                short_bio_en=alice_bio_en)
+        key = gpg_model.create(id=(doc_iri + "#key"), fingerprint=gpg_fingerprint, hex_id=gpg_hex_id)
+        create_john(id=u"http://localhost/john#me")
+
+        self.assertEquals({bob.id, alice.id, key.id}, {r.id for r in manager.filter(base_iri=doc_iri)})
+        self.assertEquals({bob.id, alice.id}, {r.id for r in manager.filter(base_iri=doc_iri,
+                                                                            types=[MY_VOC + "LocalPerson"])})
+        # Missing type (name is thus ambiguous)
+        with self.assertRaises(OMAttributeAccessError):
+            manager.filter(base_iri=doc_iri, name=alice_name)
+        self.assertEquals({alice.id}, {r.id for r in lp_model.filter(base_iri=doc_iri, name=alice_name)})
+
+    def test_get_base_iri_types_and_names(self):
+        bob = create_bob()
+        doc_iri = bob.base_iri
+        key = gpg_model.create(id=(doc_iri + "#key"), fingerprint=gpg_fingerprint, hex_id=gpg_hex_id)
+        document = manager.create(id=doc_iri, types=[str(FOAF + "Document")])
+
+        self.assertEquals(document.id, manager.get(base_iri=doc_iri).id)
+        self.assertEquals(bob.id, manager.get(base_iri=doc_iri, types=[MY_VOC + "LocalPerson"]).id)
+        self.assertEquals(key.id, manager.get(base_iri=doc_iri, types=[MY_VOC + "LocalGPGPublicKey"]).id)

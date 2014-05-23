@@ -238,12 +238,10 @@ class BasicEditingTest(unittest.TestCase):
     def test_set_validation(self):
         with self.assertRaises(OMAttributeTypeCheckError):
             # Mboxes should be a set
-            lp_model.create(name="Lola", mboxes="lola@example.org",
-                                       short_bio_en="Will not exist.")
+            lp_model.create(name="Lola", mboxes="lola@example.org", short_bio_en="Will not exist.")
         with self.assertRaises(OMAttributeTypeCheckError):
             # Mboxes should be a set not a list
-            lp_model.create(name="Lola", mboxes=["lola@example.org"],
-                                       short_bio_en="Will not exist.")
+            lp_model.create(name="Lola", mboxes=["lola@example.org"], short_bio_en="Will not exist.")
 
     def test_gpg_key(self):
         bob = create_bob()

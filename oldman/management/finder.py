@@ -46,33 +46,41 @@ class Finder(object):
         :param base_iri: base IRI of filtered resources. Defaults to `None`.
         :return: A generator of :class:`~oldman.resource.Resource` objects.
         """
-        if kwargs.get("id") is not None:
-            return self.get(**kwargs)
+        id = kwargs.pop("id") if "id" in kwargs else None
+        type_iris = types if types is not None else []
+        if id is not None:
+            return self.get(id=id, types=types, base_iri=base_iri, **kwargs)
 
-        elif base_iri is not None:
-            return self._filter_base_iri(base_iri)
-
-        elif len(kwargs) == 0:
-            self._logger.warn(u"filter() called without parameter. Returns every resource of the union graph.")
-            query = u"SELECT DISTINCT ?s WHERE { ?s ?p ?o }"
+        if len(type_iris) == 0 and len(kwargs) > 0:
+            raise OMAttributeAccessError(u"No type given in filter() so attributes %s are ambiguous."
+                                         % kwargs.keys())
+        elif len(type_iris) == 0 and len(kwargs) == 0:
+            if base_iri is None:
+                self._logger.warn(u"filter() called without parameter. Returns every resource of the union graph.")
+            lines = u"?s ?p ?o . \n"
         else:
             type_set = set(types) if types is not None else set()
             models, _ = self._manager.find_models_and_types(type_set)
 
             lines = u""
-            for type_iri in types:
-                lines += u"?s a <%s> ." % type_iri
+            for type_iri in type_iris:
+                lines += u"?s a <%s> .\n" % type_iri
 
             for name, value in kwargs.iteritems():
-                if name == "id":
-                    continue
                 # May raise a OMAttributeAccessError
                 attr = _find_attribute(models, name)
                 value = kwargs[name]
                 if value:
                     lines += attr.serialize_values_into_lines(value)
 
-            query = build_query_part(u"SELECT ?s WHERE", u"?s", lines)
+        if base_iri is not None:
+            if "#" in base_iri:
+                raise OMHashIriError(u"%s is not a base IRI" % base_iri)
+            lines += u"""FILTER (REGEX(STR(?s), CONCAT(?base, "#")) || (STR(?s) = ?base) )""".replace(
+                u"?base", u'"%s"' % base_iri)
+
+        query = build_query_part(u"SELECT DISTINCT ?s WHERE", u"?s", lines)
+        self._logger.debug(u"Filter query: %s" % query)
         try:
             results = self._manager.union_graph.query(query)
         except ParseException as e:
@@ -118,14 +126,11 @@ class Finder(object):
             if not types.issubset(resource.types):
                 missing_types = types.difference(resource.types)
                 raise OMClassInstanceError("%s found, but is not instance of %s" % (id, missing_types))
-            #TODO: warn that attributes should not be given with the id
+            if len(kwargs) > 0:
+                self._logger.warn("get(): id given so attributes %s are just ignored" % kwargs.keys())
             return resource
 
-        elif base_iri is not None:
-            #TODO: fix it!!! Should also consider types.
-            return self._get_from_base_iri(base_iri)
-
-        elif len(kwargs) == 0:
+        elif base_iri is None and len(kwargs) == 0:
             self._logger.warn(u"get() called without parameter. Returns the first resource found in the union graph.")
             query = u"SELECT ?s WHERE { ?s ?p ?o } LIMIT 1"
             try:
@@ -137,8 +142,12 @@ class Finder(object):
             # If no resource in the union graph
             return None
 
+        resources = self.filter(types=types, base_iri=base_iri, **kwargs)
+        if base_iri is not None:
+            return self._select_resource_from_base_iri(base_iri, list(resources))
+
         # First found
-        for resource in self.filter(types=types, base_iri=base_iri, **kwargs):
+        for resource in resources:
             return resource
 
         return None
@@ -158,15 +167,7 @@ class Finder(object):
         self._cache[id] = resource
         return resource
 
-    def _filter_base_iri(self, base_iri):
-        if "#" in base_iri:
-            raise OMHashIriError(u"%s is not a base IRI" % base_iri)
-        query = self._base_uri_raw_query.replace(u"?base", u'"%s"' % base_iri)
-        # Generator
-        return (self.get(id=unicode(result[0])) for result in self._manager.union_graph.query(query))
-
-    def _get_from_base_iri(self, base_iri):
-        resources = list(self._filter_base_iri(base_iri))
+    def _select_resource_from_base_iri(self, base_iri, resources):
         if len(resources) == 0:
             raise OMObjectNotFoundError(u"No resource with base iri %s" % base_iri)
         elif len(resources) > 1:
