@@ -16,13 +16,6 @@ class Finder(object):
                        It gives access to RDF graphs.
     """
 
-    _base_uri_raw_query = u"""
-        SELECT DISTINCT ?uri
-        WHERE {
-            ?uri ?p ?o .
-            FILTER (REGEX(STR(?uri), CONCAT(?base, "#")) || (STR(?uri) = ?base) )
-         } """
-
     def __init__(self, manager):
         self._manager = manager
         self._cache = WeakValueDictionary()
@@ -125,9 +118,9 @@ class Finder(object):
             resource = self._get_by_id(id)
             if not types.issubset(resource.types):
                 missing_types = types.difference(resource.types)
-                raise OMClassInstanceError("%s found, but is not instance of %s" % (id, missing_types))
+                raise OMClassInstanceError(u"%s found, but is not instance of %s" % (id, missing_types))
             if len(kwargs) > 0:
-                self._logger.warn("get(): id given so attributes %s are just ignored" % kwargs.keys())
+                self._logger.warn(u"get(): id given so attributes %s are just ignored" % kwargs.keys())
             return resource
 
         elif base_iri is None and len(kwargs) == 0:
@@ -155,7 +148,7 @@ class Finder(object):
     def _get_by_id(self, id):
         resource = self._cache.get(id)
         if resource:
-            self._logger.debug("%s found in the cache" % resource)
+            self._logger.debug(u"%s found in the cache" % resource)
             return resource
         resource_graph = Graph()
         iri = URIRef(id)
