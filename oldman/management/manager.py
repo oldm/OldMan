@@ -197,9 +197,7 @@ class ResourceManager(object):
 
 
 def _extract_class_iri(class_name, context):
-    """
-        Extracts the class URI as the type of a blank node
-    """
+    """Extracts the class IRI as the type of a blank node."""
     g = Graph().parse(data=json.dumps({u"@type": class_name}),
                       context=context, format="json-ld")
     class_iri = unicode(g.objects().next())
