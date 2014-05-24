@@ -12,7 +12,7 @@ setup(name="OldMan",
       install_requires=['rdflib',
                         'validate_email',
                         'enum34',
-                        #'ast'
+                        'dogpile.cache'
       ],
       license="BSD",
       classifiers=[

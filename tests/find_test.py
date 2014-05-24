@@ -21,17 +21,14 @@ class FindTest(unittest.TestCase):
         self.assertEquals(bobs[0].name, bob_name)
         self.assertNotEquals(bobs[0].mboxes, bobs[1].mboxes)
 
-        bobs2 = set(lp_model.filter(name=bob_name,
-                                               # mboxes is NOT REQUIRED to be exhaustive
-                                               mboxes={bob_email2}))
+        # mboxes is NOT REQUIRED to be exhaustive
+        bobs2 = {r.id for r in lp_model.filter(name=bob_name, mboxes={bob_email2})}
         self.assertEquals(len(bobs2), 1)
-        bobs3 = set(lp_model.filter(name=bob_name,
-                                               mboxes={bob_email1, bob_email2}))
+        bobs3 = {r.id for r in lp_model.filter(name=bob_name, mboxes={bob_email1, bob_email2})}
         self.assertEquals(bobs2, bobs3)
 
         # Nothing
-        bobs4 = list(lp_model.filter(name=bob_name,
-                                                mboxes={bob_email1, bob_email2, bob2_mail}))
+        bobs4 = {r.id for r in lp_model.filter(name=bob_name, mboxes={bob_email1, bob_email2, bob2_mail})}
         self.assertEquals(len(bobs4), 0)
 
     def test_wrong_filter(self):

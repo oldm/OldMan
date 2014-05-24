@@ -36,16 +36,18 @@ class ResourceManager(object):
                             will extract :class:`~oldman.attribute.OMAttribute` for generating
                             new :class:`~oldman.model.Model` objects.
                             Defaults to a new instance of :class:`~oldman.parsing.attribute.OMAttributeExtractor`.
+    :param cache_region: TODO: describe it!
     """
 
-    def __init__(self, schema_graph, data_graph, union_graph=None, attr_extractor=None):
+    def __init__(self, schema_graph, data_graph, union_graph=None, attr_extractor=None,
+                 cache_region=None):
         self._attr_extractor = attr_extractor if attr_extractor is not None else OMAttributeExtractor()
         self._schema_graph = schema_graph
         self._union_graph = union_graph if union_graph is not None else data_graph
         self._data_graph = data_graph
         self._methods = {}
         self._registry = ModelRegistry()
-        self._finder = Finder(self)
+        self._finder = Finder(self, cache_region)
         self._logger = logging.getLogger(__name__)
 
         # Registered with the "None" key
@@ -191,9 +193,9 @@ class ResourceManager(object):
         """See :func:`oldman.management.finder.Finder.sparql_filter`."""
         return self._finder.sparql_filter(query)
 
-    def clear_resource_cache(self):
+    def invalidate_resource_cache(self):
         """See :func:`oldman.management.finder.Finder.clear_cache`."""
-        self._finder.clear_cache()
+        self._finder.invalidate_cache()
 
     def find_models_and_types(self, type_set):
         """See :func:`oldman.management.registry.ModelRegistry.find_models_and_types`."""

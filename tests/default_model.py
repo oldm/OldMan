@@ -1,7 +1,7 @@
 from os import path
 import json
 import logging.config
-
+from dogpile.cache import make_region
 from rdflib import ConjunctiveGraph, Graph, URIRef, Literal, RDF, XSD
 from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
 from rdflib.namespace import FOAF
@@ -220,12 +220,16 @@ default_graph.namespace_manager.bind("wot", WOT)
 default_graph.namespace_manager.bind("rel", REL)
 default_graph.namespace_manager.bind("cert", CERT)
 
-manager = ResourceManager(schema_graph, data_graph)
+# Cache
+cache_region = None
+#cache_region = make_region().configure('dogpile.cache.memory_pickle')
+
+manager = ResourceManager(schema_graph, data_graph, cache_region=cache_region)
 # Model classes are generated here!
 #lp_name_or_iri = "LocalPerson"
 lp_name_or_iri = MY_VOC + "LocalPerson"
 lp_model = manager.create_model(lp_name_or_iri, context, iri_prefix="http://localhost/persons/",
-                               iri_fragment="me")
+                                iri_fragment="me")
 rsa_model = manager.create_model("LocalRSAPublicKey", context)
 gpg_model = manager.create_model("LocalGPGPublicKey", context)
 
@@ -263,7 +267,7 @@ ask_modulus = """ASK {?x cert:modulus ?y }"""
 def tear_down():
     """ Clears the data graph """
     default_graph.update("CLEAR GRAPH <%s>" % data_graph.identifier)
-    manager.clear_resource_cache()
+    manager.invalidate_resource_cache()
 
 
 def create_bob():

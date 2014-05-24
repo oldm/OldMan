@@ -96,7 +96,7 @@ class PropertyTest(TestCase):
     def tearDown(self):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
-        manager.clear_resource_cache()
+        manager.invalidate_resource_cache()
 
     def test_read_and_write_only(self):
         with self.assertRaises(OMPropertyDefError):

@@ -21,7 +21,7 @@ class UpdateDeleteTest(TestCase):
             data_graph.add((jason_uri, RDF.type, URIRef(class_iri)))
 
         # Mboxes is still missing
-        manager.clear_resource_cache()
+        manager.invalidate_resource_cache()
         jason = lp_model.get(id=str(jason_uri))
         self.assertFalse(jason.is_valid())
 
@@ -33,7 +33,7 @@ class UpdateDeleteTest(TestCase):
                          context=context, format="json-ld")
 
         # Clear the cache (out-of-band update)
-        manager.clear_resource_cache()
+        manager.invalidate_resource_cache()
         jason = lp_model.get(id=jason_uri)
         self.assertEquals(jason.mboxes, mboxes)
         self.assertTrue(jason.is_valid())
@@ -229,8 +229,8 @@ class UpdateDeleteTest(TestCase):
             alice.full_update_from_graph(g2)
         alice.full_update_from_graph(g2, allow_new_type=True)
 
-        del alice
-        manager.clear_resource_cache()
+        # If any cache
+        manager.invalidate_resource_cache()
         alice = lp_model.get(id=alice_iri)
         self.assertEquals(set(alice.types), set(lp_model.ancestry_iris + additional_types))
 
@@ -238,7 +238,7 @@ class UpdateDeleteTest(TestCase):
         with self.assertRaises(OMUnauthorizedTypeChangeError):
             alice.full_update_from_graph(g1)
         alice.full_update_from_graph(g1, allow_type_removal=True)
-        del alice
-        manager.clear_resource_cache()
+        # If any cache
+        manager.invalidate_resource_cache()
         alice = lp_model.get(id=alice_iri)
         self.assertEquals(set(alice.types), set(lp_model.ancestry_iris))

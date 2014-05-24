@@ -1,4 +1,3 @@
-from weakref import WeakValueDictionary
 import logging
 from rdflib import URIRef, Graph
 from rdflib.plugins.sparql.parser import ParseException
@@ -16,16 +15,15 @@ class Finder(object):
                        It gives access to RDF graphs.
     """
 
-    def __init__(self, manager):
+    def __init__(self, manager, cache_region=None):
         self._manager = manager
-        self._cache = WeakValueDictionary()
-        # if class_iri:
-        #     self._check_type_request = u"ASK {?s a <%s> }" % class_iri
+        self._cache = cache_region
         self._logger = logging.getLogger(__name__)
 
-    def clear_cache(self):
-        """Clears the cache of :class:`~oldman.resource.Resource` objects."""
-        self._cache.clear()
+    def invalidate_cache(self):
+        """Invalidates the cache (if any) of :class:`~oldman.resource.Resource` objects."""
+        if self._cache:
+            self._cache.invalidate()
 
     def filter(self, types=None, base_iri=None, **kwargs):
         """Finds the :class:`~oldman.resource.Resource` objects matching the given criteria.
@@ -49,7 +47,7 @@ class Finder(object):
                                          % kwargs.keys())
         elif len(type_iris) == 0 and len(kwargs) == 0:
             if base_iri is None:
-                self._logger.warn(u"filter() called without parameter. Returns every resource of the union graph.")
+                self._logger.warn(u"filter() called without parameter. Returns every resource in the union graph.")
             lines = u"?s ?p ?o . \n"
         else:
             type_set = set(types) if types is not None else set()
@@ -146,10 +144,13 @@ class Finder(object):
         return None
 
     def _get_by_id(self, id):
-        resource = self._cache.get(id)
-        if resource:
-            self._logger.debug(u"%s found in the cache" % resource)
-            return resource
+
+        if self._cache:
+            raise NotImplementedError("TODO: load resource from the cache")
+            #resource = self._cache.get(id)
+            # if resource:
+            #     self._logger.debug(u"%s found in the cache" % resource)
+            #     return resource
         resource_graph = Graph()
         iri = URIRef(id)
         resource_graph += self._manager.union_graph.triples((iri, None, None))
@@ -157,7 +158,9 @@ class Finder(object):
 
     def _new_resource_object(self, id, resource_graph):
         resource = Resource.load_from_graph(self._manager, id, resource_graph, is_new=(len(resource_graph) == 0))
-        self._cache[id] = resource
+        if self._cache:
+            raise NotImplementedError("TODO: continue")
+            #self._cache.set(id, resource)
         return resource
 
     def _select_resource_from_base_iri(self, base_iri, resources):
