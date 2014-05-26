@@ -9,14 +9,17 @@ from types import GeneratorType
 from rdflib import URIRef, Graph, RDF
 from rdflib.plugins.sparql.parser import ParseException
 from .property import PropertyType
-from .exception import OMSPARQLParseError, OMUnauthorizedTypeChangeError
+from .exception import OMSPARQLParseError, OMUnauthorizedTypeChangeError, OMInternalError
 from .exception import OMAttributeAccessError, OMUniquenessError, OMWrongResourceError, OMEditError
 from oldman.utils.sparql import build_update_query_part
 
 
 class Resource(object):
 
-    existence_query = u"ASK {?id ?p ?o .}"
+    _existence_query = u"ASK {?id ?p ?o .}"
+    _special_attribute_names = ["_models", "_id", "_types", "_is_blank_node", "_manager",
+                                "_former_types", "_logger"]
+    _pickle_attribute_names = ["_id", '_types']
 
     def __init__(self, manager, id=None, types=None, base_iri=None, is_new=True, **kwargs):
         """
@@ -31,16 +34,20 @@ class Resource(object):
             # Anticipated because used in __hash__
             self._id = id
             if is_new:
-                exist = bool(self._manager.union_graph.query(self.existence_query,
+                exist = bool(self._manager.union_graph.query(self._existence_query,
                                                              initBindings={'id': URIRef(self._id)}))
                 if exist:
                     raise OMUniquenessError("Object %s already exist" % self._id)
         else:
             self._id = main_model.generate_iri(base_iri=base_iri)
+        self._init_non_persistent_attributes(self._id)
 
         for k, v in kwargs.iteritems():
             setattr(self, k, v)
-        self._is_blank_node = is_blank_node(self._id)
+
+    def _init_non_persistent_attributes(self, id):
+        self._logger = logging.getLogger(__name__)
+        self._is_blank_node = is_blank_node(id)
 
     @classmethod
     def load_from_graph(cls, manager, id, subgraph, is_new=True):
@@ -63,8 +70,7 @@ class Resource(object):
         raise AttributeError("%s has not attribute %s" % (self, name))
 
     def __setattr__(self, name, value):
-        if name in ["_models", "_id", "_types", "_is_blank_node", "_manager",
-                    "_former_types"]:
+        if name in self._special_attribute_names:
             self.__dict__[name] = value
             return
 
@@ -75,6 +81,59 @@ class Resource(object):
                 found = True
         if not found:
             raise AttributeError("%s has not attribute %s" % (self, name))
+
+    def __getstate__(self):
+        """ Pickling"""
+        state = {name: getattr(self, name) for name in self._pickle_attribute_names}
+        state["manager_name"] = self._manager.name
+
+        # Reversed order so that important models can
+        # overwrite values
+        reversed_models = self._models
+        reversed_models.reverse()
+        for model in reversed_models:
+            for name, attr in model.om_attributes.iteritems():
+                value = attr.get(self, self._manager)
+                if isinstance(value, GeneratorType):
+                    if attr.container == "@list":
+                        value = list(value)
+                    else:
+                        value = set(value)
+                if value is not None:
+                    state[name] = value
+        return state
+
+    def __setstate__(self, state):
+        """Unpickling"""
+        required_fields = self._pickle_attribute_names + ["manager_name"]
+        for name in required_fields:
+            if name not in state:
+                #TODO: find a better exception (due to the cache)
+                raise OMInternalError("Required field %s is missing in the cached state" % name)
+
+        self._id = state["_id"]
+        self._init_non_persistent_attributes(self._id)
+
+        # Manager
+        from oldman import ResourceManager
+        self._manager = ResourceManager.get_manager(state["manager_name"])
+
+        # Models and types
+        self._models, self._types = self._manager.find_models_and_types(state["_types"])
+        self._former_types = set(self._types)
+
+        # Attributes (Python attributes or OMAttributes)
+        for name, value in state.iteritems():
+            if name in ["manager_name", "_id", "_types"]:
+                continue
+            elif name in self._special_attribute_names:
+                setattr(self, name, value)
+            # OMAttributes
+            else:
+                attribute = self._get_om_attribute(name)
+                attribute.set(self, value)
+                # Clears former values (allows modification)
+                attribute.pop_former_value(self)
 
     @property
     def types(self):
@@ -125,6 +184,10 @@ class Resource(object):
         for attr in attributes:
             attr.check_validity(self, is_end_user)
         self._save(attributes)
+
+        # Cache
+        self._manager.resource_cache.set_resource(self)
+
         return self
 
     def _save(self, attributes):
@@ -165,8 +228,7 @@ class Resource(object):
             query += u" ;"
         query += build_update_query_part(u"INSERT DATA", self._id, new_lines)
         if len(query) > 0:
-            logger = logging.getLogger(__name__)
-            logger.debug("Query: %s" % query)
+            self._logger.debug("Query: %s" % query)
             try:
                 self._manager.data_graph.update(query)
             except ParseException as e:
@@ -264,12 +326,19 @@ class Resource(object):
                     if isinstance(objs, (list, set, GeneratorType)):
                         for obj in objs:
                             if should_delete_object(obj):
+                                self._logger.debug(u"%s deleted with %s" % (obj.id, self._id))
                                 obj.delete()
+                            else:
+                                self._logger.debug(u"%s not deleted with %s" % (obj.id, self._id))
                     elif should_delete_object(objs):
                         objs.delete()
 
             setattr(self, attr.name, None)
+
+        #Types
+        self._change_types(set())
         self._save(attributes)
+        self._manager.resource_cache.remove_resource(self)
 
     def full_update(self, full_dict, is_end_user=True, allow_new_type=False, allow_type_removal=False,
                     save=True):
@@ -356,6 +425,15 @@ class Resource(object):
             self._former_types = set(self._types)
         self._types = new_types
 
+    def _get_om_attribute(self, name):
+        for model in self._models:
+            if name in model.om_attributes:
+                return model.access_attribute(name)
+        self._logger.debug(u"Models: %s, types: %s" % ([m.name for m in self._models], self._types))
+        #self._logger.debug(u"%s" % self._manager._registry.model_names)
+        raise AttributeError(u"%s has not attribute %s" % (self, name))
+
+
 def is_blank_node(iri):
     # External skolemized blank nodes are not considered as blank nodes
     id_result = urlparse(iri)
@@ -364,6 +442,6 @@ def is_blank_node(iri):
 
 def should_delete_object(obj):
     """
-        TODO: make sure these blank nodes are not referenced somewhere else
+    TODO: make sure these blank nodes are not referenced somewhere else
     """
     return obj is not None and obj.is_blank_node()

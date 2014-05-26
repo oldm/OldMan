@@ -3,6 +3,9 @@ from default_model import *
 
 
 class CrudTest(unittest.TestCase):
+    def setUp(self):
+        set_up()
+
     def tearDown(self):
         tear_down()
 
@@ -135,7 +138,7 @@ class CrudTest(unittest.TestCase):
         jsld_dump = alice.to_jsonld()
 
         # If any cache
-        manager.invalidate_resource_cache()
+        manager.resource_cache.invalidate_cache()
         self.assertEquals(unicode(data_graph.value(alice_ref, FOAF.name)), alice_name)
 
         crud_controller.update(alice_base_iri, jsld_dump, "application/ld+json")
@@ -143,8 +146,6 @@ class CrudTest(unittest.TestCase):
 
         crud_controller.update(alice_base_iri, js_dump, "application/json")
         self.assertEquals(unicode(data_graph.value(alice_ref, FOAF.name)), new_alice_name)
-
-
 
     def test_controller_put_scope(self):
         alice = create_alice()

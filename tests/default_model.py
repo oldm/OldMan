@@ -14,7 +14,7 @@ from oldman.exception import OMDifferentBaseIRIError, OMForbiddenSkolemizedIRIEr
 from oldman.rest.crud import CRUDController
 
 
-logging.config.fileConfig(path.join(path.dirname(__file__),'logging.ini'))
+logging.config.fileConfig(path.join(path.dirname(__file__), 'logging.ini'))
 
 
 #default_graph = ConjunctiveGraph(SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
@@ -266,8 +266,18 @@ ask_modulus = """ASK {?x cert:modulus ?y }"""
 
 def tear_down():
     """ Clears the data graph """
+    if cache_region:
+        # Memory backends of dogpile.cache do not support the invalidate method()
+        iris = {unicode(r) for r in data_graph.query("SELECT DISTINCT ?s WHERE { ?s ?p ?o }")}
+        for iri in iris:
+            cache_region.delete(iri)
     default_graph.update("CLEAR GRAPH <%s>" % data_graph.identifier)
-    manager.invalidate_resource_cache()
+    manager.resource_cache.invalidate_cache()
+
+
+def set_up(use_default_cache_region=True):
+    if use_default_cache_region:
+        manager.resource_cache.change_cache_region(cache_region)
 
 
 def create_bob():

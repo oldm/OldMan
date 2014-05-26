@@ -115,7 +115,7 @@ context = {
     }
 }
 
-manager = ResourceManager(schema_graph, data_graph)
+manager = ResourceManager(schema_graph, data_graph, manager_name='ct')
 # Model class is generated here!
 model = manager.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
 default_list_en = ["w1", "w2"]
@@ -126,7 +126,7 @@ class ContainerTest(TestCase):
     def tearDown(self):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
-        manager.invalidate_resource_cache()
+        manager.resource_cache.invalidate_cache()
 
     def create_object(self):
         return model.create(list_en=default_list_en)
@@ -139,7 +139,7 @@ class ContainerTest(TestCase):
         obj.primary_list = lst
         obj.save()
 
-        manager.invalidate_resource_cache()
+        manager.resource_cache.invalidate_cache()
         obj = model.get(id=uri)
         self.assertEquals(lst, backup_list)
         self.assertEquals(obj.primary_list, lst)
@@ -154,7 +154,7 @@ class ContainerTest(TestCase):
         obj.list_en = copy(list_en)
         obj.save()
 
-        manager.invalidate_resource_cache()
+        manager.resource_cache.invalidate_cache()
         obj = model.get(id=uri)
         self.assertEquals(obj.list_fr, list_fr)
         self.assertEquals(obj.list_en, list_en)
@@ -200,7 +200,7 @@ class ContainerTest(TestCase):
         self.assertEquals(obj.bool_list, lst)
         obj.save()
         # If any cache
-        manager.invalidate_resource_cache()
+        manager.resource_cache.invalidate_cache()
         obj = model.get(id=uri)
         self.assertEquals(obj.bool_list, lst)
         obj.bool_list = [True]
@@ -217,7 +217,7 @@ class ContainerTest(TestCase):
         obj.bool_set = bools
         obj.save()
         # If any cache
-        manager.invalidate_resource_cache()
+        manager.resource_cache.invalidate_cache()
         obj = model.get(id=uri)
         self.assertEquals(obj.bool_set, bools)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -233,7 +233,7 @@ class ContainerTest(TestCase):
         obj.lang_map = values
         obj.save()
         # If any cache
-        manager.invalidate_resource_cache()
+        manager.resource_cache.invalidate_cache()
         obj = model.get(id=uri)
         self.assertEquals(obj.lang_map, values)
 

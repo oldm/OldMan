@@ -14,13 +14,17 @@ class ModelRegistry(object):
     """
 
     def __init__(self):
-        self._model_classes = {}
-        self._model_names = {}
+        self._models_by_classes = {}
+        self._models_by_names = {}
         self._default_model_name = None
         #Only IRIs in this dict
         self._model_descendants = {}
         self._type_set_cache = {}
         self._logger = logging.getLogger(__name__)
+
+    @property
+    def model_names(self):
+        return self._models_by_names.keys()
 
     def register(self, model, is_default=False):
         """Registers a :class:`~oldman.model.Model` object.
@@ -30,21 +34,21 @@ class ModelRegistry(object):
         """
         class_iri = model.class_iri
         self._logger.info("Register model %s (%s)" % (model.name, class_iri))
-        if class_iri in self._model_classes:
+        if class_iri in self._models_by_classes:
             raise AlreadyAllocatedModelError(u"%s is already allocated to %s" %
-                                             (class_iri, self._model_classes[class_iri]))
-        if model.name in self._model_names:
+                                             (class_iri, self._models_by_classes[class_iri]))
+        if model.name in self._models_by_names:
             raise AlreadyAllocatedModelError(u"%s is already allocated to %s" %
-                                             (model.name, self._model_names[model.name].class_iri))
+                                             (model.name, self._models_by_names[model.name].class_iri))
         sub_model_iris = set()
         # The new is not yet in this list
-        for m in self._model_classes.values():
+        for m in self._models_by_classes.values():
             if class_iri in m.ancestry_iris:
                 sub_model_iris.add(m.class_iri)
 
         self._model_descendants[class_iri] = sub_model_iris
-        self._model_classes[class_iri] = model
-        self._model_names[model.name] = model
+        self._models_by_classes[class_iri] = model
+        self._models_by_names[model.name] = model
         # Clears the cache
         self._type_set_cache = {}
 
@@ -58,9 +62,9 @@ class ModelRegistry(object):
 
         :param model: the :class:`~oldman.model.Model` object to remove from the registry.
         """
-        self._model_classes.pop(model.class_iri)
+        self._models_by_classes.pop(model.class_iri)
         self._model_descendants.pop(model.class_iri)
-        self._model_names.pop(model.name)
+        self._models_by_names.pop(model.name)
         # Clears the cache
         self._type_set_cache = {}
 
@@ -70,7 +74,7 @@ class ModelRegistry(object):
         :param class_iri: IRI of a RDFS class
         :return: A :class:`~oldman.model.Model` object or `None` if not found
         """
-        return self._model_classes.get(class_iri)
+        return self._models_by_classes.get(class_iri)
 
     def find_models_and_types(self, type_set):
         """Finds the leaf models from a set of class IRIs and orders them.
@@ -88,14 +92,14 @@ class ModelRegistry(object):
         :return: An ordered list of leaf :class:`~oldman.model.Model` objects
                  and an ordered list of RDFS class IRIs.
         """
-        if type_set is None or len(type_set) == 0:
+        if type_set is None or len(type_set) == 0 or type_set == [None]:
             if self._default_model_name is None:
                 raise OMInternalError(u"No default model defined!")
 
-            return [self._model_names[self._default_model_name]], []
+            return [self._models_by_names[self._default_model_name]], []
 
         if isinstance(type_set, list):
-            type_set = set(type_set)
+            type_set = set(type_set).difference([None])
         cache_entry = self._type_set_cache.get(tuple(type_set))
         if cache_entry is not None:
             leaf_models, types = cache_entry
@@ -103,7 +107,7 @@ class ModelRegistry(object):
             return list(leaf_models), list(types)
 
         leaf_models = self._find_leaf_models(type_set)
-        leaf_model_iris = [m.class_iri for m in leaf_models]
+        leaf_model_iris = [m.class_iri for m in leaf_models if m.class_iri is not None]
         ancestry_class_iris = {t for m in leaf_models for t in m.ancestry_iris}.difference(leaf_model_iris)
         independent_class_iris = type_set.difference(leaf_model_iris).difference(ancestry_class_iris)
 
@@ -121,12 +125,13 @@ class ModelRegistry(object):
         for type_iri in type_set:
             descendants = self._model_descendants.get(type_iri)
             if (descendants is not None) and (len(descendants.intersection(type_set)) == 0):
-                model = self._model_classes[type_iri]
+                model = self._models_by_classes[type_iri]
                 assert(model.class_iri == type_iri)
                 leaf_models.append(model)
 
         if len(leaf_models) == 0:
-            return [self._model_names[self._default_model_name]]
+            return [self._models_by_names[self._default_model_name]]
+
         return self._sort_leaf_models(leaf_models)
 
     def _sort_leaf_models(self, leaf_models):

@@ -3,6 +3,9 @@ from default_model import *
 
 
 class SerializationTest(unittest.TestCase):
+    def setUp(self):
+        set_up()
+
     def tearDown(self):
         tear_down()
 
@@ -116,7 +119,7 @@ class SerializationTest(unittest.TestCase):
         bob.keys = {rsa_key}
         bob.save()
         # If any cache
-        manager.invalidate_resource_cache()
+        manager.resource_cache.invalidate_cache()
 
         bob = lp_model.get(id=bob_iri)
         bob_jsonld = json.loads(bob.to_jsonld())

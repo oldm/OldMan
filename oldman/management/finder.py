@@ -8,22 +8,15 @@ from oldman.exception import OMHashIriError, OMObjectNotFoundError
 
 
 class Finder(object):
-    """A :class:`~oldman.management.finder.Finder` object retrieves and  caches
-       :class:`~oldman.resource.Resource` objects.
+    """A :class:`~oldman.management.finder.Finder` object retrieves :class:`~oldman.resource.Resource` objects.
 
        :param manager: The :class:`~oldman.management.manager.ResourceManager` object.
                        It gives access to RDF graphs.
     """
 
-    def __init__(self, manager, cache_region=None):
+    def __init__(self, manager):
         self._manager = manager
-        self._cache = cache_region
         self._logger = logging.getLogger(__name__)
-
-    def invalidate_cache(self):
-        """Invalidates the cache (if any) of :class:`~oldman.resource.Resource` objects."""
-        if self._cache:
-            self._cache.invalidate()
 
     def filter(self, types=None, base_iri=None, **kwargs):
         """Finds the :class:`~oldman.resource.Resource` objects matching the given criteria.
@@ -144,13 +137,9 @@ class Finder(object):
         return None
 
     def _get_by_id(self, id):
-
-        if self._cache:
-            raise NotImplementedError("TODO: load resource from the cache")
-            #resource = self._cache.get(id)
-            # if resource:
-            #     self._logger.debug(u"%s found in the cache" % resource)
-            #     return resource
+        resource = self._manager.resource_cache.get_resource(id)
+        if resource:
+            return resource
         resource_graph = Graph()
         iri = URIRef(id)
         resource_graph += self._manager.union_graph.triples((iri, None, None))
@@ -158,9 +147,7 @@ class Finder(object):
 
     def _new_resource_object(self, id, resource_graph):
         resource = Resource.load_from_graph(self._manager, id, resource_graph, is_new=(len(resource_graph) == 0))
-        if self._cache:
-            raise NotImplementedError("TODO: continue")
-            #self._cache.set(id, resource)
+        self._manager.resource_cache.set_resource(resource)
         return resource
 
     def _select_resource_from_base_iri(self, base_iri, resources):

@@ -85,7 +85,7 @@ def disclaim2(self):
     return new_disclaim
 
 
-manager = ResourceManager(schema_graph, data_graph)
+manager = ResourceManager(schema_graph, data_graph, manager_name="it")
 # Methods
 manager.declare_method(square_value, "square_value", EXAMPLE + "GrandParentClass")
 manager.declare_method(print_new_value, "print_new_value", EXAMPLE + "ChildClass")
@@ -110,7 +110,7 @@ class InstanceTest(TestCase):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
         child_model.reset_counter()
-        manager.invalidate_resource_cache()
+        manager.resource_cache.invalidate_cache()
 
     def test_types(self):
         john = grand_parent_model.new()
@@ -131,7 +131,7 @@ class InstanceTest(TestCase):
         with self.assertRaises(AttributeError):
             john.new_value = "not saved (again)"
         # If any cache
-        manager.invalidate_resource_cache()
+        manager.resource_cache.invalidate_cache()
         john = grand_parent_model.get(id=uri)
         self.assertEquals(john.old_number_value, old_value)
         with self.assertRaises(AttributeError):
@@ -150,7 +150,7 @@ class InstanceTest(TestCase):
             jack.new_value = "not saved"
         jack.save()
         # If any cache
-        manager.invalidate_resource_cache()
+        manager.resource_cache.invalidate_cache()
         jack = parent_model.get(id=uri)
         self.assertEquals(jack.mid_values, mid_values)
         self.assertEquals(jack.old_number_value, old_value)
@@ -168,7 +168,7 @@ class InstanceTest(TestCase):
         tom.new_value = new_value
         tom.save()
         # If any cache
-        manager.invalidate_resource_cache()
+        manager.resource_cache.invalidate_cache()
         tom = child_model.get(id=uri)
         self.assertEquals(tom.new_value, new_value)
         self.assertEquals(tom.mid_values, mid_values)
@@ -247,7 +247,7 @@ class InstanceTest(TestCase):
         tom.new_value = tom_new_value
         tom.save()
         # If any cache
-        manager.invalidate_resource_cache()
+        manager.resource_cache.invalidate_cache()
 
         tom = manager.get(id=tom_uri)
         self.assertEquals(tom.new_value, tom_new_value)

@@ -27,7 +27,7 @@ context = {
     }
 }
 
-manager = ResourceManager(schema_graph, data_graph)
+manager = ResourceManager(schema_graph, data_graph, manager_name="igt")
 crud_controller = CRUDController(manager)
 model = manager.create_model("MyClass", context, iri_generator=RandomFragmentIriGenerator())
 
@@ -37,7 +37,7 @@ class DatatypeTest(TestCase):
     def tearDown(self):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
-        manager.invalidate_resource_cache()
+        manager.resource_cache.invalidate_cache()
 
     def test_generation(self):
         base_iri = "http://example.org/doc1"

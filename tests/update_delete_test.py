@@ -5,6 +5,9 @@ from default_model import *
 
 
 class UpdateDeleteTest(TestCase):
+    def setUp(self):
+        set_up()
+
     def tearDown(self):
         tear_down()
 
@@ -21,7 +24,7 @@ class UpdateDeleteTest(TestCase):
             data_graph.add((jason_uri, RDF.type, URIRef(class_iri)))
 
         # Mboxes is still missing
-        manager.invalidate_resource_cache()
+        manager.resource_cache.invalidate_cache()
         jason = lp_model.get(id=str(jason_uri))
         self.assertFalse(jason.is_valid())
 
@@ -33,18 +36,23 @@ class UpdateDeleteTest(TestCase):
                          context=context, format="json-ld")
 
         # Clear the cache (out-of-band update)
-        manager.invalidate_resource_cache()
+        manager.resource_cache.invalidate_cache()
         jason = lp_model.get(id=jason_uri)
         self.assertEquals(jason.mboxes, mboxes)
         self.assertTrue(jason.is_valid())
 
     def test_delete_bob(self):
+        req_name = """ASK {?x foaf:name "%s"^^xsd:string }""" % bob_name
+        req_type = """ASK {?x a <%s> }""" % (MY_VOC + "LocalPerson")
+        self.assertFalse(bool(data_graph.query(req_name)))
+        self.assertFalse(bool(data_graph.query(req_type)))
         bob = create_bob()
-        request = """ASK {?x foaf:name "%s"^^xsd:string }""" % bob_name
-        self.assertTrue(bool(data_graph.query(request)))
+        self.assertTrue(bool(data_graph.query(req_name)))
+        self.assertTrue(bool(data_graph.query(req_type)))
 
         bob.delete()
-        self.assertFalse(bool(data_graph.query(request)))
+        self.assertFalse(bool(data_graph.query(req_name)))
+        self.assertFalse(bool(data_graph.query(req_type)))
 
     def test_delete_rsa_but_no_alice(self):
         ask_alice = """ASK {?x foaf:name "%s"^^xsd:string }""" % alice_name
@@ -230,7 +238,7 @@ class UpdateDeleteTest(TestCase):
         alice.full_update_from_graph(g2, allow_new_type=True)
 
         # If any cache
-        manager.invalidate_resource_cache()
+        manager.resource_cache.invalidate_cache()
         alice = lp_model.get(id=alice_iri)
         self.assertEquals(set(alice.types), set(lp_model.ancestry_iris + additional_types))
 
@@ -239,6 +247,6 @@ class UpdateDeleteTest(TestCase):
             alice.full_update_from_graph(g1)
         alice.full_update_from_graph(g1, allow_type_removal=True)
         # If any cache
-        manager.invalidate_resource_cache()
+        manager.resource_cache.invalidate_cache()
         alice = lp_model.get(id=alice_iri)
         self.assertEquals(set(alice.types), set(lp_model.ancestry_iris))

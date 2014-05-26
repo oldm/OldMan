@@ -87,7 +87,7 @@ context = {
     }
 }
 
-manager = ResourceManager(schema_graph, data_graph)
+manager = ResourceManager(schema_graph, data_graph, manager_name="pt")
 lc_model = manager.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
 
 
@@ -96,7 +96,7 @@ class PropertyTest(TestCase):
     def tearDown(self):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
-        manager.invalidate_resource_cache()
+        manager.resource_cache.invalidate_cache()
 
     def test_read_and_write_only(self):
         with self.assertRaises(OMPropertyDefError):

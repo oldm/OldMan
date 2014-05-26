@@ -3,6 +3,9 @@ from default_model import *
 
 
 class FindTest(unittest.TestCase):
+    def setUp(self):
+        set_up()
+
     def tearDown(self):
         tear_down()
 
