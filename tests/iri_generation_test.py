@@ -37,7 +37,6 @@ class DatatypeTest(TestCase):
     def tearDown(self):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
-        manager.resource_cache.invalidate_cache()
 
     def test_generation(self):
         base_iri = "http://example.org/doc1"

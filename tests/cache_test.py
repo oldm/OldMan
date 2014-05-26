@@ -9,6 +9,20 @@ class CacheTest(unittest.TestCase):
     def tearDown(self):
         tear_down()
 
+    def test_direct_cache(self):
+        alice1 = lp_model.new(name=alice_name, mboxes={alice_mail}, short_bio_en=alice_bio_en)
+        #For test ONLY. Do not do that yourself
+        manager.resource_cache.set_resource(alice1)
+        alice2 = manager.resource_cache.get_resource(alice1.id)
+        self.assertFalse(alice1 is alice2)
+        self.assertEquals(alice1.name, alice2.name)
+        self.assertEquals(alice1.id, alice2.id)
+        self.assertEquals(alice1.short_bio_en, alice2.short_bio_en)
+        self.assertEquals(set(alice1.mboxes), set(alice2.mboxes))
+
+        manager.resource_cache.remove_resource(alice1)
+        self.assertFalse(manager.resource_cache.get_resource(alice1.id))
+
     def test_simple_get(self):
         alice1 = create_alice()
         alice2 = manager.get(id=alice1.id)
@@ -72,7 +86,6 @@ class CacheTest(unittest.TestCase):
         self.assertEquals(alice3.id, alice4.id)
         self.assertEquals(alice3.name, alice4.name)
         self.assertEquals(alice4.name, name3)
-
 
     def test_basic_deletion(self):
         alice1 = create_alice()

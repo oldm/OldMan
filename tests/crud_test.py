@@ -137,8 +137,6 @@ class CrudTest(unittest.TestCase):
         alice.name = new_new_alice_name
         jsld_dump = alice.to_jsonld()
 
-        # If any cache
-        manager.resource_cache.invalidate_cache()
         self.assertEquals(unicode(data_graph.value(alice_ref, FOAF.name)), alice_name)
 
         crud_controller.update(alice_base_iri, jsld_dump, "application/ld+json")

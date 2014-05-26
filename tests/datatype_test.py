@@ -157,7 +157,6 @@ class DatatypeTest(TestCase):
     def tearDown(self):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
-        manager.resource_cache.invalidate_cache()
 
     def create_object(self):
         return lc_model.create()
@@ -167,22 +166,16 @@ class DatatypeTest(TestCase):
         uri = obj.id
         obj.single_bool = True
         obj.save()
-        # If any cache
-        manager.resource_cache.invalidate_cache()
         obj = lc_model.get(id=uri)
         self.assertEquals(obj.single_bool, True)
 
         obj.single_bool = None
         obj.save()
-        # If any cache
-        manager.resource_cache.invalidate_cache()
         obj = lc_model.get(id=uri)
         self.assertEquals(obj.single_bool, None)
 
         obj.single_bool = False
         obj.save()
-        # If any cache
-        manager.resource_cache.invalidate_cache()
         obj = lc_model.get(id=uri)
         self.assertEquals(obj.single_bool, False)
 
@@ -192,8 +185,6 @@ class DatatypeTest(TestCase):
         d = date(2009, 11, 2)
         obj.date = copy(d)
         obj.save()
-        # If any cache
-        manager.resource_cache.invalidate_cache()
         obj = lc_model.get(id=uri)
         self.assertEquals(obj.date, d)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -205,8 +196,6 @@ class DatatypeTest(TestCase):
         d = datetime.now()
         obj.datetime = copy(d)
         obj.save()
-        # If any cache
-        manager.resource_cache.invalidate_cache()
         obj = lc_model.get(id=uri)
         self.assertEquals(obj.datetime, d)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -218,8 +207,6 @@ class DatatypeTest(TestCase):
         t = time(12, 55, 30)
         obj.time = copy(t)
         obj.save()
-        # If any cache
-        manager.resource_cache.invalidate_cache()
         obj = lc_model.get(id=uri)
         self.assertEquals(obj.time, t)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -231,8 +218,6 @@ class DatatypeTest(TestCase):
         value = -5
         obj.int = value
         obj.save()
-        # If any cache
-        manager.resource_cache.invalidate_cache()
         obj = lc_model.get(id=uri)
         self.assertEquals(obj.int, value)
         obj.int = 0
@@ -248,8 +233,6 @@ class DatatypeTest(TestCase):
         value = 5
         obj.integer = value
         obj.save()
-        # If any cache
-        manager.resource_cache.invalidate_cache()
         obj = lc_model.get(id=uri)
         self.assertEquals(obj.integer, value)
         obj.integer = 0
@@ -265,8 +248,6 @@ class DatatypeTest(TestCase):
         value = -5
         obj.short = value
         obj.save()
-        # If any cache
-        manager.resource_cache.invalidate_cache()
         obj = lc_model.get(id=uri)
         self.assertEquals(obj.short, value)
         obj.short = 0
@@ -282,8 +263,6 @@ class DatatypeTest(TestCase):
         value = 5
         obj.positiveInt = value
         obj.save()
-        # If any cache
-        manager.resource_cache.invalidate_cache()
         obj = lc_model.get(id=uri)
         self.assertEquals(obj.positiveInt, value)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -301,8 +280,6 @@ class DatatypeTest(TestCase):
         value = -5
         obj.negativeInt = value
         obj.save()
-        # If any cache
-        manager.resource_cache.invalidate_cache()
         obj = lc_model.get(id=uri)
         self.assertEquals(obj.negativeInt, value)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -320,8 +297,6 @@ class DatatypeTest(TestCase):
         value = -5
         obj.nonPositiveInt = value
         obj.save()
-        # If any cache
-        manager.resource_cache.invalidate_cache()
         obj = lc_model.get(id=uri)
         self.assertEquals(obj.nonPositiveInt, value)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -338,8 +313,6 @@ class DatatypeTest(TestCase):
         value = 5
         obj.nonNegativeInt = value
         obj.save()
-        # If any cache
-        manager.resource_cache.invalidate_cache()
         obj = lc_model.get(id=uri)
         self.assertEquals(obj.nonNegativeInt, value)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -356,8 +329,6 @@ class DatatypeTest(TestCase):
         value = Decimal(23.05)
         obj.decimal = value
         obj.save()
-        # If any cache
-        manager.resource_cache.invalidate_cache()
         obj = lc_model.get(id=uri)
         self.assertEquals(obj.decimal, value)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -371,8 +342,6 @@ class DatatypeTest(TestCase):
         value = Decimal(23.05)
         obj.double = value
         obj.save()
-        # If any cache
-        manager.resource_cache.invalidate_cache()
         obj = lc_model.get(id=uri)
         self.assertEquals(obj.double, value)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -386,8 +355,6 @@ class DatatypeTest(TestCase):
         value = Decimal(23.05)
         obj.float = value
         obj.save()
-        # If any cache
-        manager.resource_cache.invalidate_cache()
         obj = lc_model.get(id=uri)
         self.assertEquals(obj.float, value)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -401,8 +368,6 @@ class DatatypeTest(TestCase):
         mail = "john.doe@example.org"
         obj.mbox = mail
         obj.save()
-        # If any cache
-        manager.resource_cache.invalidate_cache()
         obj = lc_model.get(id=uri)
         self.assertEquals(obj.mbox, mail)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -419,8 +384,6 @@ class DatatypeTest(TestCase):
         mail = "john.doe@example.org"
         obj.email = mail
         obj.save()
-        # If any cache
-        manager.resource_cache.invalidate_cache()
         obj = lc_model.get(id=uri)
         self.assertEquals(obj.email, mail)
         with self.assertRaises(OMAttributeTypeCheckError):

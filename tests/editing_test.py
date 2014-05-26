@@ -61,7 +61,7 @@ class BasicEditingTest(unittest.TestCase):
         bob.name = "You should not retrieve this string"
 
         # If any cache
-        manager.resource_cache.invalidate_cache()
+        manager.resource_cache.remove_resource(bob)
         bob = lp_model.get(id=bob_uri)
 
         self.assertEquals(bob_name, bob.name)
@@ -104,7 +104,7 @@ class BasicEditingTest(unittest.TestCase):
         bob.save()
         bob_uri = bob.id
         # If any cache
-        manager.resource_cache.invalidate_cache()
+        manager.resource_cache.remove_resource(bob)
         bob = lp_model.get(id=bob_uri)
 
         self.assertEquals(bob.short_bio_en, None)
@@ -129,7 +129,7 @@ class BasicEditingTest(unittest.TestCase):
         self.assertEquals(bob.short_bio_en, forbidden_string)
 
         # If any cache
-        manager.resource_cache.invalidate_cache()
+        manager.resource_cache.remove_resource(bob)
         bob = lp_model.get(id=bob_id)
         self.assertEquals(bob.short_bio_en, None)
         self.assertEquals(bob.short_bio_fr, bob_bio_fr)
@@ -139,7 +139,7 @@ class BasicEditingTest(unittest.TestCase):
         bob.save()
         bob.short_bio_en = "You should not retrieve this string (again)"
 
-        manager.resource_cache.invalidate_cache()
+        manager.resource_cache.remove_resource(bob)
         bob = lp_model.get(id=bob_id)
         self.assertEquals(bob.short_bio_en, bob_bio_en_2)
         self.assertEquals(bob.short_bio_fr, bob_bio_fr)
@@ -148,8 +148,7 @@ class BasicEditingTest(unittest.TestCase):
         rsa_key = create_rsa_key()
         rsa_skolemized_iri = rsa_key.id
         # If any cache
-        manager.resource_cache.invalidate_cache()
-
+        manager.resource_cache.remove_resource(rsa_key)
         rsa_key = rsa_model.get(id=rsa_skolemized_iri)
         self.assertEquals(rsa_key.exponent, key_exponent)
         self.assertEquals(rsa_key.modulus, key_modulus)
@@ -179,7 +178,9 @@ class BasicEditingTest(unittest.TestCase):
 
         # Force reload from the triplestore
         # If any cache
-        manager.resource_cache.invalidate_cache()
+        manager.resource_cache.remove_resource(bob)
+        manager.resource_cache.remove_resource(alice)
+        manager.resource_cache.remove_resource(john)
         bob = lp_model.get(id=bob_uri)
         self.assertEquals(bob_children_ids, [c.id for c in bob.children])
 
@@ -195,7 +196,9 @@ class BasicEditingTest(unittest.TestCase):
 
         # Force reload from the triplestore
         # If any cache
-        manager.resource_cache.invalidate_cache()
+        manager.resource_cache.remove_resource(bob)
+        manager.resource_cache.remove_resource(alice)
+        manager.resource_cache.remove_resource(john)
 
         bob = lp_model.get(id=bob_uri)
         self.assertEquals(bob.id, bob_uri)
@@ -234,7 +237,9 @@ class BasicEditingTest(unittest.TestCase):
 
         bob_children_iris = [c.id for c in bob_children]
         # If any cache
-        manager.resource_cache.invalidate_cache()
+        manager.resource_cache.remove_resource(bob)
+        manager.resource_cache.remove_resource(alice)
+        manager.resource_cache.remove_resource(john)
         bob = manager.get(id=bob_iri)
         self.assertEquals([c.id for c in bob.children], bob_children_iris)
 
@@ -258,7 +263,8 @@ class BasicEditingTest(unittest.TestCase):
         self.assertEquals(bob.gpg_key.hex_id, gpg_hex_id)
 
         # If any cache
-        manager.resource_cache.invalidate_cache()
+        manager.resource_cache.remove_resource(bob)
+        manager.resource_cache.remove_resource(bob.gpg_key)
         bob = lp_model.get(id=bob_id)
         self.assertEquals(bob.gpg_key.fingerprint, gpg_fingerprint)
         self.assertEquals(bob.gpg_key.hex_id, gpg_hex_id)

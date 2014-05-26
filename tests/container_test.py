@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-"""
-    Additional test on containers
+""" Additional test on containers
+
+No cache.
 """
 
 from unittest import TestCase
@@ -126,7 +127,6 @@ class ContainerTest(TestCase):
     def tearDown(self):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
-        manager.resource_cache.invalidate_cache()
 
     def create_object(self):
         return model.create(list_en=default_list_en)
@@ -139,7 +139,6 @@ class ContainerTest(TestCase):
         obj.primary_list = lst
         obj.save()
 
-        manager.resource_cache.invalidate_cache()
         obj = model.get(id=uri)
         self.assertEquals(lst, backup_list)
         self.assertEquals(obj.primary_list, lst)
@@ -154,7 +153,6 @@ class ContainerTest(TestCase):
         obj.list_en = copy(list_en)
         obj.save()
 
-        manager.resource_cache.invalidate_cache()
         obj = model.get(id=uri)
         self.assertEquals(obj.list_fr, list_fr)
         self.assertEquals(obj.list_en, list_en)
@@ -199,8 +197,6 @@ class ContainerTest(TestCase):
         obj.bool_list = lst
         self.assertEquals(obj.bool_list, lst)
         obj.save()
-        # If any cache
-        manager.resource_cache.invalidate_cache()
         obj = model.get(id=uri)
         self.assertEquals(obj.bool_list, lst)
         obj.bool_list = [True]
@@ -216,8 +212,6 @@ class ContainerTest(TestCase):
         bools = {False, True}
         obj.bool_set = bools
         obj.save()
-        # If any cache
-        manager.resource_cache.invalidate_cache()
         obj = model.get(id=uri)
         self.assertEquals(obj.bool_set, bools)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -232,8 +226,6 @@ class ContainerTest(TestCase):
                   'en': u"What's up?"}
         obj.lang_map = values
         obj.save()
-        # If any cache
-        manager.resource_cache.invalidate_cache()
         obj = model.get(id=uri)
         self.assertEquals(obj.lang_map, values)
 

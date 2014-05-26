@@ -12,32 +12,33 @@ class UpdateDeleteTest(TestCase):
         tear_down()
 
     def test_out_of_band_update(self):
-        jason_uri = URIRef("https://example.com/jason#me")
-        data_graph.add((jason_uri, URIRef(FOAF + "name"), Literal("Jason")))
-        data_graph.add((jason_uri, URIRef(BIO + "olb"), Literal("Jason was a warrior", lang="en")))
+        jason_iri = URIRef(u"https://example.com/jason#me")
+        data_graph.add((jason_iri, URIRef(FOAF + "name"), Literal("Jason")))
+        data_graph.add((jason_iri, URIRef(BIO + "olb"), Literal("Jason was a warrior", lang="en")))
 
         # LocalPerson and Person types are missing
         with self.assertRaises(OMClassInstanceError):
-            lp_model.get(id=str(jason_uri))
+            lp_model.get(id=str(jason_iri))
+        # Cleans the cache
+        manager.resource_cache.remove_resource_from_id(jason_iri)
 
         for class_iri in lp_model.ancestry_iris:
-            data_graph.add((jason_uri, RDF.type, URIRef(class_iri)))
+            data_graph.add((jason_iri, RDF.type, URIRef(class_iri)))
 
         # Mboxes is still missing
-        manager.resource_cache.invalidate_cache()
-        jason = lp_model.get(id=str(jason_uri))
+        jason = lp_model.get(id=str(jason_iri))
         self.assertFalse(jason.is_valid())
 
         mboxes = {"jason@example.com", "jason@example.org"}
-        data_graph.parse(data=json.dumps({"@id": jason_uri,
+        data_graph.parse(data=json.dumps({"@id": jason_iri,
                                           "@type": ["LocalPerson", "Person"],
                                           # Required
                                           "mboxes": list(mboxes)}),
                          context=context, format="json-ld")
 
         # Clear the cache (out-of-band update)
-        manager.resource_cache.invalidate_cache()
-        jason = lp_model.get(id=jason_uri)
+        manager.resource_cache.remove_resource(jason)
+        jason = lp_model.get(id=jason_iri)
         self.assertEquals(jason.mboxes, mboxes)
         self.assertTrue(jason.is_valid())
 
@@ -238,7 +239,7 @@ class UpdateDeleteTest(TestCase):
         alice.full_update_from_graph(g2, allow_new_type=True)
 
         # If any cache
-        manager.resource_cache.invalidate_cache()
+        manager.resource_cache.remove_resource(alice)
         alice = lp_model.get(id=alice_iri)
         self.assertEquals(set(alice.types), set(lp_model.ancestry_iris + additional_types))
 
@@ -247,6 +248,6 @@ class UpdateDeleteTest(TestCase):
             alice.full_update_from_graph(g1)
         alice.full_update_from_graph(g1, allow_type_removal=True)
         # If any cache
-        manager.resource_cache.invalidate_cache()
+        manager.resource_cache.remove_resource(alice)
         alice = lp_model.get(id=alice_iri)
         self.assertEquals(set(alice.types), set(lp_model.ancestry_iris))
