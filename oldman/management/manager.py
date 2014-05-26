@@ -4,7 +4,7 @@ from urlparse import urlparse
 from rdflib import Graph
 from oldman.model import Model
 from oldman.resource import Resource
-from oldman.exception import OMUndeclaredClassNameError
+from oldman.exception import OMUndeclaredClassNameError, OMExpiredMethodDeclarationTimeSlotError
 from oldman.iri import RandomPrefixedIriGenerator, IncrementalIriGenerator, BlankNodeIriGenerator
 from oldman.parsing.schema.attribute import OMAttributeExtractor
 from .registry import ModelRegistry
@@ -104,6 +104,9 @@ class ResourceManager(object):
         :param class_iri: Targetted RDFS class. If not overwritten, all the instances
                           (:class:`~oldman.resource.Resource` objects) should inherit this method.
         """
+        if self._registry.has_specific_models():
+            raise OMExpiredMethodDeclarationTimeSlotError(u"Method declaration cannot occur after model creation.")
+
         if class_iri in self._methods:
             if name in self._methods[class_iri]:
                 self._logger.warn("Method %s of %s is overloaded." % (name, class_iri))

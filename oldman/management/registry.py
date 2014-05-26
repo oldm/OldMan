@@ -26,6 +26,10 @@ class ModelRegistry(object):
     def model_names(self):
         return self._models_by_names.keys()
 
+    def has_specific_models(self):
+        """:return: `True` if contains other models than the default one."""
+        return len(self._models_by_names) > int(self._default_model_name is not None)
+
     def register(self, model, is_default=False):
         """Registers a :class:`~oldman.model.Model` object.
 
