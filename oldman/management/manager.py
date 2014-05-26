@@ -4,7 +4,7 @@ from urlparse import urlparse
 from rdflib import Graph
 from oldman.model import Model
 from oldman.resource import Resource
-from oldman.exception import OMUndeclaredClassNameError, OMExpiredMethodDeclarationTimeSlotError
+from oldman.exception import OMUndeclaredClassNameError, OMExpiredMethodDeclarationTimeSlotError, OMError
 from oldman.iri import RandomPrefixedIriGenerator, IncrementalIriGenerator, BlankNodeIriGenerator
 from oldman.parsing.schema.attribute import OMAttributeExtractor
 from .registry import ModelRegistry
@@ -22,8 +22,8 @@ class ResourceManager(object):
     It gives access to the graphs and creates :class:`~oldman.model.Model` objects.
     It also creates, retrieves and caches :class:`~oldman.resource.Resource` objects.
 
-    Internally, it owns a :class:`~oldman.management.finder.Finder` object
-    and a :class:`~oldman.management.registry.ModelRegistry` object.
+    Internally, it owns three objects a :class:`~oldman.management.finder.Finder`,
+    a :class:`~oldman.management.registry.ModelRegistry` and a :class:`~oldman.management.cache.ResourceCache`.
 
     :param schema_graph: :class:`rdflib.Graph` object containing all the schema triples. May be independent of
                          `union_graph`.
@@ -37,10 +37,12 @@ class ResourceManager(object):
                             will extract :class:`~oldman.attribute.OMAttribute` for generating
                             new :class:`~oldman.model.Model` objects.
                             Defaults to a new instance of :class:`~oldman.parsing.attribute.OMAttributeExtractor`.
-    :param cache_region: TODO: describe it!
+    :param cache_region: :class:`dogpile.cache.region.CacheRegion` object.
+                         This object must already be configured.
+                         Defaults to None (no cache).
+                         See :class:`~oldman.management.cache.ResourceCache` for further details.
+    :param manager_name: Name of this manager. Defaults to `"default"`. This name must be unique.
     """
-
-    #TODO: replace with a weakref?
     _managers = {}
 
     def __init__(self, schema_graph, data_graph, union_graph=None, attr_extractor=None,
@@ -55,6 +57,8 @@ class ResourceManager(object):
         self._resource_cache = ResourceCache(cache_region)
         self._logger = logging.getLogger(__name__)
         self._name = manager_name
+        if manager_name in self._managers:
+            raise OMError(u"Manager name %s is already allocated" % manager_name)
         self._managers[manager_name] = self
 
         # Registered with the "None" key
@@ -76,28 +80,37 @@ class ResourceManager(object):
 
     @property
     def name(self):
-        """TODO: document"""
+        """Name of this manager.
+        The manager can be retrieved from its name by calling the
+        class method :func:`~oldman.management.manager.ResourceManager.get_manager`.
+        """
         return self._name
 
     @property
     def resource_cache(self):
-        """TODO: document"""
+        """:class:`~oldman.management.cache.ResourceCache` object."""
         return self._resource_cache
 
     @classmethod
     def get_manager(cls, name):
-        """TODO: document"""
+        """Gets a :class:`~oldman.management.manager.ResourceManager` object by its name.
+
+        :param name: manager name.
+        :return: A :class:`~oldman.management.manager.ResourceManager` object.
+        """
         return cls._managers.get(name)
 
     def declare_method(self, method, name, class_iri):
         """Attaches a method to the :class:`~oldman.resource.Resource` objects that are instances of a given RDFS class.
 
         Like in Object-Oriented Programming, this method can be overwritten by attaching a homonymous
-        method to a class that has an higher inheritance priority (such as a sub-class).
+        method to a class that has a higher inheritance priority (such as a sub-class).
 
         To benefit from this method (or an overwritten one), :class:`~oldman.resource.Resource` objects
         must be associated to a :class:`~oldman.model.Model` that corresponds to the RDFS class or to one of its
         subclasses.
+
+        This method can only be used before the creation of any model (except the default one).
 
         :param method: Python function that takes as first argument a :class:`~oldman.resource.Resource` object.
         :param name: Name assigned to this method.
@@ -109,7 +122,7 @@ class ResourceManager(object):
 
         if class_iri in self._methods:
             if name in self._methods[class_iri]:
-                self._logger.warn("Method %s of %s is overloaded." % (name, class_iri))
+                self._logger.warn(u"Method %s of %s is overloaded." % (name, class_iri))
             self._methods[class_iri][name] = method
         else:
             self._methods[class_iri] = {name: method}

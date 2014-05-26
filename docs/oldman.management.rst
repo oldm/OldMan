@@ -12,6 +12,14 @@ oldman.management.ancestry module
     :undoc-members:
     :show-inheritance:
 
+oldman.management.cache module
+------------------------------
+
+.. automodule:: oldman.management.cache
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 oldman.management.finder module
 -------------------------------
 
