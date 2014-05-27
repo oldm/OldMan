@@ -95,7 +95,7 @@ class ResourceCache(object):
     def invalidate_cache(self):
         """See :func:`dogpile.cache.region.CacheRegion.invalidate`.
 
-        .. admonition:: Warning
+        .. admonition:: Cache invalidation
 
             Please note that this method is not supported by some :class:`dogpile.cache.api.CacheBackend`
             objects. In such a case, this method has no effect so entries must be removed **explicitly**
