@@ -11,7 +11,6 @@ setup(name="OldMan",
       #zip_safe = False,
       install_requires=['rdflib',
                         'validate_email',
-                        'enum34',
                         'dogpile.cache'
       ],
       license="BSD",

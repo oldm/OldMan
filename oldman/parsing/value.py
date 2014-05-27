@@ -9,7 +9,7 @@ class AttributeValueExtractorFromGraph(object):
         self._attribute = attribute
         self._language = attribute.language
         self._value_format = attribute.value_format
-        self._property_uri = URIRef(attribute.om_property.uri)
+        self._property_uri = URIRef(attribute.om_property.iri)
         self._container = attribute.container
         try:
             self._extract_fct = AttributeValueExtractorFromGraph.extract_fcts[self._container]

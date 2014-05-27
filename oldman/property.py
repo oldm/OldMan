@@ -1,26 +1,20 @@
-from enum import Enum
 import logging
 from .attribute import OMAttributeMetadata, OMAttribute, ObjectOMAttribute
 from .exception import OMAlreadyDeclaredDatatypeError, OMPropertyDefTypeError
 from .exception import OMAlreadyGeneratedAttributeError, OMInternalError, OMPropertyDefError
-
-
-class PropertyType(Enum):
-    UnknownPropertyType = 1
-    DatatypeProperty = 2
-    ObjectProperty = 3
+from oldman.common import DATATYPE_PROPERTY, OBJECT_PROPERTY
 
 
 class OMProperty(object):
     """
         RDF property declared "supported by a RDF class"
     """
-    def __init__(self, manager, property_uri, supporter_class_uri, is_required=False, read_only=False,
-                 write_only=False, cardinality=None, property_type=PropertyType.UnknownPropertyType,
+    def __init__(self, manager, property_iri, supporter_class_iri, is_required=False, read_only=False,
+                 write_only=False, cardinality=None, property_type=None,
                  domains=None, ranges=None):
         self._manager = manager
-        self._uri = property_uri
-        self._supporter_class_uri = supporter_class_uri
+        self._iri = property_iri
+        self._supporter_class_iri = supporter_class_iri
         self._is_required = is_required
         if cardinality:
             raise NotImplementedError("Property cardinality is not yet supported")
@@ -31,7 +25,7 @@ class OMProperty(object):
         self._domains = domains if domains is not None else set()
 
         if read_only and write_only:
-            raise OMPropertyDefError("Property %s cannot be read-only and write-only" % property_uri)
+            raise OMPropertyDefError("Property %s cannot be read-only and write-only" % property_iri)
         self._read_only = read_only
         self._write_only = write_only
 
@@ -40,31 +34,30 @@ class OMProperty(object):
         self._attributes = None
 
     @property
-    def uri(self):
+    def iri(self):
         """ Read-only """
-        return self._uri
+        return self._iri
 
     @property
     def type(self):
-        """
-            Read-only
-            Returns a PropertyType
+        """The property can be a Datatype Property (`"datatype"`), an Object Property
+            (`"object"`) or be unknown (`None`).
         """
         return self._type
 
     @type.setter
     def type(self, property_type):
-        if self._type != PropertyType.UnknownPropertyType:
+        if self._type is not None:
             if self._type != property_type:
-                raise OMPropertyDefTypeError("Already declared as %s so cannot also be a %s "
-                                                        %(self._type,  property_type))
+                raise OMPropertyDefTypeError(u"Already declared as %s so cannot also be a %s "
+                                             % (self._type, property_type))
             return
         self._type = property_type
 
     @property
     def supporter_class_uri(self):
         """ Read-only """
-        return self._supporter_class_uri
+        return self._supporter_class_iri
 
     @property
     def is_required(self):
@@ -91,11 +84,11 @@ class OMProperty(object):
     def add_range(self, p_range):
         # Detects XSD
         if p_range.startswith(u"http://www.w3.org/2001/XMLSchema#"):
-            self.type = PropertyType.DatatypeProperty
+            self.type = DATATYPE_PROPERTY
 
-        if self.type == PropertyType.DatatypeProperty and (not p_range in self._ranges) \
-                and len(self._ranges) >=1:
-            raise OMAlreadyDeclaredDatatypeError("Property datatype can only be specified once")
+        if self.type == DATATYPE_PROPERTY and (not p_range in self._ranges) \
+                and len(self._ranges) >= 1:
+            raise OMAlreadyDeclaredDatatypeError(u"Property datatype can only be specified once")
 
         self._ranges.add(p_range)
 
@@ -107,7 +100,7 @@ class OMProperty(object):
         # Detects XSD
         if range.startswith(u"http://www.w3.org/2001/XMLSchema#"):
             #TODO: find a better error type
-            raise Exception("Domain cannot have a literal datatype")
+            raise Exception(u"Domain cannot have a literal datatype")
         self._domains.add(domain)
 
     @property
@@ -115,7 +108,7 @@ class OMProperty(object):
         """
             May return None (if ObjectProperty or if not defined)
         """
-        if self._type == PropertyType.DatatypeProperty and len(self._ranges) >= 1:
+        if self._type == DATATYPE_PROPERTY and len(self._ranges) >= 1:
             # Should be one
             return list(self._ranges)[0]
         return None
@@ -137,9 +130,9 @@ class OMProperty(object):
             raise OMAlreadyGeneratedAttributeError("It is too late to add attribute metadata")
         if jsonld_type:
             if jsonld_type == "@id":
-                self.type = PropertyType.ObjectProperty
+                self.type = OBJECT_PROPERTY
             else:
-                self.type = PropertyType.DatatypeProperty
+                self.type = DATATYPE_PROPERTY
                 if (not jsonld_type in self._ranges) and len(self._ranges) >=1:
                     raise OMAlreadyDeclaredDatatypeError("Attribute %s cannot have a different datatype"
                                                          "(%s) than the property's one (%s)" % (name, jsonld_type,
@@ -150,9 +143,9 @@ class OMProperty(object):
             if language is None:
                 logger.warn("No datatype defined in the JSON-LD context for the attribute %s" % name)
             #(harder to parse for a JSON-LD client)
-            if self.type == PropertyType.ObjectProperty:
+            if self.type == OBJECT_PROPERTY:
                 jsonld_type = "@id"
-            elif self.type == PropertyType.DatatypeProperty:
+            elif self.type == DATATYPE_PROPERTY:
                 jsonld_type = self.default_datatype
             elif language is None:
                 #TODO: find a better Exception type
@@ -175,7 +168,7 @@ class OMProperty(object):
         self._attributes = set()
         for md in self._tmp_attr_mds:
             value_format = attr_format_selector.find_value_format(md)
-            attr_cls = ObjectOMAttribute if self._type == PropertyType.ObjectProperty else OMAttribute
+            attr_cls = ObjectOMAttribute if self._type == OBJECT_PROPERTY else OMAttribute
             self._attributes.add(attr_cls(self._manager, md, value_format))
 
         # Clears mds

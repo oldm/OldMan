@@ -1,0 +1,2 @@
+DATATYPE_PROPERTY = "datatype"
+OBJECT_PROPERTY = "object"

@@ -1,6 +1,3 @@
-"""
-
-"""
 from functools import partial
 from urlparse import urlparse
 import logging
@@ -8,10 +5,10 @@ import json
 from types import GeneratorType
 from rdflib import URIRef, Graph, RDF
 from rdflib.plugins.sparql.parser import ParseException
-from .property import PropertyType
 from .exception import OMSPARQLParseError, OMUnauthorizedTypeChangeError, OMInternalError
 from .exception import OMAttributeAccessError, OMUniquenessError, OMWrongResourceError, OMEditError
 from oldman.utils.sparql import build_update_query_part
+from oldman.common import OBJECT_PROPERTY
 
 
 class Resource(object):
@@ -355,7 +352,7 @@ class Resource(object):
             new_lines += attr.serialize_current_value_into_line(self)
 
             # Some former objects may be deleted
-            if attr.om_property.type == PropertyType.ObjectProperty:
+            if attr.om_property.type == OBJECT_PROPERTY:
                 if isinstance(former_values, dict):
                     raise NotImplementedError("Object dicts are not yet supported.")
                 former_values = former_values if isinstance(former_values, (set, list)) else [former_values]
@@ -507,7 +504,7 @@ class Resource(object):
         attributes = self._extract_attribute_list()
         for attr in attributes:
             # Delete blank nodes recursively
-            if attr.om_property.type == PropertyType.ObjectProperty:
+            if attr.om_property.type == OBJECT_PROPERTY:
                 objs = getattr(self, attr.name)
                 if objs is not None:
                     if isinstance(objs, (list, set, GeneratorType)):

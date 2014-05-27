@@ -7,7 +7,7 @@ from oldman.validation.value_format import AnyValueFormat, IRIValueFormat, Typed
 from oldman.validation.value_format import PositiveTypedValueFormat, NegativeTypedValueFormat
 from oldman.validation.value_format import NonPositiveTypedValueFormat, NonNegativeTypedValueFormat
 from oldman.validation.value_format import HexBinaryFormat
-from oldman.property import PropertyType
+from oldman.common import OBJECT_PROPERTY
 
 
 class OMAttributeExtractor(object):
@@ -122,12 +122,12 @@ class ValueFormatSelector(object):
     def find_value_format(self, attr_md):
         prop = attr_md.property
 
-        value_format = self._special_properties.get(prop.uri, None)
+        value_format = self._special_properties.get(prop.iri, None)
         if value_format:
             return value_format
 
         # If not a special property but an ObjectProperty
-        if prop.type == PropertyType.ObjectProperty:
+        if prop.type == OBJECT_PROPERTY:
             return self._uri_format
 
         # If a DatatypeProperty

@@ -164,7 +164,7 @@ class OMAttribute(object):
         else:
             converted_values = [self._encode_value(v) for v in vs]
 
-        property_uri = self.om_property.uri
+        property_uri = self.om_property.iri
         lines = ""
 
         if self.container == "@list":
