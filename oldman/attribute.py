@@ -8,33 +8,46 @@ from oldman.validation.value_format import ValueFormatError
 from oldman.iri import skolemize
 
 
-OMAttributeMetadata = namedtuple("DataAttributeMetadata", ["name", "property", "language", "jsonld_type",
+OMAttributeMetadata = namedtuple("OMAttributeMetadata", ["name", "property", "language", "jsonld_type",
                                                            "container", "reversed"])
 
 
 class OMAttribute(object):
     """
-        An OMAttribute is a key-value pair.
+    An :class:`~oldman.attribute.OMAttribute` object corresponds
+    to a JSON-LD term that refers to a RDF property.
 
-        The key is the name of the attribute. Technically, the key is a JSON-LD term,
-        namely "a short-hand string that expands to an IRI or a blank node identifier"
-        ( http://www.w3.org/TR/json-ld/#dfn-term ) which corresponds here to a RDF property
-        (see SupportedProperty).
+    Technically, the name of the :class:`~oldman.attribute.OMAttribute` object is a JSON-LD term,
+    namely *"a short-hand string that expands to an IRI or a blank node identifier"*
+    (cf. `the JSON-LD standard <http://www.w3.org/TR/json-ld/#dfn-term>`_) which corresponds here to a RDF property
+    (see :class:`~oldman.property.OMProperty`).
 
-        This value may be :
-          - None
-          - A Python equivalent for a RDF literal (double, string, date, etc.)
-          - An URI
-          - A collection (set, list and dict) of these types.
+    In JSON-LD, the same RDF property may correspond to multiple JSON-LD terms that have different metadata.
+    For instance, a foaf:Person resource may have two attributes for its bio in English and in French.
+    Look at the quickstart example for seeing it in practise.
 
-        TODO: explain further details.
+    An :class:`~oldman.attribute.OMAttribute` object manages the values of every
+    :class:`~oldman.resource.Resource` object that depends on a given :class:`~oldman.model.Model` object.
+
+    Each value may be :
+
+      - `None`;
+      - The Python equivalent for a RDF literal (double, string, date, etc.);
+      - An IRI ;
+      - A collection (set, list and dict) of these types.
+
+    :param manager: :class:`~oldman.management.manager.ResourceManager` object.
+    :param metadata: :class:`~oldman.attribute.OMAttributeMetadata` object.
+    :param value_format: :class:`~oldman.validation.value_format.ValueFormat` object
+                         that validates the format of values and converts RDF values
+                         into regular Python objects.
     """
 
-    CONTAINER_REQUIREMENTS = {'@set': set,
-                              '@list': list,
-                              '@language': dict,
-                              #'@index': dict,
-                              None: object}
+    _CONTAINER_REQUIREMENTS = {'@set': set,
+                               '@list': list,
+                               '@language': dict,
+                               #'@index': dict,
+                               None: object}
 
     def __init__(self, manager, metadata, value_format):
         self._manager = manager
@@ -56,63 +69,90 @@ class OMAttribute(object):
 
     @property
     def is_required(self):
+        """`True` if its property is required."""
         return self._metadata.property.is_required
 
     @property
     def is_read_only(self):
+        """`True` if the property cannot be modified by regular end-users."""
         return self._metadata.property.is_read_only
 
     @property
     def is_write_only(self):
+        """`True` if the property cannot be accessed by regular end-users."""
         return self._metadata.property.is_write_only
 
     @property
     def om_property(self):
+        """:class:`~oldman.property.OMProperty` to which it belongs."""
         return self._metadata.property
 
     @property
     def name(self):
+        """Its name as an attribute."""
         return self._metadata.name
 
     @property
     def language(self):
+        """Its language if localized."""
         return self._metadata.language
 
     @property
     def manager(self):
+        """Its :class:`~oldman.management.manager.ResourceManager` object."""
         return self._manager
 
     @property
     def jsonld_type(self):
+        """JSON-LD type (datatype IRI or JSON-LD keyword). May be `None`."""
         return self._metadata.jsonld_type
 
     @property
     def reversed(self):
+        """`True` if the object and subject in RDF triples should be reversed."""
         return self._metadata.reversed
 
     @property
     def other_attributes(self):
-        """
-            Attributes of the same property
+        """ Other :class:`~oldman.attribute.OMAttribute` objects of the same property.
         """
         return self.om_property.om_attributes.difference([self])
 
+    @property
+    def container(self):
+        """JSON-LD container (`"@set"`, `"@list"`, `"@language"` or `"@index"`).
+        May be `None`.
+        """
+        return self._metadata.container
+
+    @property
+    def value_format(self):
+        """:class:`~oldman.validation.value_format.ValueFormat` object that validates
+        the format of values and converts RDF values into regular Python objects.
+        """
+        return self._value_format
+
     def is_valid(self, instance, is_end_user=True):
+        """Tests if the attribute value assigned to a resource is valid.
+
+        See :func:`~oldman.attribute.OMAttribute.check_validity` for further details.
+
+        :return: `False` if the value assigned to the resource is invalid and `True` otherwise.
+        """
         try:
             self.check_validity(instance, is_end_user)
             return True
         except OMEditError:
             return False
 
-    @property
-    def container(self):
-        return self._metadata.container
-
-    @property
-    def value_format(self):
-        return self._value_format
-
     def check_validity(self, instance, is_end_user=True):
+        """Raises an :class:`~oldman.exception.OMEditError` exception if
+        the attribute value assigned to a resource is invalid.
+
+        :param instance: :class:`~oldman.resource.Resource` object.
+        :param is_end_user: `False` when an authorized user (not a regular end-user)
+                             wants to force some rights. Defaults to `True`.
+        """
         self._check_local_constraints(instance, is_end_user)
         self._check_requirement(instance)
 
@@ -245,7 +285,7 @@ class OMAttribute(object):
         if value is None:
             return
 
-        required_container_type = OMAttribute.CONTAINER_REQUIREMENTS[self.container]
+        required_container_type = OMAttribute._CONTAINER_REQUIREMENTS[self.container]
         if not isinstance(value, required_container_type):
             raise OMAttributeTypeCheckError(u"A container (%s) was expected instead of %s"
                                             % (required_container_type, type(value)))

@@ -159,14 +159,15 @@ class OMProperty(object):
 
     def add_attribute_metadata(self, name, jsonld_type=None, language=None, container=None,
                                reverse=None):
-        """Adds metadata about a future class:`~oldman.attribute.OMAttribute` object.
+        """Adds metadata about a future :class:`~oldman.attribute.OMAttribute` object.
 
         :param name: JSON-LD term representing the attribute.
         :param jsonld_type: JSON-LD type (datatype IRI or JSON-LD keyword). Defaults to `None`.
         :param language: Defaults to `None`.
         :param container: JSON-LD container (`"@set"`, `"@list"`, `"@language"` or `"@index"`).
                           Defaults to `None`.
-        :param reverse: `True` if the attribute is reversed. Defaults to `None`. Not yet supported.
+        :param reverse: `True` if the object and subject in RDF triples should be reversed.
+                         Defaults to `None`. Not yet supported.
         """
         #TODO: support:
         # - the container variable

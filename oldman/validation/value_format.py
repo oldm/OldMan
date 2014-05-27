@@ -1,29 +1,42 @@
-from rdflib import Literal
 from validate_email import validate_email
 
 
 class ValueFormatError(Exception):
+    """Invalid format detected."""
     pass
 
 
 class ValueFormat(object):
+    """A :class:`~oldman.validation.value_format.ValueFormat` object
+    checks the values and converts `rdflib.term.Identifier` objects into
+    Python objects.
+    """
 
     def check_value(self, value):
-        """
-            Raise a ValueFormatError if the value is wrongly formatted
+        """Raises a :class:`~oldman.validation.value_format.ValueFormatError` exception
+        if the value is wrongly formatted.
+
+        :param value: Python value to check.
         """
         raise NotImplementedError(u"check_value must be overwritten")
 
     def to_python(self, rdf_term):
-        """
-            By default, use the RDFlib toPython function
+        """Converts a `rdflib.term.Identifier` object into
+        a regular Python value.
+
+        By default, uses the RDFlib `toPython()` method.
+
+        :param rdf_term: `rdflib.term.Identifier` object.
+        :return: Regular Python object.
         """
         return rdf_term.toPython()
 
 
 class AnyValueFormat(ValueFormat):
+    """Accepts any value."""
 
     def check_value(self, value):
+        """Accepts any value."""
         pass
 
 
@@ -38,15 +51,9 @@ class TypedValueFormat(ValueFormat):
 
 
 class IRIValueFormat(ValueFormat):
-    """
-        TODO:
-            - implement it.
-    """
 
     def check_value(self, value):
-        """
-            TODO: to be implemented
-        """
+        #TODO: to be implemented
         pass
 
 
