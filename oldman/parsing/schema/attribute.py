@@ -45,13 +45,13 @@ class OMAttributeExtractor(object):
         if property_extractor not in self._property_extractors:
             self._property_extractors.append(property_extractor)
 
-    def extract(self, class_uri, type_uris, context_js, graph):
+    def extract(self, class_uri, type_uris, context_js, graph, manager):
         # Supported properties
         properties = {}
 
         # Extracts and updates properties
         for property_extractor in self._property_extractors:
-            properties = property_extractor.update(properties, class_uri, type_uris, graph)
+            properties = property_extractor.update(properties, class_uri, type_uris, graph, manager)
 
         # Updates properties with attribute metadata
         for md_extractor in self._attr_md_extractors:

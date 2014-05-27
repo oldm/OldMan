@@ -62,7 +62,7 @@ class Resource(object):
     def __getattr__(self, name):
         for model in self._models:
             if name in model.om_attributes:
-                return model.access_attribute(name).get(self, self._manager)
+                return model.access_attribute(name).get(self)
             method = model.methods.get(name)
             if method is not None:
                 # Make this function be a method (taking self as first parameter)
@@ -93,7 +93,7 @@ class Resource(object):
         reversed_models.reverse()
         for model in reversed_models:
             for name, attr in model.om_attributes.iteritems():
-                value = attr.get(self, self._manager)
+                value = attr.get(self)
                 if isinstance(value, GeneratorType):
                     if attr.container == "@list":
                         value = list(value)

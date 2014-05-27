@@ -7,7 +7,7 @@ class OMPropertyExtractor(object):
         Supported Property Extractor
     """
 
-    def update(self, properties, type_uris, graph):
+    def update(self, properties, class_iri, type_iris, graph, manager):
         """
             Updates metadata on RDF properties: {property_uri: Property.23}
 
@@ -49,13 +49,13 @@ class HydraPropertyExtractor(OMPropertyExtractor):
     """
     ns = {u'hydra': Namespace(u"http://www.w3.org/ns/hydra/core#")}
 
-    def update(self, properties, class_uri, type_uris, graph):
+    def update(self, properties, class_iri, type_iris, graph, manager):
         """
             TODO: Support rdfs:range (optional)
         """
         prop_params = {}
 
-        for type_uri in type_uris:
+        for type_uri in type_iris:
             results = graph.query(self.extract_hydra_properties, initNs=self.ns,
                                   initBindings={u'class_uri': URIRef(type_uri)})
             for property_uri, is_req, ro, wo in results:
@@ -71,6 +71,6 @@ class HydraPropertyExtractor(OMPropertyExtractor):
 
         for property_uri, (is_required, read_only, write_only) in prop_params.iteritems():
             if not property_uri in properties:
-                properties[property_uri] = OMProperty(property_uri, class_uri, is_required=is_required,
+                properties[property_uri] = OMProperty(manager, property_uri, class_iri, is_required=is_required,
                                                       read_only=read_only, write_only=write_only)
         return properties

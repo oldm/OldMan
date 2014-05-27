@@ -36,7 +36,8 @@ class OMAttribute(object):
                               #'@index': dict,
                               None: object}
 
-    def __init__(self, metadata, value_format):
+    def __init__(self, manager, metadata, value_format):
+        self._manager = manager
         self._metadata = metadata
         self._value_format = value_format
         self._data = WeakKeyDictionary()
@@ -76,6 +77,10 @@ class OMAttribute(object):
     @property
     def language(self):
         return self._metadata.language
+
+    @property
+    def manager(self):
+        return self._manager
 
     @property
     def jsonld_type(self):
@@ -212,7 +217,7 @@ class OMAttribute(object):
         else:
             raise NotImplementedError(u"Untyped JSON-LD value are not (yet?) supported")
 
-    def get(self, instance, manager):
+    def get(self, instance):
         value = self._data.get(instance, None)
         return value
 
@@ -271,18 +276,18 @@ class OMAttribute(object):
 
 class ObjectOMAttribute(OMAttribute):
 
-    def __init__(self, metadata, value_format):
-        OMAttribute.__init__(self, metadata, value_format)
+    def __init__(self, manager, metadata, value_format):
+        OMAttribute.__init__(self, manager, metadata, value_format)
 
-    def get(self, instance, manager):
-        iris = OMAttribute.get(self, instance, manager)
+    def get(self, instance):
+        iris = OMAttribute.get(self, instance)
         if isinstance(iris, (list, set)):
             # Returns a generator
-            return (manager.get(id=iri) for iri in iris)
+            return (self.manager.get(id=iri) for iri in iris)
         elif isinstance(iris, dict):
             raise NotImplementedError(u"Should we implement it?")
         elif iris is not None:
-            return manager.get(id=iris)
+            return self.manager.get(id=iris)
         else:
             return None
 

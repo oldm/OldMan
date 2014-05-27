@@ -171,7 +171,7 @@ class ResourceManager(object):
             class_iri = _extract_class_iri(class_name_or_iri, context)
             ancestry = ClassAncestry(class_iri, self._schema_graph)
             om_attributes = self._attr_extractor.extract(class_iri, ancestry.bottom_up, context,
-                                                         self._schema_graph)
+                                                         self._schema_graph, self)
         if iri_generator is not None:
             id_generator = iri_generator
         elif iri_prefix is not None:

@@ -15,9 +15,10 @@ class OMProperty(object):
     """
         RDF property declared "supported by a RDF class"
     """
-    def __init__(self, property_uri, supporter_class_uri, is_required=False, read_only=False,
+    def __init__(self, manager, property_uri, supporter_class_uri, is_required=False, read_only=False,
                  write_only=False, cardinality=None, property_type=PropertyType.UnknownPropertyType,
                  domains=None, ranges=None):
+        self._manager = manager
         self._uri = property_uri
         self._supporter_class_uri = supporter_class_uri
         self._is_required = is_required
@@ -175,7 +176,7 @@ class OMProperty(object):
         for md in self._tmp_attr_mds:
             value_format = attr_format_selector.find_value_format(md)
             attr_cls = ObjectOMAttribute if self._type == PropertyType.ObjectProperty else OMAttribute
-            self._attributes.add(attr_cls(md, value_format))
+            self._attributes.add(attr_cls(self._manager, md, value_format))
 
         # Clears mds
         self._tmp_attr_mds = []
