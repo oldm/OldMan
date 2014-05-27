@@ -541,8 +541,8 @@ class Resource(object):
                              See :func:`~oldman.attribute.OMAttribute.check_validity` for further details.
         :param allow_new_type: If `True`, new types can be added.
                                Please keep in mind that type change can:
-                                 - Modify the behavior of the resource by changing its model list.
-                                 - Interfere with the SPARQL requests using instance tests.
+                                   - Modify the behavior of the resource by changing its model list.
+                                   - Interfere with the SPARQL requests using instance tests.
                                If enabled, this may represent a major **security concern**.
                                Defaults to `False`.
         :param allow_type_removal: If `True`, new types can be removed. Same security concerns than above.

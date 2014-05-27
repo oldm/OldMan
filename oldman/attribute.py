@@ -95,7 +95,7 @@ class OMAttribute(object):
         """
             Attributes of the same property
         """
-        return self.om_property.attributes.difference([self])
+        return self.om_property.om_attributes.difference([self])
 
     def is_valid(self, instance, is_end_user=True):
         try:

@@ -61,7 +61,7 @@ class OMAttributeExtractor(object):
         attrs = []
         for prop in properties.values():
             prop.generate_attributes(self._class_selector)
-            attrs += prop.attributes
+            attrs += prop.om_attributes
 
         # TODO: detects if attribute names are not unique
         return {a.name: a for a in attrs}
