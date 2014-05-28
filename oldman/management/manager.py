@@ -10,7 +10,7 @@ from oldman.parsing.schema.attribute import OMAttributeExtractor
 from .registry import ModelRegistry
 from .ancestry import ClassAncestry
 from .cache import ResourceCache
-from .finder import Finder
+from .finder import ResourceFinder
 
 
 DEFAULT_MODEL_NAME = "Thing"
@@ -22,7 +22,7 @@ class ResourceManager(object):
     It gives access to the graphs and creates :class:`~oldman.model.Model` objects.
     It also creates, retrieves and caches :class:`~oldman.resource.Resource` objects.
 
-    Internally, it owns three objects a :class:`~oldman.management.finder.Finder`,
+    Internally, it owns three objects a :class:`~oldman.management.finder.ResourceFinder`,
     a :class:`~oldman.management.registry.ModelRegistry` and a :class:`~oldman.management.cache.ResourceCache`.
 
     :param schema_graph: :class:`rdflib.Graph` object containing all the schema triples. May be independent of
@@ -53,7 +53,7 @@ class ResourceManager(object):
         self._data_graph = data_graph
         self._methods = {}
         self._registry = ModelRegistry()
-        self._finder = Finder(self)
+        self._finder = ResourceFinder(self)
         self._resource_cache = ResourceCache(cache_region)
         self._logger = logging.getLogger(__name__)
         self._name = manager_name
@@ -220,15 +220,15 @@ class ResourceManager(object):
         return self.new(id=id, types=types, base_iri=base_iri, **kwargs).save()
 
     def get(self, id=None, types=None, base_iri=None, **kwargs):
-        """See :func:`oldman.management.finder.Finder.get`."""
+        """See :func:`oldman.management.finder.ResourceFinder.get`."""
         return self._finder.get(id=id, types=types, base_iri=base_iri, **kwargs)
 
     def filter(self, types=None, base_iri=None, **kwargs):
-        """See :func:`oldman.management.finder.Finder.filter`."""
+        """See :func:`oldman.management.finder.ResourceFinder.filter`."""
         return self._finder.filter(types=types, base_iri=base_iri, **kwargs)
 
     def sparql_filter(self, query):
-        """See :func:`oldman.management.finder.Finder.sparql_filter`."""
+        """See :func:`oldman.management.finder.ResourceFinder.sparql_filter`."""
         return self._finder.sparql_filter(query)
 
     def find_models_and_types(self, type_set):

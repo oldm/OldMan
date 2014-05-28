@@ -7,11 +7,12 @@ from oldman.exception import OMSPARQLParseError, OMAttributeAccessError, OMClass
 from oldman.exception import OMHashIriError, OMObjectNotFoundError
 
 
-class Finder(object):
-    """A :class:`~oldman.management.finder.Finder` object retrieves :class:`~oldman.resource.Resource` objects.
+class ResourceFinder(object):
+    """A :class:`~oldman.management.finder.ResourceFinder` object retrieves
+    :class:`~oldman.resource.Resource` objects.
 
-       :param manager: The :class:`~oldman.management.manager.ResourceManager` object.
-                       It gives access to RDF graphs.
+    :param manager: The :class:`~oldman.management.manager.ResourceManager` object.
+                    It gives access to RDF graphs.
     """
 
     def __init__(self, manager):
