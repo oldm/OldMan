@@ -22,8 +22,8 @@ class OMAttribute(object):
 
     In JSON-LD, the same RDF property may correspond to multiple JSON-LD terms that have different metadata.
     For instance, a foaf:Person resource may have two attributes for its bio in English and in French.
-    These attributes have two different languages but use the same property (bio:olb).
-    Look at the quickstart example for seeing it in practise.
+    These attributes have two different languages but use the same property `bio:olb`.
+    Look at the quickstart example to see it in practice.
 
     An :class:`~oldman.attribute.OMAttribute` object manages the values of every
     :class:`~oldman.resource.Resource` object that depends on a given :class:`~oldman.model.Model` object.
@@ -113,8 +113,7 @@ class OMAttribute(object):
 
     @property
     def other_attributes(self):
-        """ Other :class:`~oldman.attribute.OMAttribute` objects of the same property.
-        """
+        """ Other :class:`~oldman.attribute.OMAttribute` objects of the same property."""
         return self.om_property.om_attributes.difference([self])
 
     @property
@@ -161,6 +160,7 @@ class OMAttribute(object):
             raise OMReadOnlyAttributeError(u"Attribute %s is not editable by end-users" % self.name)
 
     def _check_requirement(self, resource):
+        """A required property has to be provided by at least one of its attributes."""
         if (not self.om_property.is_required) or self.has_value(resource):
             return
         for other in self.other_attributes:
@@ -249,10 +249,11 @@ class OMAttribute(object):
         return lines
 
     def update_from_graph(self, resource, sub_graph, initial=False):
-        """
+        """Updates a resource attribute value by extracting the relevant information from a RDF graph.
+
         :param resource: :class:`~oldman.resource.Resource` object.
         :param sub_graph: :class:`rdflib.Graph` object containing the value to extract.
-        :param initial: Defaults to `False`.
+        :param initial: `True` when the value is directly from the datastore. Defaults to `False`.
         """
         values = self._value_extractor.extract_values(resource, sub_graph)
 
@@ -262,8 +263,11 @@ class OMAttribute(object):
             self.pop_former_value(resource)
 
     def _encode_value(self, value, language=None):
-        """
-            SPARQL encoding
+        """Encodes an atomic value into a SPARQL line.
+
+        :param value: Atomic value.
+        :param language: language code. Defaults to `None`.
+        :return: SPARQL-encoded string (a line).
         """
         jsonld_type = self.jsonld_type
         if language is None:
@@ -279,15 +283,19 @@ class OMAttribute(object):
             raise NotImplementedError(u"Untyped JSON-LD value are not (yet?) supported")
 
     def get(self, resource):
-        """
+        """Gets the attribute value of a resource.
+
         :param resource: :class:`~oldman.resource.Resource` object.
+        :return: Atomic value or a generator.
         """
         value = self._data.get(resource, None)
         return value
 
     def set(self, resource, value):
-        """
+        """Sets the attribute value of a resource.
+
         :param resource: :class:`~oldman.resource.Resource` object.
+        :param value: Its value for this attribute.
         """
         # Even if None
         self.check_value(value)
@@ -307,8 +315,12 @@ class OMAttribute(object):
         self._data[resource] = value
 
     def check_value(self, value):
-        """
-        :param resource: :class:`~oldman.resource.Resource` object.
+        """Checks a new **when assigned**.
+
+        Raises an :class:`oldman.exception.OMAttributeTypeCheckError` exception
+        if the value is invalid.
+
+        :param value: collection or atomic value.
         """
         # None value are always allowed
         # (at assignment time)
@@ -328,6 +340,14 @@ class OMAttribute(object):
             raise OMAttributeTypeCheckError(unicode(e))
 
     def _check_container(self, value):
+        """Checks that container used is authorized
+        and its items are formatted properly.
+
+        May raise a :class:`oldman.exception.OMAttributeTypeCheckError` or
+        a :class:`oldman.exception.ValueFormatError` exception.
+
+        :param value: collection of atomic items.
+        """
         if not self.container:
             logger = logging.getLogger(__name__)
             logger.warn("No container declared for %s" % self.name)
@@ -345,13 +365,19 @@ class OMAttribute(object):
 
 
 class ObjectOMAttribute(OMAttribute):
+    """An :class:`~oldman.attribute.ObjectOMAttribute` object is an :class:`~oldman.attribute.OMAttribute` object
+    that depends on a owl:ObjectProperty.
+
+    """
 
     def __init__(self, manager, metadata, value_format):
         OMAttribute.__init__(self, manager, metadata, value_format)
 
     def get(self, resource):
-        """
-        :param resource: :class:`~oldman.resource.Resource` object.
+        """See :func:`~oldman.attribute.OMAttribute.get`.
+
+        :return: :class:`~oldman.resource.Resource` object
+                 or a generator of :class:`~oldman.resource.Resource` objects.
         """
         iris = OMAttribute.get(self, resource)
         if isinstance(iris, (list, set)):
@@ -365,8 +391,9 @@ class ObjectOMAttribute(OMAttribute):
             return None
 
     def set(self, resource, value):
-        """
-        :param resource: :class:`~oldman.resource.Resource` object.
+        """See :func:`~oldman.attribute.OMAttribute.set`.
+
+            Accepts :class:`~oldman.resource.Resource` object(s) or IRI(s).
         """
         from .resource import Resource
         f = lambda x: x.id if isinstance(x, Resource) else x
