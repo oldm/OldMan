@@ -34,18 +34,18 @@ class HydraPropertyExtractor(OMPropertyExtractor):
     """
 
     _extract_hydra_properties = u"""
-        SELECT ?p ?required ?readOnly ?writeOnly
+        SELECT ?p ?required ?readonly ?writeonly
         WHERE {
-            ?class_uri hydra:supportedProperty ?sp.
+            ?class_iri hydra:supportedProperty ?sp.
             ?sp hydra:property ?p.
             OPTIONAL {
                 ?sp hydra:required ?required
             } .
             OPTIONAL {
-                ?sp hydra:readonly ?readOnly
+                ?sp hydra:readonly ?readonly
             } .
             OPTIONAL {
-                ?sp hydra:writeonly ?writeOnly
+                ?sp hydra:writeonly ?writeonly
             }
         }
     """
@@ -57,7 +57,7 @@ class HydraPropertyExtractor(OMPropertyExtractor):
 
         for type_uri in type_iris:
             results = schema_graph.query(self._extract_hydra_properties, initNs=self._ns,
-                                         initBindings={u'class_uri': URIRef(type_uri)})
+                                         initBindings={u'class_iri': URIRef(type_uri)})
             for property_iri, is_req, ro, wo in results:
                 prop_uri = property_iri.toPython()
                 # Booleans are false by default

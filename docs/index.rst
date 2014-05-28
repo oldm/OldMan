@@ -35,6 +35,10 @@ By adopting a declarative style:
  * Your schema (including validation constraints) can be published and reused by **hypermedia-driven** Web clients.
  * Your declared domain logic becomes independent of Python and its frameworks.
 
+But there is also one secret mission: make you manipulate IRIs only when you want to see them, i.e.,
+when it is relevant for you to see them.
+Short names and objects are nice, especially when they map to IRIs!
+
 
 Examples
 ========
@@ -45,16 +49,22 @@ See `examples/quickstart.py`
 
 Current core features
 =====================
- * Resource-centric validation based on RDF vocabularies
-     - `Hydra: <http://www.markus-lanthaler.com/hydra/spec/latest/core/>`_ hydra:requirement, hydra:readOnly and hydra:writeOnly
-     - Literal validation for common XSD types
-     - Literal validation for arbitrary property (e.g. foaf:mbox)
-     - `JSON-LD collections <http://www.w3.org/TR/json-ld/#sets-and-lists>`_ (set, list and language maps)
- * IRI generation for new resources (objects)
- * Inheritance (attributes and Python methods)
- * An attribute can require its value to be a collection (a set, a list or a language map)
- * Arbitrary attribute names (e.g. plural names for collections)
+ * Resource-centric validation based on RDF vocabularies:
 
+     - `Hydra`_: `hydra:required`_ , `hydra:readonly`_ and `hydra:writeonly`_;
+     - Literal validation for common XSD types;
+     - Literal validation for arbitrary property (e.g. `foaf:mbox <http://xmlns.com/foaf/spec/#term_mbox>`_);
+     - `JSON-LD collections <http://www.w3.org/TR/json-ld/#sets-and-lists>`_ (set, list and language maps);
+ * IRI generation for new resources (objects);
+ * Inheritance (attributes and Python methods);
+ * An attribute can require its value to be a collection (a set, a list or a language map);
+ * Arbitrary attribute names (e.g. plural names for collections);
+ * Optional resource cache relying on the popular `dogpile.cache <https://bitbucket.org/zzzeek/dogpile.cache>`_ library.
+
+.. _Hydra: http://www.markus-lanthaler.com/hydra/spec/latest/core/
+.. _hydra:required: http://www.markus-lanthaler.com/hydra/spec/latest/core/#hydra:required
+.. _hydra:readonly: http://www.markus-lanthaler.com/hydra/spec/latest/core/#hydra:readonly
+.. _hydra:writeonly: http://www.markus-lanthaler.com/hydra/spec/latest/core/#hydra:writeonly
 
 Status
 ======
@@ -71,7 +81,10 @@ See our issue tracker.
 
 
 API
-====
+===
+
+See our three main classes: :class:`~oldman.management.manager.ResourceManager`, :class:`~oldman.model.Model`
+and  :class:`~oldman.resource.Resource`.
 
 * :ref:`genindex`
 * :ref:`modindex`
