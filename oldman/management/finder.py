@@ -55,7 +55,7 @@ class Finder(object):
                 attr = _find_attribute(models, name)
                 value = kwargs[name]
                 if value:
-                    lines += attr.serialize_values_into_lines(value)
+                    lines += attr.serialize_value_into_lines(value)
 
         if base_iri is not None:
             if "#" in base_iri:

@@ -13,9 +13,7 @@ OMAttributeMetadata = namedtuple("OMAttributeMetadata", ["name", "property", "la
 
 
 class OMAttribute(object):
-    """
-    An :class:`~oldman.attribute.OMAttribute` object corresponds
-    to a JSON-LD term that refers to a RDF property.
+    """An :class:`~oldman.attribute.OMAttribute` object corresponds to a JSON-LD term that refers to a RDF property.
 
     Technically, the name of the :class:`~oldman.attribute.OMAttribute` object is a JSON-LD term,
     namely *"a short-hand string that expands to an IRI or a blank node identifier"*
@@ -24,6 +22,7 @@ class OMAttribute(object):
 
     In JSON-LD, the same RDF property may correspond to multiple JSON-LD terms that have different metadata.
     For instance, a foaf:Person resource may have two attributes for its bio in English and in French.
+    These attributes have two different languages but use the same property (bio:olb).
     Look at the quickstart example for seeing it in practise.
 
     An :class:`~oldman.attribute.OMAttribute` object manages the values of every
@@ -33,7 +32,7 @@ class OMAttribute(object):
 
       - `None`;
       - The Python equivalent for a RDF literal (double, string, date, etc.);
-      - An IRI ;
+      - An IRI;
       - A collection (set, list and dict) of these types.
 
     :param manager: :class:`~oldman.management.manager.ResourceManager` object.
@@ -132,7 +131,7 @@ class OMAttribute(object):
         """
         return self._value_format
 
-    def is_valid(self, instance, is_end_user=True):
+    def is_valid(self, resource, is_end_user=True):
         """Tests if the attribute value assigned to a resource is valid.
 
         See :func:`~oldman.attribute.OMAttribute.check_validity` for further details.
@@ -140,65 +139,82 @@ class OMAttribute(object):
         :return: `False` if the value assigned to the resource is invalid and `True` otherwise.
         """
         try:
-            self.check_validity(instance, is_end_user)
+            self.check_validity(resource, is_end_user)
             return True
         except OMEditError:
             return False
 
-    def check_validity(self, instance, is_end_user=True):
+    def check_validity(self, resource, is_end_user=True):
         """Raises an :class:`~oldman.exception.OMEditError` exception if
         the attribute value assigned to a resource is invalid.
 
-        :param instance: :class:`~oldman.resource.Resource` object.
+        :param resource: :class:`~oldman.resource.Resource` object.
         :param is_end_user: `False` when an authorized user (not a regular end-user)
                              wants to force some rights. Defaults to `True`.
         """
-        self._check_local_constraints(instance, is_end_user)
-        self._check_requirement(instance)
+        self._check_local_constraints(resource, is_end_user)
+        self._check_requirement(resource)
 
-    def _check_local_constraints(self, instance, is_end_user):
+    def _check_local_constraints(self, resource, is_end_user):
         #Read-only constraint
-        if is_end_user and self.is_read_only and self.has_new_value(instance):
-            raise OMReadOnlyAttributeError("Attribute %s is not editable by end users" % self.name)
+        if is_end_user and self.is_read_only and self.has_new_value(resource):
+            raise OMReadOnlyAttributeError(u"Attribute %s is not editable by end-users" % self.name)
 
-    def _check_requirement(self, instance):
-        if (not self.om_property.is_required) or self.has_value(instance):
+    def _check_requirement(self, resource):
+        if (not self.om_property.is_required) or self.has_value(resource):
             return
         for other in self.other_attributes:
-            if other.has_value(instance):
+            if other.has_value(resource):
                 return
         raise OMRequiredPropertyError(self.name)
 
-    def has_value(self, instance):
-        return self._data.get(instance) is not None
+    def has_value(self, resource):
+        """Tests if the resource attribute has a non-None value.
 
-    def has_new_value(self, instance):
-        return instance in self._former_values
+        :param resource: :class:`~oldman.resource.Resource` object.
+        :return: `False` if the value is `None`.
+        """
+        return self._data.get(resource) is not None
 
-    def pop_former_value(self, instance):
+    def has_new_value(self, resource):
         """
-            To be called before saving the instance.
-            Pops out the former value that has been saved
+        :param resource: :class:`~oldman.resource.Resource` object.
         """
-        if instance in self._former_values:
-            return self._former_values.pop(instance)
+        return resource in self._former_values
+
+    def pop_former_value(self, resource):
+        """Pops out the former value that has been replaced.
+
+        After calling this method, the former value cannot be retrieved anymore.
+
+        :param resource: :class:`~oldman.resource.Resource` object.
+        :return: its former attribute value.
+        """
+        if resource in self._former_values:
+            return self._former_values.pop(resource)
         return None
 
-    def serialize_current_value_into_line(self, instance):
-        """
-            Serialized in a SPARQL-compatible way
-        """
-        values = self._data.get(instance, None)
-        return self.serialize_values_into_lines(values)
+    def serialize_current_value_into_line(self, resource):
+        """Converts its current attribute value into SPARQL-encoded lines.
 
-    def serialize_values_into_lines(self, values):
+        Relies on :func:`~oldman.attribute.OMAttribute.serialize_value_into_lines`.
+
+        :param resource: :class:`~oldman.resource.Resource` object.
+        :return: SPARQL serialization of its attribute value.
         """
-            Each value is returned as a SPARQL encoded string
+        value = self._data.get(resource, None)
+        return self.serialize_value_into_lines(value)
+
+    def serialize_value_into_lines(self, value):
+        """Converts an attribute value into SPARQL-encoded lines.
+
+        :param value: Attribute value for a given resource.
+        :return: SPARQL serialization of this value.
         """
-        if values is None:
+        if value is None:
             return ""
 
-        vs = values if isinstance(values, (list, set, dict)) else [values]
+        vs = value if isinstance(value, (list, set, dict)) else [value]
         if isinstance(vs, dict):
             converted_values = [self._encode_value(v, language) for language, v in vs.iteritems()]
         else:
@@ -232,13 +248,19 @@ class OMAttribute(object):
 
         return lines
 
-    def update_from_graph(self, instance, sub_graph, storage_graph, initial=False):
-        values = self._value_extractor.extract_values(instance, sub_graph, storage_graph)
+    def update_from_graph(self, resource, sub_graph, storage_graph, initial=False):
+        """
+        :param resource: :class:`~oldman.resource.Resource` object.
+        :param sub_graph: :class:`rdflib.Graph` object containing the value to extract.
+        :param storage_graph: TO REMOVE???
+        :param initial: Defaults to `False`.
+        """
+        values = self._value_extractor.extract_values(resource, sub_graph, storage_graph)
 
-        setattr(instance, self.name, values)
+        setattr(resource, self.name, values)
         if initial:
             # Clears "None" former value
-            self.pop_former_value(instance)
+            self.pop_former_value(resource)
 
     def _encode_value(self, value, language=None):
         """
@@ -257,11 +279,17 @@ class OMAttribute(object):
         else:
             raise NotImplementedError(u"Untyped JSON-LD value are not (yet?) supported")
 
-    def get(self, instance):
-        value = self._data.get(instance, None)
+    def get(self, resource):
+        """
+        :param resource: :class:`~oldman.resource.Resource` object.
+        """
+        value = self._data.get(resource, None)
         return value
 
-    def set(self, instance, value):
+    def set(self, resource, value):
+        """
+        :param resource: :class:`~oldman.resource.Resource` object.
+        """
         # Even if None
         self.check_value(value)
 
@@ -271,15 +299,18 @@ class OMAttribute(object):
 
         # Former value (if not already in cache)
         # (robust to multiple changes before saving)
-        if not instance in self._former_values:
+        if not resource in self._former_values:
             # May be None (trick!)
-            former_value = self._data.get(instance)
+            former_value = self._data.get(resource)
             if former_value != value:
-                self._former_values[instance] = former_value
+                self._former_values[resource] = former_value
 
-        self._data[instance] = value
+        self._data[resource] = value
 
     def check_value(self, value):
+        """
+        :param resource: :class:`~oldman.resource.Resource` object.
+        """
         # None value are always allowed
         # (at assignment time)
         if value is None:
@@ -319,8 +350,11 @@ class ObjectOMAttribute(OMAttribute):
     def __init__(self, manager, metadata, value_format):
         OMAttribute.__init__(self, manager, metadata, value_format)
 
-    def get(self, instance):
-        iris = OMAttribute.get(self, instance)
+    def get(self, resource):
+        """
+        :param resource: :class:`~oldman.resource.Resource` object.
+        """
+        iris = OMAttribute.get(self, resource)
         if isinstance(iris, (list, set)):
             # Returns a generator
             return (self.manager.get(id=iri) for iri in iris)
@@ -331,7 +365,10 @@ class ObjectOMAttribute(OMAttribute):
         else:
             return None
 
-    def set(self, instance, value):
+    def set(self, resource, value):
+        """
+        :param resource: :class:`~oldman.resource.Resource` object.
+        """
         from .resource import Resource
         f = lambda x: x.id if isinstance(x, Resource) else x
 
@@ -347,4 +384,4 @@ class ObjectOMAttribute(OMAttribute):
                                                 u"are not supported for objects.")
         else:
             values = f(value)
-        OMAttribute.set(self, instance, values)
+        OMAttribute.set(self, resource, values)

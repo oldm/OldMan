@@ -49,7 +49,7 @@ class AttributeValueExtractorFromGraph(object):
             if len(values) > 0:
                 if final_list is not None:
                     raise OMDataStoreError(u"Same language in multiple list for the property %s"
-                                         % self._property_uri)
+                                           % self._property_uri)
                 final_list = values
 
         return final_list
