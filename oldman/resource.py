@@ -602,7 +602,7 @@ class Resource(object):
         :return: The :class:`~oldman.resource.Resource` object itself.
         """
         for attr in self._extract_attribute_list():
-            attr.update_from_graph(self, subgraph, self._manager.data_graph, initial=initial)
+            attr.update_from_graph(self, subgraph, initial=initial)
         #Types
         if not initial:
             new_types = {unicode(t) for t in subgraph.objects(URIRef(self._id), RDF.type)}

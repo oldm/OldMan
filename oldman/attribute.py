@@ -248,14 +248,13 @@ class OMAttribute(object):
 
         return lines
 
-    def update_from_graph(self, resource, sub_graph, storage_graph, initial=False):
+    def update_from_graph(self, resource, sub_graph, initial=False):
         """
         :param resource: :class:`~oldman.resource.Resource` object.
         :param sub_graph: :class:`rdflib.Graph` object containing the value to extract.
-        :param storage_graph: TO REMOVE???
         :param initial: Defaults to `False`.
         """
-        values = self._value_extractor.extract_values(resource, sub_graph, storage_graph)
+        values = self._value_extractor.extract_values(resource, sub_graph)
 
         setattr(resource, self.name, values)
         if initial:

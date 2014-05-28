@@ -251,3 +251,36 @@ class UpdateDeleteTest(TestCase):
         manager.resource_cache.remove_resource(alice)
         alice = lp_model.get(id=alice_iri)
         self.assertEquals(set(alice.types), set(lp_model.ancestry_iris))
+
+    def test_add_list_by_dict_update(self):
+        alice = create_alice()
+        bob = create_bob()
+        john = create_john()
+
+        # Not saved
+        alice.children = [bob, john]
+        children_iris = [bob.id, john.id]
+        self.assertEquals([c.id for c in alice.children], children_iris)
+        alice_dict = dict(alice.to_dict())
+        alice.children = None
+        self.assertEquals(alice.children, None)
+
+        alice.full_update(alice_dict)
+        self.assertEquals([c.id for c in alice.children], children_iris)
+
+    def test_add_list_by_graph_update(self):
+        alice = create_alice()
+        bob = create_bob()
+        john = create_john()
+
+        # Not saved
+        alice.children = [bob, john]
+        children_iris = [bob.id, john.id]
+        self.assertEquals([c.id for c in alice.children], children_iris)
+
+        alice_graph = Graph().parse(data=alice.to_rdf(rdf_format="nt"), format="nt")
+        alice.children = None
+        self.assertEquals(alice.children, None)
+
+        alice.full_update_from_graph(alice_graph)
+        self.assertEquals([c.id for c in alice.children], children_iris)

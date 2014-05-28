@@ -1,5 +1,5 @@
 import logging
-from rdflib import URIRef, Graph
+from rdflib import URIRef, Graph, RDF
 from rdflib.plugins.sparql.parser import ParseException
 from oldman.resource import Resource
 from oldman.utils.sparql import build_query_part
@@ -143,6 +143,21 @@ class Finder(object):
         resource_graph = Graph()
         iri = URIRef(id)
         resource_graph += self._manager.union_graph.triples((iri, None, None))
+        # Extracts lists
+        list_items_request = u"""
+        SELECT ?subList ?value ?previous
+        WHERE {
+          <%s> ?p ?l .
+          ?l rdf:rest* ?subList .
+          ?subList rdf:first ?value .
+          OPTIONAL { ?previous rdf:rest ?subList }
+        }""" % id
+        results = list(self._manager.union_graph.query(list_items_request))
+        for subList, value, previous in results:
+            if previous is not None:
+                resource_graph.add((previous, RDF.rest, subList))
+            resource_graph.add((subList, RDF.first, value))
+
         return self._new_resource_object(id, resource_graph)
 
     def _new_resource_object(self, id, resource_graph):
