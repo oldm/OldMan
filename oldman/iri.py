@@ -4,43 +4,68 @@ from .exception import OMDataStoreError, OMRequiredBaseIRIError
 
 
 class IriGenerator(object):
+    """An :class:`~oldman.iri.IriGenerator` object generates
+    the IRIs of some new :class:`~oldman.resource.Resource` objects.
+    """
 
-    def __init__(self, **kwargs):
+    def __init__(self):
         pass
 
     def generate(self, **kwargs):
+        """Generates an IRI.
+
+        :return: Unique IRI (unicode string).
+        """
         raise NotImplementedError()
 
 
-class RandomPrefixedIriGenerator(IriGenerator):
+class PrefixedUUIDIriGenerator(IriGenerator):
+    """Uses a prefix, a fragment and a unique UUID1 number to generate IRIs.
+
+    Recommended generator because UUID1 is robust and fast (no DB access).
+
+    :param prefix: IRI prefix.
+    :param fragment: IRI fragment to append to the base IRI. Defaults to `None`.
+    """
 
     def __init__(self, prefix, fragment=None):
         self._prefix = prefix
         self._fragment = fragment
 
     def generate(self, **kwargs):
-        partial_iri = skolemize(prefix=self._prefix)
+        """See :func:`oldman.iri.IriGenerator.generate`."""
+        partial_iri = _skolemize(prefix=self._prefix)
         if self._fragment is not None:
             return u"%s#%s" % (partial_iri, self._fragment)
         return partial_iri
 
 
-class BlankNodeIriGenerator(RandomPrefixedIriGenerator):
+class BlankNodeIriGenerator(PrefixedUUIDIriGenerator):
+    """Generates skolem IRIs that denote blank nodes.
+
+    :param hostname: Defaults to `"localhost"`.
+    """
 
     def __init__(self, hostname=u"localhost"):
         prefix = u"http://%s/.well-known/genid/" % hostname
-        RandomPrefixedIriGenerator.__init__(self, prefix=prefix)
+        PrefixedUUIDIriGenerator.__init__(self, prefix=prefix)
 
 
 class IncrementalIriGenerator(IriGenerator):
-    """
-        Generates IRIs with short numbers.
+    """Generates IRIs with short numbers.
 
-        Slow in concurrent settings: number generation implies a critical section
-        of two SPARQL requests. It is a significant bottleneck.
+    Beautiful but **slow** in concurrent settings. The number generation implies a critical section
+    and a sequence of two SPARQL requests, which represents a significant bottleneck.
+
+    :param prefix: IRI prefix.
+    :param graph: :class:`rdflib.Graph` object where to store the counter.
+    :param class_iri: IRI of the RDFS class of which new :class:`~oldman.resource.Resource` objects are instance of.
+                      Usually corresponds to the class IRI of the :class:`~oldman.model.Model` object that
+                      owns this generator.
+    :param fragment: IRI fragment to append to the base IRI. Defaults to `None`.
     """
 
-    mutex = Lock()
+    _mutex = Lock()
 
     def __init__(self, prefix, graph, class_iri, fragment=None):
         self._prefix = prefix
@@ -76,6 +101,10 @@ class IncrementalIriGenerator(IriGenerator):
             raise OMDataStoreError(u"Multiple counter for class %s" % self._class_iri)
 
     def reset_counter(self):
+        """Resets the counter.
+
+        For test purposes **only**.
+        """
         self._graph.update(u"""
             PREFIX oldman: <urn:oldman:>
             INSERT {
@@ -83,13 +112,14 @@ class IncrementalIriGenerator(IriGenerator):
                 } WHERE {}""" % self._class_iri)
 
     def generate(self, **kwargs):
+        """See :func:`oldman.iri.IriGenerator.generate`."""
         # Critical section
-        self.mutex.acquire()
+        self._mutex.acquire()
         try:
             self._graph.update(self._counter_update_req)
             numbers = [int(r) for r, in self._graph.query(self._counter_query_req)]
         finally:
-            self.mutex.release()
+            self._mutex.release()
 
         if len(numbers) == 0:
             raise OMDataStoreError(u"No counter for class %s (has disappeared)" % self._class_iri)
@@ -102,9 +132,14 @@ class IncrementalIriGenerator(IriGenerator):
         return partial_iri
 
 
-class RandomFragmentIriGenerator(IriGenerator):
+class UUIDFragmentIriGenerator(IriGenerator):
+    """Generates an hashed IRI from a base IRI.
+
+    Its fragment is a unique UUID1 number.
+    """
 
     def generate(self, base_iri):
+        """See :func:`oldman.iri.IriGenerator.generate`."""
         if base_iri is None:
             raise OMRequiredBaseIRIError(u"Base IRI is required to generate an IRI")
         if '#' in base_iri:
@@ -112,5 +147,5 @@ class RandomFragmentIriGenerator(IriGenerator):
         return u"%s#%s" % (base_iri, uuid1().hex)
 
 
-def skolemize(prefix=u"http://localhost/.well-known/genid/"):
+def _skolemize(prefix=u"http://localhost/.well-known/genid/"):
     return u"%s%s" % (prefix, uuid1().hex)

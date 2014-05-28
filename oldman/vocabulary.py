@@ -28,5 +28,5 @@ MODEL_HAS_PRIORITY_IRI = "urn:oldman:model:ordering:hasPriority"
 MODEL_PRIORITY_CLASS_IRI = "urn:oldman:model:ordering:class"
 MODEL_PRIORITY_IRI = "urn:oldman:model:ordering:priority"
 
-#: Used to increment IRIs
+#: Used to increment IRIs.
 NEXT_NUMBER_IRI = "urn:oldman:nextNumber"

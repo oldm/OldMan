@@ -5,7 +5,7 @@ from rdflib import Graph
 from oldman.model import Model
 from oldman.resource import Resource
 from oldman.exception import OMUndeclaredClassNameError, OMExpiredMethodDeclarationTimeSlotError, OMError
-from oldman.iri import RandomPrefixedIriGenerator, IncrementalIriGenerator, BlankNodeIriGenerator
+from oldman.iri import PrefixedUUIDIriGenerator, IncrementalIriGenerator, BlankNodeIriGenerator
 from oldman.parsing.schema.attribute import OMAttributeExtractor
 from .registry import ModelRegistry
 from .ancestry import ClassAncestry
@@ -179,7 +179,7 @@ class ResourceManager(object):
                 id_generator = IncrementalIriGenerator(iri_prefix, self._data_graph,
                                                        class_iri, fragment=iri_fragment)
             else:
-                id_generator = RandomPrefixedIriGenerator(iri_prefix, fragment=iri_fragment)
+                id_generator = PrefixedUUIDIriGenerator(iri_prefix, fragment=iri_fragment)
         else:
             id_generator = BlankNodeIriGenerator()
 

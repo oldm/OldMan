@@ -5,7 +5,7 @@ from rdflib import Literal
 from .exception import OMAttributeTypeCheckError, OMRequiredPropertyError, OMReadOnlyAttributeError, OMEditError
 from oldman.parsing.value import AttributeValueExtractorFromGraph
 from oldman.validation.value_format import ValueFormatError
-from oldman.iri import skolemize
+from oldman.iri import _skolemize
 
 
 OMAttributeMetadata = namedtuple("OMAttributeMetadata", ["name", "property", "language", "jsonld_type",
@@ -226,12 +226,12 @@ class OMAttribute(object):
         if self.container == "@list":
             #list_value = u"( " + u" ".join(converted_values) + u" )"
             # List with skolemized nodes
-            first_node = "<%s>" % skolemize()
+            first_node = "<%s>" % _skolemize()
             node = first_node
             for v in converted_values:
                 lines += u'  %s rdf:first %s .\n' % (node, v)
                 previous_node = node
-                node = "<%s>" % skolemize()
+                node = "<%s>" % _skolemize()
                 lines += u'  %s rdf:rest %s .\n' % (previous_node, node)
             lines += u'  %s rdf:rest rdf:nil .\n' % node
             serialized_values = [first_node]
