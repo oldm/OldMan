@@ -3,35 +3,37 @@ from oldman.property import OMProperty
 
 
 class OMPropertyExtractor(object):
-    """
-        Supported Property Extractor
+    """An :class:`~oldman.parsing.schema.property.OMPropertyExtractor` object generates
+    and updates :class:`~oldman.property.OMProperty` objects from the schema RDF graph.
+
+    This class is generic and must derived for supporting various RDF vocabularies.
     """
 
-    def update(self, properties, class_iri, type_iris, graph, manager):
-        """
-            Updates metadata on RDF properties: {property_uri: Property.23}
+    def update(self, om_properties, class_iri, type_iris, schema_graph, manager):
+        """Generates new :class:`~oldman.property.OMProperty` objects or updates them
+        from the schema graph.
 
-            Returns updated properties
+        :param om_properties: `dict` of :class:`~oldman.property.OMProperty` objects indexed
+                              by their IRIs.
+        :param class_iri: IRI of RDFS class of the future :class:`~oldman.model.Model` object.
+        :param type_iris: Ancestry of the RDFS class.
+        :param schema_graph: :class:`rdflib.graph.Graph` object.
+        :return: Updated `dict` :class:`~oldman.property.OMProperty` objects.
         """
         raise NotImplementedError()
 
 
 class HydraPropertyExtractor(OMPropertyExtractor):
-    """
-        Extracts supported properties from Hydra RDF descriptions
+    """:class:`~oldman.parsing.schema.property.OMPropertyExtractor` objects
+    that support the `Hydra vocabulary <http://www.markus-lanthaler.com/hydra/spec/latest/core/>`_.
 
-        http://www.markus-lanthaler.com/hydra/spec/latest/core/
-
-        Currently supported:
-           - hydra:required
-           - hydra:readOnly
-           - hydra:writeOnly
-
-        TODO: support
-           - rdfs:range
+    Currently, this class supports:
+        - `hydra:required <http://www.markus-lanthaler.com/hydra/spec/latest/core/#hydra:required>`_ ;
+        - `hydra:readonly <http://www.markus-lanthaler.com/hydra/spec/latest/core/#hydra:readonly>`_;
+        - `hydra:writeonly <http://www.markus-lanthaler.com/hydra/spec/latest/core/#hydra:writeonly>`_ .
     """
 
-    extract_hydra_properties = u"""
+    _extract_hydra_properties = u"""
         SELECT ?p ?required ?readOnly ?writeOnly
         WHERE {
             ?class_uri hydra:supportedProperty ?sp.
@@ -47,19 +49,17 @@ class HydraPropertyExtractor(OMPropertyExtractor):
             }
         }
     """
-    ns = {u'hydra': Namespace(u"http://www.w3.org/ns/hydra/core#")}
+    _ns = {u'hydra': Namespace(u"http://www.w3.org/ns/hydra/core#")}
 
-    def update(self, properties, class_iri, type_iris, graph, manager):
-        """
-            TODO: Support rdfs:range (optional)
-        """
+    def update(self, om_properties, class_iri, type_iris, schema_graph, manager):
+        """See :func:`oldman.parsing.schema.property.OMPropertyExtractor.update`."""
         prop_params = {}
 
         for type_uri in type_iris:
-            results = graph.query(self.extract_hydra_properties, initNs=self.ns,
-                                  initBindings={u'class_uri': URIRef(type_uri)})
-            for property_uri, is_req, ro, wo in results:
-                prop_uri = property_uri.toPython()
+            results = schema_graph.query(self._extract_hydra_properties, initNs=self._ns,
+                                         initBindings={u'class_uri': URIRef(type_uri)})
+            for property_iri, is_req, ro, wo in results:
+                prop_uri = property_iri.toPython()
                 # Booleans are false by default
                 is_required, read_only, write_only = prop_params.get(prop_uri, (False, False, False))
 
@@ -69,8 +69,9 @@ class HydraPropertyExtractor(OMPropertyExtractor):
                 write_only = write_only or (wo is not None and bool(wo.toPython()))
                 prop_params[prop_uri] = (is_required, read_only, write_only)
 
-        for property_uri, (is_required, read_only, write_only) in prop_params.iteritems():
-            if not property_uri in properties:
-                properties[property_uri] = OMProperty(manager, property_uri, class_iri, is_required=is_required,
-                                                      read_only=read_only, write_only=write_only)
-        return properties
+        for property_iri, (is_required, read_only, write_only) in prop_params.iteritems():
+            if not property_iri in om_properties:
+                om_property = OMProperty(manager, property_iri, class_iri, is_required=is_required,
+                                         read_only=read_only, write_only=write_only)
+                om_properties[property_iri] = om_property
+        return om_properties

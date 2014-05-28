@@ -3,7 +3,7 @@ from collections import namedtuple
 from weakref import WeakKeyDictionary
 from rdflib import Literal
 from .exception import OMAttributeTypeCheckError, OMRequiredPropertyError, OMReadOnlyAttributeError, OMEditError
-from oldman.parsing.value import AttributeValueExtractorFromGraph
+from oldman.parsing.value import AttributeValueExtractor
 from oldman.validation.value_format import ValueFormatError
 from oldman.iri import _skolemize
 
@@ -56,7 +56,7 @@ class OMAttribute(object):
         # Non-saved former values
         self._former_values = WeakKeyDictionary()
 
-        self._value_extractor = AttributeValueExtractorFromGraph(self)
+        self._value_extractor = AttributeValueExtractor(self)
 
         # TODO: support "@index"
         if not self.container in [None, "@set", "@list", "@language"]:
@@ -255,7 +255,7 @@ class OMAttribute(object):
         :param sub_graph: :class:`rdflib.Graph` object containing the value to extract.
         :param initial: `True` when the value is directly from the datastore. Defaults to `False`.
         """
-        values = self._value_extractor.extract_values(resource, sub_graph)
+        values = self._value_extractor.extract_value(resource, sub_graph)
 
         setattr(resource, self.name, values)
         if initial:

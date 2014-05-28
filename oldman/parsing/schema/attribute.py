@@ -11,21 +11,24 @@ from oldman.common import OBJECT_PROPERTY
 
 
 class OMAttributeExtractor(object):
-    """
-       Extracts :class:`oldman.attribute.OMAttribute` objects from the schema and the JSON-LD context.
+    """Extracts :class:`~oldman.attribute.OMAttribute` objects from the schema and the JSON-LD context.
 
+    Extensible in two ways:
 
-        Extensible in two ways:
-            1. Property extractors (new RDF vocabularies)
-            2. Attribute md extractors (e.g. JSON-LD context)
-            3. New Attribute classes for (through its attribute_class_selector):
-              * Some specific properties (eg. foaf:mbox and EmailAttribute)
-              * Some types, as defined in the JSON-LD context or the domain or range (eg. xsd:string)
+        1. New :class:`~oldman.parsing.schema.property.OMPropertyExtractor` objects (new RDF vocabularies);
+        2. New :class:`~oldman.parsing.schema.context.OMAttributeMdExtractor` objects (e.g. JSON-LD context);
+        3. New :class:`~oldman.validation.value_format.ValueFormat` objects.
+           See its :attr:`~oldman.parsing.schema.attribute.OMAttributeExtractor.value_format_registry` attribute.
+
+    :param property_extractors: Defaults to `[]`.
+    :param attr_md_extractors: Defaults to `[]`.
+    :param use_hydra: Defaults to `True`.
+    :param use_jsonld_context: Defaults to `True`.
     """
 
     def __init__(self, property_extractors=None, attr_md_extractors=None, use_hydra=True,
                  use_jsonld_context=True):
-        self._class_selector = ValueFormatSelector()
+        self._value_format_registry = ValueFormatRegistry()
         self._property_extractors = list(property_extractors) if property_extractors else []
         self._attr_md_extractors = list(attr_md_extractors) if attr_md_extractors else []
         if use_hydra:
@@ -34,46 +37,69 @@ class OMAttributeExtractor(object):
             self.add_attribute_md_extractor(JsonLdContextAttributeMdExtractor())
 
     @property
-    def attribute_class_selector(self):
-        return self._class_selector
+    def value_format_registry(self):
+        """:class:`~oldman.parsing.schema.attribute.ValueFormatRegistry` object."""
+        return self._value_format_registry
 
     def add_attribute_md_extractor(self, attr_md_extractor):
+        """Adds a new :class:`~oldman.parsing.schema.context.OMAttributeMdExtractor` object."""
         if attr_md_extractor not in self._attr_md_extractors:
             self._attr_md_extractors.append(attr_md_extractor)
 
     def add_property_extractor(self, property_extractor):
+        """Adds a new :class:`~oldman.parsing.schema.property.OMPropertyExtractor` object."""
         if property_extractor not in self._property_extractors:
             self._property_extractors.append(property_extractor)
 
-    def extract(self, class_uri, type_uris, context_js, graph, manager):
-        # Supported properties
-        properties = {}
+    def extract(self, class_iri, type_iris, context_js, schema_graph, manager):
+        """Extracts metadata and generates :class:`~oldman.property.OMProperty` and
+        :class:`~oldman.attribute.OMAttribute` objects.
 
-        # Extracts and updates properties
+        :param class_iri: IRI of RDFS class of the future :class:`~oldman.model.Model` object.
+        :param type_iris: Ancestry of the RDFS class.
+        :param context_js: the JSON-LD context.
+        :param schema_graph: :class:`rdflib.graph.Graph` object.
+        :param manager: :class:`~oldman.management.manager.ResourceManager` object.
+        :return: `dict` of :class:`~oldman.attribute.OMAttribute` objects.
+        """
+        # Supported om_properties
+        om_properties = {}
+
+        # Extracts and updates om_properties
         for property_extractor in self._property_extractors:
-            properties = property_extractor.update(properties, class_uri, type_uris, graph, manager)
+            om_properties = property_extractor.update(om_properties, class_iri, type_iris, schema_graph, manager)
 
-        # Updates properties with attribute metadata
+        # Updates om_properties with attribute metadata
         for md_extractor in self._attr_md_extractors:
-            md_extractor.update(properties, context_js, graph)
+            md_extractor.update(om_properties, context_js, schema_graph)
 
         # Generates attributes
-        attrs = []
-        for prop in properties.values():
-            prop.generate_attributes(self._class_selector)
-            attrs += prop.om_attributes
+        om_attrs = []
+        for prop in om_properties.values():
+            prop.generate_attributes(self._value_format_registry)
+            om_attrs += prop.om_attributes
 
         # TODO: detects if attribute names are not unique
-        return {a.name: a for a in attrs}
+        return {a.name: a for a in om_attrs}
 
 
-class ValueFormatSelector(object):
+class ValueFormatRegistry(object):
+    """Finds the :class:`~oldman.validation.value_format.ValueFormat` object that corresponds
+    to a :class:`~oldman.attribute.OMAttributeMetadata` object.
+
+    New :class:`~oldman.validation.value_format.ValueFormat` objects can be added, for supporting:
+
+        1. Specific properties (eg. foaf:mbox and :class:`~oldman.validation.value_format.EmailValueFormat`);
+        2. Other datatypes, as defined in the JSON-LD context or the RDFS domain or range (eg. xsd:string).
+
+    :param special_properties: Defaults to `{}`.
+    :param include_default_datatypes: Defaults to `True`.
+    :param include_well_known_properties: Defaults to `True`.
+    """
 
     def __init__(self, special_properties=None, include_default_datatypes=True,
                  include_well_known_properties=True):
-        """
-            TODO: enrich default datatypes
-        """
+        # TODO: enrich default datatypes
         self._special_properties = dict(special_properties) if special_properties else {}
         self._datatypes = {}
         if include_default_datatypes:
@@ -113,13 +139,31 @@ class ValueFormatSelector(object):
             self.add_special_property(u"http://xmlns.com/foaf/0.1/mbox", email_value_format)
             self.add_special_property(u"http://schema.org/email", email_value_format)
 
-    def add_special_property(self, property_uri, value_format):
-        self._special_properties[property_uri] = value_format
+    def add_special_property(self, property_iri, value_format):
+        """Registers a :class:`~oldman.validation.value_format.ValueFormat` object for
+        a given RDF property.
 
-    def add_datatype(self, type_uri, value_format):
-        self._datatypes[type_uri] = value_format
+        :param property_iri: IRI of the RDF property.
+        :param value_format: :class:`~oldman.validation.value_format.ValueFormat` object.
+        """
+        self._special_properties[property_iri] = value_format
+
+    def add_datatype(self, datatype_iri, value_format):
+        """Registers a :class:`~oldman.validation.value_format.ValueFormat` object for
+        a given datatype.
+
+        :param datatype_iri: IRI of the datatype.
+        :param value_format: :class:`~oldman.validation.value_format.ValueFormat` object.
+        """
+        self._datatypes[datatype_iri] = value_format
 
     def find_value_format(self, attr_md):
+        """Finds the :class:`~oldman.validation.value_format.ValueFormat` object that corresponds
+        to a :class:`~oldman.attribute.OMAttributeMetadata` object.
+
+        :param attr_md: :class:`~oldman.attribute.OMAttributeMetadata` object.
+        :return: :class:`~oldman.validation.value_format.ValueFormat` object.
+        """
         prop = attr_md.property
 
         value_format = self._special_properties.get(prop.iri, None)

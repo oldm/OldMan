@@ -4,22 +4,32 @@ from rdflib.collection import Collection
 from oldman.exception import OMDataStoreError
 
 
-class AttributeValueExtractorFromGraph(object):
+class AttributeValueExtractor(object):
+    """An :class:`~oldman.parsing.value.AttributeValueExtractor` object
+    extracts values from RDF graphs for a given :class:`~oldman.attribute.OMAttribute` object.
 
-    def __init__(self, attribute):
+    :param om_attribute: :class:`~oldman.attribute.OMAttribute` object.
+    """
+
+    def __init__(self, om_attribute):
         self._logger = logging.getLogger(__name__)
-        self._attribute = attribute
-        self._language = attribute.language
-        self._value_format = attribute.value_format
-        self._property_uri = URIRef(attribute.om_property.iri)
-        self._container = attribute.container
+        self._language = om_attribute.language
+        self._value_format = om_attribute.value_format
+        self._property_uri = URIRef(om_attribute.om_property.iri)
+        self._container = om_attribute.container
         try:
-            self._extract_fct = AttributeValueExtractorFromGraph.extract_fcts[self._container]
+            self._extract_fct = AttributeValueExtractor._extract_fcts[self._container]
         except KeyError as e:
             raise NotImplementedError("Container %s is not supported" % e)
 
-    def extract_values(self, instance, subgraph):
-        instance_uri = URIRef(instance.id)
+    def extract_value(self, resource, subgraph):
+        """Extracts a resource attribute value from a RDF graph.
+
+        :param resource: :class:`~oldman.resource.Resource` object.
+        :param subgraph: :class:`rdflib.graph.Graph` object containing the value to extract.
+        :return: Collection or atomic value.
+        """
+        instance_uri = URIRef(resource.id)
         raw_rdf_values = list(subgraph.objects(instance_uri, self._property_uri))
         if len(raw_rdf_values) == 0:
             return None
@@ -38,9 +48,7 @@ class AttributeValueExtractorFromGraph(object):
         return self._extract_regular_values(raw_rdf_values, is_set=True, **kwargs)
 
     def _extract_list_values(self, raw_rdf_values, graph):
-        """
-            Filters by language (unique way to discriminate)
-        """
+        """Filters by language (unique way to discriminate)."""
         if not self._language and len(raw_rdf_values) > 1:
             raise OMDataStoreError(u"Multiple list found for the property %s"
                                    % self._property_uri)
@@ -62,16 +70,14 @@ class AttributeValueExtractorFromGraph(object):
         return {r.language: self._value_format.to_python(r) for r in raw_rdf_values}
 
     def _filter_and_convert(self, rdf_values):
-        """
-            Filters if language is specified
-        """
+        """Filters if language is specified."""
         if self._language:
             rdf_values = [r for r in rdf_values if isinstance(r, Literal)
                           and r.language == self._language]
 
         return [self._value_format.to_python(r) for r in rdf_values]
 
-    extract_fcts = {'@list': _extract_list_values,
+    _extract_fcts = {'@list': _extract_list_values,
                     '@set': _extract_set_values,
                     '@language': _extract_language_map_values,
                     #TODO: support index maps

@@ -3,46 +3,57 @@ from rdflib_jsonld.context import Context, UNDEF
 
 
 class OMAttributeMdExtractor(object):
-    def update(self, properties, context_js, graph):
-        """
-            No property added, only attribute metadata
+    """An :class:`~oldman.parsing.schema.context.OMAttributeMdExtractor` object
+    extracts :class:`~oldman.attribute.OMAttributeMetadata` tuples
+    and transmits them to :class:`~oldman.property.OMProperty` objects.
+    """
+
+    def update(self, om_properties, context_js, schema_graph):
+        """Updates the :class:`~oldman.property.OMProperty` objects by transmitting
+        them extracted :class:`~oldman.attribute.OMAttributeMetadata` tuples.
+
+        :param om_properties: `dict` of :class:`~oldman.property.OMProperty` objects indexed
+                              by their IRIs.
+        :param context_js: JSON-LD context.
+        :param schema_graph: :class:`rdflib.graph.Graph` object.
         """
         raise NotImplementedError()
 
 
 class JsonLdContextAttributeMdExtractor(OMAttributeMdExtractor):
-    """
-        Extracts name and basic type (if available) from the context
+    """:class:`~oldman.parsing.schema.context.OMAttributeMdExtractor` objects
+    that extract attribute names and datatypes from the JSON-LD context.
     """
 
-    def update(self, properties, context_js, graph):
+    def update(self, om_properties, context_js, schema_graph):
+        """See :func:`oldman.parsing.schema.context.OMAttributeMdExtractor.update`."""
         context = Context(context_js)
 
-        for property_uri, property in properties.iteritems():
+        for property_iri, om_property in om_properties.iteritems():
             # Efficient search
-            term = context.find_term(property_uri)
+            term = context.find_term(property_iri)
             if term:
-                self._update_property(property, term)
+                self._update_property(om_property, term)
             else:
                 # May not have been found because of its type
                 terms = [t for t in context.terms.values()
-                         if t.id == property_uri]
+                         if t.id == property_iri]
                 if len(terms) > 0:
                     for term in terms:
-                        self._update_property(property, term)
+                        self._update_property(om_property, term)
 
                 # Not declared (worst case)
-                elif len(property_uri) == 0:
-                    name = graph.qname(property_uri).replace(":", "_")
+                elif len(property_iri) == 0:
+                    name = schema_graph.qname(property_iri).replace(":", "_")
                     logger = logging.getLogger(__name__)
-                    logger.warn(u"No short name found for property %s. QName %s used instead" % (property_uri, name))
-                    property.add_attribute_metadata(name)
+                    logger.warn(u"No short name found for property %s. QName %s used instead" % (property_iri, name))
+                    om_property.add_attribute_metadata(name)
 
-    def _update_property(self, property, term):
+    def _update_property(self, om_property, term):
         kwargs = {'jsonld_type': term.type,
                   'language': term.language,
                   'container': term.container,
                   'reverse': term.reverse}
         clean_fct = lambda v: None if v == UNDEF else v
         kwargs = {k: clean_fct(v) for k, v in kwargs.iteritems()}
-        property.add_attribute_metadata(term.name, **kwargs)
+        om_property.add_attribute_metadata(term.name, **kwargs)
