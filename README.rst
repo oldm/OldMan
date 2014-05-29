@@ -74,6 +74,8 @@ Status
 ======
 
 OldMan is a young project **under active development** started in April 2014.
+Feel free to `fork, fill issues, pull requests <https://github.com/oldm/OldMan>`_ and to subscribe
+to our mailing list `oldman AT librelist.com`.
 
 Only Python 2.7 is currently supported, but support for Python 3.x is of course something we would like to consider.
 
