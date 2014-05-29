@@ -30,6 +30,7 @@ However, OldMan does not force you to express all your domain logic in a declara
 OldMan makes easy for you to add dynamically plain-old Python methods to resource objects.
 
 By adopting a declarative style:
+
  * You can provide both RDF and JSON data to your clients.
  * Your schema (including validation constraints) can be published and reused by **hypermedia-driven** Web clients.
  * Your declared domain logic becomes independent of Python and its frameworks.
@@ -51,17 +52,18 @@ http://oldman.readthedocs.org/en/latest/
 
 Current core features
 =====================
- * Resource-centric validation based on RDF vocabularies:
+
+- Resource-centric validation based on RDF vocabularies:
 
      - `Hydra`_: `hydra:required`_ , `hydra:readonly`_ and `hydra:writeonly`_;
      - Literal validation for common XSD types;
      - Literal validation for arbitrary property (e.g. `foaf:mbox <http://xmlns.com/foaf/spec/#term_mbox>`_);
      - `JSON-LD collections <http://www.w3.org/TR/json-ld/#sets-and-lists>`_ (set, list and language maps);
- * IRI generation for new resources (objects);
- * Inheritance (attributes and Python methods);
- * An attribute can require its value to be a collection (a set, a list or a language map);
- * Arbitrary attribute names (e.g. plural names for collections);
- * Optional resource cache relying on the popular `dogpile.cache <https://bitbucket.org/zzzeek/dogpile.cache>`_ library.
+- IRI generation for new resources (objects);
+- Inheritance (attributes and Python methods);
+- An attribute can require its value to be a collection (a set, a list or a language map);
+- Arbitrary attribute names (e.g. plural names for collections);
+- Optional resource cache relying on the popular `dogpile.cache <https://bitbucket.org/zzzeek/dogpile.cache>`_ library.
 
 .. _Hydra: http://www.markus-lanthaler.com/hydra/spec/latest/core/
 .. _hydra:required: http://www.markus-lanthaler.com/hydra/spec/latest/core/#hydra:required
