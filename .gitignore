@@ -13,3 +13,5 @@ dist/
 settings.cfg
 _build/
 build/
+htmlcov/
+.coverage

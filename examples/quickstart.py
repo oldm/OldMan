@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-from rdflib import ConjunctiveGraph
+from rdflib import Dataset,ConjunctiveGraph
 from oldman import ResourceManager, parse_graph_safely
+
+# In-memory main graph that will be divided into named sub-graphs
+default_graph = Dataset()
 
 #from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
 #default_graph = ConjunctiveGraph(SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
 #                                                   update_endpoint="http://localhost:3030/test/update"))
-# In-memory main graph that will be divided into named sub-graphs
-default_graph = ConjunctiveGraph()
-
 
 # Graph containing all the schema RDF triples
 schema_graph = default_graph.get_context("http://localhost/schema")
@@ -26,59 +26,58 @@ manager = ResourceManager(schema_graph, data_graph)
 lp_model = manager.create_model("LocalPerson", context_iri, iri_prefix="http://localhost/persons/",
                                 iri_fragment="me", incremental_iri=True)
 
-# First object stored in the graph
-alice = lp_model.create(name="Alice", emails={"alice@example.org"}, short_bio_en="I am ...")
-# Generated IRI
-alice_iri = alice.id
-print alice.id
-print alice.name
+alice = lp_model.create(name="Alice", emails={"alice@example.org"},
+                        short_bio_en="I am ...")
+bob = lp_model.new(name="Bob", blog="http://blog.example.com/",
+                   short_bio_fr=u"J'ai grandi en ... .")
 
-# Second object
-bob = lp_model.new(name="Bob", blog="http://blog.example.com/", short_bio_fr=u"J'ai grandi en ... .")
 print bob.is_valid()
 bob.emails = {"bob@localhost", "bob@example.org"}
 print bob.is_valid()
 bob.save()
 
-# Declare friendship
 alice.friends = {bob}
 bob.friends = {alice}
 alice.save()
 bob.save()
 
-#data_graph = default_graph
-#data_graph = default_graph.default_context
-#print data_graph.serialize(format="trig")
+print alice.id
+print bob.id
+print bob.types
+
+print alice.name
+print bob.emails
+print bob.short_bio_en
+print bob.short_bio_fr
 
 john_iri = "http://example.org/john#me"
 john = lp_model.create(id=john_iri, name="John", emails={"john@example.org"})
 print john.id
 
-#Clear the cache
-#LocalPerson.clear_cache()
-
-#Reloads for the datastore
+alice_iri = alice.id
 # First person found named Bob
 bob = lp_model.get(name="Bob")
 alice = lp_model.get(id=alice_iri)
 
-# Or retrieve it as the unique friend of Bob
+# Or retrieve her as the unique friend of Bob
 alice = list(bob.friends)[0]
 print alice.name
 
+print set(lp_model.all())
+print set(lp_model.filter())
+
 print alice.to_json()
-print alice.to_jsonld()
+print john.to_jsonld()
 print bob.to_rdf("turtle")
 
+## Email is required
+#lp_model.create(name="Jack")
 
-# Validation (commented because generate errors, as expected)
-# Email is required
-#LocalPerson.create(name="Jack")
+## Invalid email
+#bob.emails = {'you_wont_email_me'}
 
-#bob.emails = {'bad email address'}
+## Not a set
+#bob.emails = "bob@example.com"
 
-# Schema
-print schema_graph.serialize(format="turtle")
-
-# Context (JSON-LD)
-#TODO: get it
+##Invalid name
+#bob.name = 5

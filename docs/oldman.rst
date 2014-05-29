@@ -1,3 +1,5 @@
+.. _oldman:
+
 oldman package
 ==============
 
@@ -67,15 +69,6 @@ oldman.vocabulary module
 ------------------------
 
 .. automodule:: oldman.vocabulary
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: oldman
     :members:
     :undoc-members:
     :show-inheritance:
