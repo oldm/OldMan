@@ -65,14 +65,13 @@ Status
 ======
 
 OldMan is a young project **under active development** started in April 2014.
-Feel free to join us on Github and to subscribe to our mailing list (coming).
+Feel free to `join us on Github <https://github.com/oldm/OldMan>`_ and to subscribe to our mailing list (coming).
 
 Only Python 2.7 is currently supported, but support for Python 3.x is of course something we would like to consider.
 
 
 Planned features
 ================
-See our issue tracker.
-
+See `our issue tracker <https://github.com/oldm/OldMan/issues>`_.
 
 Continue to :ref:`installation <installation>` or the :ref:`quickstart <quickstart>`.

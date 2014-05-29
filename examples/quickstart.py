@@ -14,10 +14,10 @@ schema_graph = default_graph.get_context("http://localhost/schema")
 data_graph = default_graph.get_context("http://localhost/data")
 
 # Load the schema
-parse_graph_safely(schema_graph, "https://gitlab.bcgl.fr/benjamin/oldman/raw/master/examples/quickstart_schema.ttl",
+parse_graph_safely(schema_graph, "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_schema.ttl",
                    format="turtle")
 
-context_iri = "https://gitlab.bcgl.fr/benjamin/oldman/raw/master/examples/quickstart_context.jsonld"
+context_iri = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_context.jsonld"
 
 #Resource manager (will generate the model objects)
 manager = ResourceManager(schema_graph, data_graph)

@@ -2,6 +2,9 @@
 OldMan: Python OLDM
 ===================
 
+.. image:: docs/_static/wiseoldman_small.png
+  :alt: Wise old man from https://openclipart.org/detail/190655/wise-old-man-by-j4p4n-190655
+
 OldMan is a Python *Object Linked Data Mapper* (OLDM), an alternative name for *Object RDF Mapper*.
 
 An OLDM let you access, create and alter objects that represent resources described in RDF
@@ -35,11 +38,15 @@ There is also one secret mission: make you manipulate IRIs only when you want to
 when it is relevant for you to see them.
 Short names and objects are nice, especially when they map to IRIs!
 
-Examples
-========
+Quickstart
+==========
 
-See `examples/quickstart.py`
+http://oldman.readthedocs.org/en/latest/quickstart.html
 
+Documentation
+=============
+
+http://oldman.readthedocs.org/en/latest/
 
 
 Current core features
@@ -68,7 +75,6 @@ OldMan is a young project **under active development** started in April 2014.
 
 Only Python 2.7 is currently supported, but support for Python 3.x is of course something we would like to consider.
 
-
 Planned features
 ================
-See our issue tracker.
+See `our issue tracker <https://github.com/oldm/OldMan/issues>`_.

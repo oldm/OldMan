@@ -2,7 +2,7 @@ from setuptools import setup
 setup(name="OldMan",
       author="Benjamin Cogrel",
       author_email="benjamin.cogrel@bcgl.fr",
-      url="https://github.com/bcogrel/oldman",
+      url="https://github.com/oldm/oldman",
       version="0.1",
       description="Object Linked Data Mapper",
       long_description=open('README.rst').read(),
@@ -31,4 +31,3 @@ setup(name="OldMan",
           'Topic :: Software Development :: Libraries',
       ]
       )
-

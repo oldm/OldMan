@@ -23,13 +23,13 @@ The data graph is where we store regular data.
 The role of the schema graph is to contain most of the domain logic necessary to build our models.
 In this example, we load it from a RDF file::
 
-    schema_url = "https://gitlab.bcgl.fr/benjamin/oldman/raw/master/examples/quickstart_schema.ttl"
+    schema_url = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_schema.ttl"
     parse_graph_safely(schema_graph, schema_url, format="turtle")
 
 Another main piece of the domain logic is found in the JSON-LD context.
 Here, we just need its IRI::
 
-    context_iri = "https://gitlab.bcgl.fr/benjamin/oldman/raw/master/examples/quickstart_context.jsonld"
+    context_iri = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_context.jsonld"
 
 We now have almost enough information to create our models.
 But first of all, we first create the central object of this framework,
@@ -82,7 +82,7 @@ Let's now declare that they are friends::
     alice.save()
     bob.save()
 
-That's it. Have you seen many IRIs? Only for the blog.
+That's it. Have you seen many IRIs? Only one, for the blog.
 Let's look at them::
 
     >>> alice.id
