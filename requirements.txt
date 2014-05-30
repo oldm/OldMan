@@ -1,5 +1,7 @@
 # Inspired by https://caremad.io/blog/setup-vs-requirement/
 
+python-coveralls
+
 # Waiting for 4.1.3 or 4.2
 -e git+https://github.com/bcogrel/rdflib.git@oldman#egg=rdflib
 
