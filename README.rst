@@ -30,7 +30,6 @@ However, OldMan does not force you to express all your domain logic in a declara
 OldMan makes easy for you to add dynamically plain-old Python methods to resource objects.
 
 By adopting a declarative style:
-
  * You can provide both RDF and JSON data to your clients.
  * Your schema (including validation constraints) can be published and reused by **hypermedia-driven** Web clients.
  * Your declared domain logic becomes independent of Python and its frameworks.
@@ -74,7 +73,7 @@ Status
 ======
 
 OldMan is a young project **under active development** started in April 2014.
-Feel free to `fork, fill issues, pull requests <https://github.com/oldm/OldMan>`_ and to subscribe
+Feel free to `fork, fill issues, make some pull requests <https://github.com/oldm/OldMan>`_ and to subscribe
 to our mailing list `oldman AT librelist.com`.
 
 Only Python 2.7 is currently supported, but support for Python 3.x is of course something we would like to consider.
