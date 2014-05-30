@@ -71,9 +71,11 @@ Current core features
 
 Status
 ======
-.. image:: https://api.travis-ci.org/oldm/OldMan.svg?branch=master :target: https://travis-ci.org/oldm/OldMan#
+.. image:: https://api.travis-ci.org/oldm/OldMan.svg?branch=master
+   :target: https://travis-ci.org/oldm/OldMan
 
-.. image:: https://coveralls.io/repos/oldm/OldMan/badge.png :target: https://coveralls.io/r/oldm/OldMan
+.. image:: https://coveralls.io/repos/oldm/OldMan/badge.png
+   :target: https://coveralls.io/r/oldm/OldMan
 
 OldMan is a young project **under active development** started in April 2014.
 Feel free to `fork, fill issues, make some pull requests <https://github.com/oldm/OldMan>`_ and to subscribe
