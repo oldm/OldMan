@@ -23,5 +23,5 @@ script:
 #    - if [[ ${TRAVIS_PYTHON_VERSION%%.*} == '3' ]]; then nosetests --with-coverage --cover-tests --cover-package=build/src/oldman --where=./build/src; fi
 
 after_success:
-    - if [[ $HAS_COVERALLS ]] ; then coveralls ; fi
+    - coveralls
 
