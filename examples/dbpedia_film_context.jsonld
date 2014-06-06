@@ -28,13 +28,8 @@
       "@type": "@id",
       "container": "@set"
     },
-    "name_en": {
-      "@id": "foaf:name",
-      "@language": "en"
-    },
-    "name_fr": {
-      "@id": "foaf:name",
-      "@language": "fr"
+    "name": {
+      "@id": "foaf:name"
     }
   }
 }
