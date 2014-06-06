@@ -7,7 +7,7 @@
     "dbpo": "http://dbpedia.org/ontology/",
     "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
     "Film": "dbpo:Film",
-    "Actor": "umbel:Actor",
+    "Person: "foaf:Person",
     "id": "@id",
     "types": "@type",
     "title_en": {

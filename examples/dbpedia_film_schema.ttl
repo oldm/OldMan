@@ -3,12 +3,11 @@
 @prefix hydra: <http://www.w3.org/ns/hydra/core#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix dbpo: <http://dbpedia.org/ontology/> .
-@prefix umbel: <http://umbel.org/umbel/rc/> .
 
 dbpo:Film a hydra:Class ;
     hydra:supportedProperty [ hydra:property rdfs:label ],
         [ hydra:property dcterms:subject ],
         [ hydra:property dbpo:starring ] .
 
-umbel:Actor a hydra:Class ;
+foaf:Person a hydra:Class ;
     hydra:supportedProperty [ hydra:property foaf:name ] .
