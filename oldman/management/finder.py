@@ -19,7 +19,7 @@ class ResourceFinder(object):
         self._manager = manager
         self._logger = logging.getLogger(__name__)
 
-    def filter(self, types=None, base_iri=None, **kwargs):
+    def filter(self, types=None, base_iri=None, limit=None, **kwargs):
         """Finds the :class:`~oldman.resource.Resource` objects matching the given criteria.
 
         The `kwargs` dict can contains:
@@ -29,6 +29,8 @@ class ResourceFinder(object):
 
         :param types: IRIs of the RDFS classes filtered resources must be instance of. Defaults to `None`.
         :param base_iri: base IRI of filtered resources. Defaults to `None`.
+        :param limit: Upper bound on the number of solutions returned (SPARQL LIMIT). Positive integer.
+                      Defaults to `None`.
         :return: A generator of :class:`~oldman.resource.Resource` objects.
         """
         id = kwargs.pop("id") if "id" in kwargs else None
@@ -65,6 +67,8 @@ class ResourceFinder(object):
                 u"?base", u'"%s"' % base_iri)
 
         query = build_query_part(u"SELECT DISTINCT ?s WHERE", u"?s", lines)
+        if limit is not None:
+            query += u"LIMIT %d" % limit
         self._logger.debug(u"Filter query: %s" % query)
         try:
             results = self._manager.union_graph.query(query)
@@ -127,11 +131,12 @@ class ResourceFinder(object):
             # If no resource in the union graph
             return None
 
-        resources = self.filter(types=types, base_iri=base_iri, **kwargs)
         if base_iri is not None:
+            resources = self.filter(types=types, base_iri=base_iri, **kwargs)
             return self._select_resource_from_base_iri(base_iri, list(resources))
 
         # First found
+        resources = self.filter(types=types, base_iri=base_iri, limit=1, **kwargs)
         for resource in resources:
             return resource
 

@@ -110,3 +110,14 @@ class FindTest(unittest.TestCase):
         self.assertEquals(document.id, manager.get(base_iri=doc_iri).id)
         self.assertEquals(bob.id, manager.get(base_iri=doc_iri, types=[MY_VOC + "LocalPerson"]).id)
         self.assertEquals(key.id, manager.get(base_iri=doc_iri, types=[MY_VOC + "LocalGPGPublicKey"]).id)
+
+    def test_limit(self):
+        n = 20
+        for _ in range(20):
+            create_alice()
+        self.assertEquals(len(list(manager.filter())), n)
+        self.assertEquals(len(list(lp_model.filter())), n)
+        self.assertEquals(len(list(lp_model.all())), n)
+        self.assertEquals(len(list(manager.filter(limit=10))), 10)
+        self.assertEquals(len(list(lp_model.filter(limit=10))), 10)
+        self.assertEquals(len(list(lp_model.all(limit=10))), 10)

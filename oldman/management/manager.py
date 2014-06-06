@@ -223,9 +223,9 @@ class ResourceManager(object):
         """See :func:`oldman.management.finder.ResourceFinder.get`."""
         return self._finder.get(id=id, types=types, base_iri=base_iri, **kwargs)
 
-    def filter(self, types=None, base_iri=None, **kwargs):
+    def filter(self, types=None, base_iri=None, limit=None, **kwargs):
         """See :func:`oldman.management.finder.ResourceFinder.filter`."""
-        return self._finder.filter(types=types, base_iri=base_iri, **kwargs)
+        return self._finder.filter(types=types, base_iri=base_iri, limit=limit, **kwargs)
 
     def sparql_filter(self, query):
         """See :func:`oldman.management.finder.ResourceFinder.sparql_filter`."""
