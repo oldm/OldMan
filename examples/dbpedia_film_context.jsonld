@@ -29,7 +29,8 @@
       "container": "@set"
     },
     "name": {
-      "@id": "foaf:name"
+      "@id": "foaf:name",
+      "@type": "xsd:string"
     }
   }
 }
