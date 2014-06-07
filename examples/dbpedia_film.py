@@ -7,6 +7,7 @@ from rdflib.plugins.stores.sparqlstore import SPARQLStore
 from oldman import ResourceManager
 import logging
 from os import path
+import time
 
 
 def extract_title(film):
@@ -51,8 +52,9 @@ if __name__ == "__main__":
     # JSON-LD terms can be used instead of IRIs
     actor_model = manager.create_model("Person", context_url)
 
-    print "10 first French films found on DBPedia"
-    print "--------------------------------------"
+    print "10 first French films found on DBPedia (with OldMan)"
+    print "----------------------------------------------------"
+    q1_start_time = time.time()
     for film in film_model.filter(subjects=["http://dbpedia.org/resource/Category:French_films"], limit=10):
         title = extract_title(film)
         if film.actors is None:
@@ -60,8 +62,108 @@ if __name__ == "__main__":
         else:
             actor_names = ", ".join([extract_name(a) for a in film.actors])
             print "   %s starring %s" % (title, actor_names)
+    print "Done in %.1f seconds" % (time.time() - q1_start_time)
 
-    print "Films starring Michel Piccoli"
-    print "-----------------------------"
+    print "Films starring Michel Piccoli (with OldMan)"
+    print "-------------------------------------------"
+    q2_start_time = time.time()
     for film in film_model.filter(actors=["http://dbpedia.org/resource/Michel_Piccoli"]):
         print "   %s" % extract_title(film)
+    print "Done in %.1f seconds" % (time.time() - q2_start_time)
+
+    print "10 first French films found on DBPedia (without OldMan)"
+    print "-------------------------------------------------------"
+    q3_start_time = time.time()
+    results = data_graph.query("""
+    PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+    PREFIX dcterms: <http://purl.org/dc/terms/>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    PREFIX dbpo: <http://dbpedia.org/ontology/>
+
+    SELECT ?film ?title_fr ?title_en ?actor ?actor_name_fr ?actor_name_en
+    WHERE {
+        {
+         SELECT ?film
+         WHERE {
+            ?film a dbpo:Film ;
+                  dcterms:subject <http://dbpedia.org/resource/Category:French_films> .
+          }
+          LIMIT 10
+        }
+        OPTIONAL {
+           ?film rdfs:label ?title_en .
+           FILTER langMatches( lang(?title_en), "EN" ) .
+        }
+        OPTIONAL {
+           ?film rdfs:label ?title_fr .
+           FILTER langMatches( lang(?title_fr), "FR" ) .
+        }
+        OPTIONAL {
+          ?film dbpo:starring ?actor .
+          OPTIONAL {
+            ?actor foaf:name ?actor_name_en .
+            FILTER langMatches( lang(?actor_name_en), "EN" ) .
+          }
+          OPTIONAL {
+            ?actor foaf:name ?actor_name_fr .
+            FILTER langMatches( lang(?actor_name_fr), "FR" ) .
+          }
+        }
+    }
+    """)
+    # Extract titles and names
+    film_titles = {}
+    film_actors = {}
+    for film_iri, title_fr, title_en, actor_iri, actor_name_fr, actor_name_en in results:
+        if film_iri not in film_titles:
+            for t in [title_fr, title_en, film_iri]:
+                if t is not None:
+                    film_titles[film_iri] = unicode(t)
+                    break
+        for name in [actor_name_fr, actor_name_en, actor_iri]:
+            if name is not None:
+                if film_iri not in film_actors:
+                    film_actors[film_iri] = [name]
+                elif name not in film_actors[film_iri]:
+                    film_actors[film_iri].append(unicode(name))
+                break
+    # Display titles and names
+    for film_iri in film_titles:
+        title = film_titles[film_iri]
+        if film_iri not in film_actors:
+            print "   %s %s (no actor declared)" % (title, film_iri)
+        else:
+            actor_names = ", ".join(film_actors[film_iri])
+            print "   %s starring %s" % (title, actor_names)
+    print "Done in %.1f seconds" % (time.time() - q3_start_time)
+
+    print "Films starring Michel Piccoli (without OldMan)"
+    print "----------------------------------------------"
+    q4_start_time = time.time()
+    results = data_graph.query("""
+    PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+    PREFIX dcterms: <http://purl.org/dc/terms/>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    PREFIX dbpo: <http://dbpedia.org/ontology/>
+
+    SELECT ?film ?title_fr ?title_en
+    WHERE {
+        ?film a dbpo:Film ;
+              dbpo:starring <http://dbpedia.org/resource/Michel_Piccoli> .
+        OPTIONAL {
+           ?film rdfs:label ?title_en .
+           FILTER langMatches( lang(?title_en), "EN" ) .
+        }
+        OPTIONAL {
+           ?film rdfs:label ?title_fr .
+           FILTER langMatches( lang(?title_fr), "FR" ) .
+        }
+    }
+    """)
+    for film_iri, title_fr, title_en in results:
+        if film_iri not in film_titles:
+            for t in [title_fr, title_en, film_iri]:
+                if t is not None:
+                    print "    %s" % t
+                    break
+    print "Done in %.1f seconds" % (time.time() - q4_start_time)
