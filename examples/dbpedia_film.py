@@ -58,7 +58,9 @@ if __name__ == "__main__":
     print "10 first French films found on DBPedia (with OldMan)"
     print "----------------------------------------------------"
     q1_start_time = time.time()
-    for film in film_model.filter(subjects=["http://dbpedia.org/resource/Category:French_films"], limit=10, eager=True):
+    for film in film_model.filter(subjects=["http://dbpedia.org/resource/Category:French_films"],
+                                  limit=10, eager=True,
+                                  pre_cache_properties=["http://dbpedia.org/ontology/starring"]):
         title = extract_title(film)
         if film.actors is None:
             print "   %s %s (no actor declared)" % (title, film.id)
@@ -70,7 +72,7 @@ if __name__ == "__main__":
     print "Films starring Michel Piccoli (with OldMan)"
     print "-------------------------------------------"
     q2_start_time = time.time()
-    for film in film_model.filter(actors=["http://dbpedia.org/resource/Michel_Piccoli"]):
+    for film in film_model.filter(actors=["http://dbpedia.org/resource/Michel_Piccoli"], eager=True):
         print "   %s" % extract_title(film)
     print "Done in %.3f seconds" % (time.time() - q2_start_time)
 

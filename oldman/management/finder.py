@@ -19,7 +19,7 @@ class ResourceFinder(object):
         self._manager = manager
         self._logger = logging.getLogger(__name__)
 
-    def filter(self, types=None, base_iri=None, limit=None, eager=False, eager_properties=None, **kwargs):
+    def filter(self, types=None, base_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
         """Finds the :class:`~oldman.resource.Resource` objects matching the given criteria.
 
         The `kwargs` dict can contains:
@@ -33,11 +33,13 @@ class ResourceFinder(object):
                       Defaults to `None`.
         :param eager: If `True` loads all the Resource objects within one single SPARQL query.
                       Defaults to `False` (lazy).
-        :param eager_properties: List of RDF properties to follow eagerly.
-                      Defaults to `[]`. If given, `eager` must be `True`. Not yet supported.
+        :param pre_cache_properties: List of RDF ObjectProperties to pre-cache eagerly.
+                      Their values (:class:`~oldman.resource.Resource` objects) are loaded and
+                      added to the cache. Defaults to `[]`. If given, `eager` must be `True`.
+                      Disabled if there is no cache.
         :return: A generator (if lazy) or a list (if eager) of :class:`~oldman.resource.Resource` objects.
         """
-        if not eager and eager_properties is not None:
+        if not eager and pre_cache_properties is not None:
             raise AttributeError(u"Eager properties are incompatible with lazyness. Please set eager to True.")
 
         id = kwargs.pop("id") if "id" in kwargs else None
@@ -78,10 +80,9 @@ class ResourceFinder(object):
             query += u"LIMIT %d" % limit
 
         if eager:
-            return self._filter_eagerly(query, limit, eager_properties)
+            return self._filter_eagerly(query, pre_cache_properties)
         # Lazy (by default)
-        return self._filter_lazily(query, limit)
-
+        return self._filter_lazily(query)
 
     def sparql_filter(self, query):
         """Finds the :class:`~oldman.resource.Resource` objects matching a given query.
@@ -189,7 +190,7 @@ class ResourceFinder(object):
                               u"The first one is selected." % resources)
         return resources[0]
 
-    def _filter_lazily(self, query, limit):
+    def _filter_lazily(self, query):
         """ Lazy filtering """
         self._logger.debug(u"Filter query: %s" % query)
         try:
@@ -200,14 +201,14 @@ class ResourceFinder(object):
         # Generator expression
         return (self.get(id=unicode(r[0])) for r in results)
 
-    def _filter_eagerly(self, sub_query, limit, eager_properties, erase_cache=False):
+    def _filter_eagerly(self, sub_query, pre_cache_properties, erase_cache=False):
         """ Eager: requests all the properties of all returned resource
         within one single SPARQL query.
 
-        One big query instead of a lot of small ones sent sequently.
+        One big query instead of a long sequence of small ones.
         """
-        if eager_properties is not None:
-            properties = [u"<%s>" % p for p in eager_properties]
+        if pre_cache_properties is not None:
+            properties = [u"<%s>" % p for p in pre_cache_properties]
             query = u"""SELECT DISTINCT ?s ?s2 ?p2 ?o2
             WHERE
             {
@@ -242,12 +243,11 @@ class ResourceFinder(object):
         except ParseException as e:
             raise OMSPARQLParseError(u"%s\n %s" % (query, e))
 
-
         main_resource_iris = set()
         resource_iris = set()
         graph = Graph()
 
-        if eager_properties is not None:
+        if pre_cache_properties is not None:
             for s, s2, p2, o2 in results:
                 main_resource_iris.add(s)
                 resource_iris.add(s2)
@@ -282,6 +282,7 @@ class ResourceFinder(object):
                 main_resources.append(resource)
 
         return main_resources
+
 
 def _find_attribute(models, name):
     for m in models:

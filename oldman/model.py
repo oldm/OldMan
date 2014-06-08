@@ -147,14 +147,15 @@ class Model(object):
         """
         return self.new(id=id, base_iri=base_iri, **kwargs).save()
 
-    def filter(self, base_iri=None, limit=None, eager=False, **kwargs):
+    def filter(self, base_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
         """Finds the :class:`~oldman.resource.Resource` objects matching the given criteria.
 
         The `class_iri` attribute is added to the `types`.
 
         See :func:`oldman.management.finder.Finder.filter` for further details."""
         types, kwargs = self._update_kwargs_and_types(kwargs)
-        return self._manager.filter(types=types, base_iri=base_iri, limit=limit, eager=eager, **kwargs)
+        return self._manager.filter(types=types, base_iri=base_iri, limit=limit, eager=eager,
+                                    pre_cache_properties=pre_cache_properties, **kwargs)
 
     def get(self, id=None, base_iri=None, **kwargs):
         """Gets the first :class:`~oldman.resource.Resource` object matching the given criteria.
