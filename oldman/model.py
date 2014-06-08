@@ -147,14 +147,14 @@ class Model(object):
         """
         return self.new(id=id, base_iri=base_iri, **kwargs).save()
 
-    def filter(self, base_iri=None, limit=None, **kwargs):
+    def filter(self, base_iri=None, limit=None, eager=False, **kwargs):
         """Finds the :class:`~oldman.resource.Resource` objects matching the given criteria.
 
         The `class_iri` attribute is added to the `types`.
 
         See :func:`oldman.management.finder.Finder.filter` for further details."""
         types, kwargs = self._update_kwargs_and_types(kwargs)
-        return self._manager.filter(types=types, base_iri=base_iri, limit=limit, **kwargs)
+        return self._manager.filter(types=types, base_iri=base_iri, limit=limit, eager=eager, **kwargs)
 
     def get(self, id=None, base_iri=None, **kwargs):
         """Gets the first :class:`~oldman.resource.Resource` object matching the given criteria.
@@ -165,15 +165,17 @@ class Model(object):
         types, kwargs = self._update_kwargs_and_types(kwargs)
         return self._manager.get(id=id, types=types, base_iri=base_iri, **kwargs)
 
-    def all(self, limit=None):
+    def all(self, limit=None, eager=False):
         """Finds every :class:`~oldman.resource.Resource` object that is instance
         of its RDFS class.
 
         :param limit: Upper bound on the number of solutions returned (SPARQL LIMIT). Positive integer.
                       Defaults to `None`.
+        :param eager: If `True` loads all the Resource objects within one single SPARQL query.
+                      Defaults to `False` (lazy).
         :return: A generator of :class:`~oldman.resource.Resource` objects.
         """
-        return self.filter(types=[self._class_iri], limit=limit)
+        return self.filter(types=[self._class_iri], limit=limit, eager=eager)
 
     def _update_kwargs_and_types(self, kwargs, include_ancestry=False):
         types = list(self._class_types) if include_ancestry else [self._class_iri]
