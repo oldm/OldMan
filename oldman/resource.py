@@ -356,8 +356,8 @@ class Resource(object):
                 if isinstance(former_value, dict):
                     raise NotImplementedError("Object dicts are not yet supported.")
                 former_value = former_value if isinstance(former_value, (set, list)) else [former_value]
-                former_objects = [self._manager.get(id=v) for v in former_value if v is not None]
-                objects_to_delete += [v for v in former_objects if should_delete_resource(v)]
+                objects_to_delete += [self._manager.get(id=v) for v in former_value
+                                      if v is not None and is_blank_node(v)]
 
         if self._former_types is not None:
             types = set(self._types)

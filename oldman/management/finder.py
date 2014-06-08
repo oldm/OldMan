@@ -149,6 +149,7 @@ class ResourceFinder(object):
         resource_graph = Graph()
         iri = URIRef(id)
         resource_graph += self._manager.union_graph.triples((iri, None, None))
+        self._logger.debug(u"All triples with subject %s loaded from the union_graph" % iri)
         # Extracts lists
         list_items_request = u"""
         SELECT ?subList ?value ?previous
