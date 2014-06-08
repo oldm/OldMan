@@ -291,6 +291,14 @@ class OMAttribute(object):
         value = self._data.get(resource, None)
         return value
 
+    def get_lightly(self, resource):
+        """Gets the attribute value of a resource in a lightweight manner.
+
+        By default, behaves exactly like :func:`~oldman.attribute.OMAttribute.get`.
+        See the latter function for further details.
+        """
+        return self.get(resource)
+
     def set(self, resource, value):
         """Sets the attribute value of a resource.
 
@@ -389,6 +397,16 @@ class ObjectOMAttribute(OMAttribute):
             return self.manager.get(id=iris)
         else:
             return None
+
+    def get_lightly(self, resource):
+        """Gets the attribute value of a resource in a lightweight manner.
+
+        By contrast with :func:`~oldman.attribute.ObjectOMAttribute.get` only IRIs
+        are returned, not :class:`~oldman.resource.Resource` objects.
+
+        :return: An IRI, a list or a set of IRIs or `None`.
+        """
+        return OMAttribute.get(self, resource)
 
     def set(self, resource, value):
         """See :func:`~oldman.attribute.OMAttribute.set`.
