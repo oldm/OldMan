@@ -248,7 +248,7 @@ class Resource(object):
         reversed_models.reverse()
         for model in reversed_models:
             for name, attr in model.om_attributes.iteritems():
-                value = attr.get(self)
+                value = attr.get_lightly(self)
                 if isinstance(value, GeneratorType):
                     if attr.container == "@list":
                         value = list(value)
