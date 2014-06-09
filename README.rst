@@ -34,9 +34,9 @@ By adopting a declarative style:
  * Your schema (including validation constraints) can be published and reused by **hypermedia-driven** Web clients.
  * Your declared domain logic becomes independent of Python and its frameworks.
 
-It also acknowledges that IRIs or `compact URIs (CURIEs)<http://www.w3.org/TR/curie/>`_-like strings
-are not always pleasant to use. Arbitrary short names and objects are usually more user-friendly.
-However, everything remains mapped to IRIs so you can still manipulate IRIs when it is relevant for you to do so.
+It also acknowledges that IRIs or `compact URIs (CURIEs) <http://www.w3.org/TR/curie/>`_ -like strings
+are not always pleasant to use: arbitrary short names and objects are usually more user-friendly.
+However, you can still manipulate IRIs when it is relevant for you to do so. Everything remains mapped to IRIs.
 
 
 Quickstart
