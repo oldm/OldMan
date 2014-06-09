@@ -5,6 +5,7 @@ Inspired by https://gist.github.com/olberger/c6ebd26bb389e270da72
 from rdflib import Graph
 from rdflib.plugins.stores.sparqlstore import SPARQLStore
 from oldman import ResourceManager
+from dogpile.cache import make_region
 import logging
 from os import path
 import time
@@ -46,8 +47,10 @@ if __name__ == "__main__":
 
     data_graph = Graph(SPARQLStore("http://dbpedia.org/sparql", context_aware=False))
 
+    cache_region = make_region().configure('dogpile.cache.memory_pickle')
+
     # Resource Manager and Models
-    manager = ResourceManager(schema_graph, data_graph)
+    manager = ResourceManager(schema_graph, data_graph, cache_region=cache_region)
     film_model = manager.create_model("http://dbpedia.org/ontology/Film", context_url)
     # JSON-LD terms can be used instead of IRIs
     actor_model = manager.create_model("Person", context_url)
@@ -55,21 +58,37 @@ if __name__ == "__main__":
     print "10 first French films found on DBPedia (with OldMan)"
     print "----------------------------------------------------"
     q1_start_time = time.time()
-    for film in film_model.filter(subjects=["http://dbpedia.org/resource/Category:French_films"], limit=10):
+    for film in film_model.filter(subjects=["http://dbpedia.org/resource/Category:French_films"],
+                                  limit=10
+                                  , eager=True, pre_cache_properties=["http://dbpedia.org/ontology/starring"]
+                                  ):
         title = extract_title(film)
         if film.actors is None:
             print "   %s %s (no actor declared)" % (title, film.id)
         else:
             actor_names = ", ".join([extract_name(a) for a in film.actors])
             print "   %s starring %s" % (title, actor_names)
-    print "Done in %.1f seconds" % (time.time() - q1_start_time)
+    print "Done in %.3f seconds" % (time.time() - q1_start_time)
+
+    print "Again, with the cache:"
+    q1_start_time = time.time()
+    for film in film_model.filter(subjects=["http://dbpedia.org/resource/Category:French_films"],
+                                  limit=10
+                                  #, eager=True, pre_cache_properties=["http://dbpedia.org/ontology/starring"]
+                                  ):
+        title = extract_title(film)
+        if film.actors is not None:
+            [extract_name(a) for a in film.actors]
+    print "Done in %.3f seconds" % (time.time() - q1_start_time)
 
     print "Films starring Michel Piccoli (with OldMan)"
     print "-------------------------------------------"
     q2_start_time = time.time()
-    for film in film_model.filter(actors=["http://dbpedia.org/resource/Michel_Piccoli"]):
+    for film in film_model.filter(actors=["http://dbpedia.org/resource/Michel_Piccoli"]
+                                  , eager=True
+                                  ):
         print "   %s" % extract_title(film)
-    print "Done in %.1f seconds" % (time.time() - q2_start_time)
+    print "Done in %.3f seconds" % (time.time() - q2_start_time)
 
     print "10 first French films found on DBPedia (without OldMan)"
     print "-------------------------------------------------------"
@@ -134,8 +153,8 @@ if __name__ == "__main__":
             print "   %s %s (no actor declared)" % (title, film_iri)
         else:
             actor_names = ", ".join(film_actors[film_iri])
-            print "   %s starring %s" % (title, actor_names)
-    print "Done in %.1f seconds" % (time.time() - q3_start_time)
+            print "   %s with %s" % (title, actor_names)
+    print "Done in %.3f seconds" % (time.time() - q3_start_time)
 
     print "Films starring Michel Piccoli (without OldMan)"
     print "----------------------------------------------"
@@ -166,4 +185,4 @@ if __name__ == "__main__":
                 if t is not None:
                     print "    %s" % t
                     break
-    print "Done in %.1f seconds" % (time.time() - q4_start_time)
+    print "Done in %.3f seconds" % (time.time() - q4_start_time)

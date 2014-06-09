@@ -19,7 +19,7 @@ class ResourceFinder(object):
         self._manager = manager
         self._logger = logging.getLogger(__name__)
 
-    def filter(self, types=None, base_iri=None, limit=None, **kwargs):
+    def filter(self, types=None, base_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
         """Finds the :class:`~oldman.resource.Resource` objects matching the given criteria.
 
         The `kwargs` dict can contains:
@@ -31,8 +31,17 @@ class ResourceFinder(object):
         :param base_iri: base IRI of filtered resources. Defaults to `None`.
         :param limit: Upper bound on the number of solutions returned (SPARQL LIMIT). Positive integer.
                       Defaults to `None`.
-        :return: A generator of :class:`~oldman.resource.Resource` objects.
+        :param eager: If `True` loads all the Resource objects within one single SPARQL query.
+                      Defaults to `False` (lazy).
+        :param pre_cache_properties: List of RDF ObjectProperties to pre-cache eagerly.
+                      Their values (:class:`~oldman.resource.Resource` objects) are loaded and
+                      added to the cache. Defaults to `[]`. If given, `eager` must be `True`.
+                      Disabled if there is no cache.
+        :return: A generator (if lazy) or a list (if eager) of :class:`~oldman.resource.Resource` objects.
         """
+        if not eager and pre_cache_properties is not None:
+            raise AttributeError(u"Eager properties are incompatible with lazyness. Please set eager to True.")
+
         id = kwargs.pop("id") if "id" in kwargs else None
         type_iris = types if types is not None else []
         if id is not None:
@@ -69,14 +78,11 @@ class ResourceFinder(object):
         query = build_query_part(u"SELECT DISTINCT ?s WHERE", u"?s", lines)
         if limit is not None:
             query += u"LIMIT %d" % limit
-        self._logger.debug(u"Filter query: %s" % query)
-        try:
-            results = self._manager.union_graph.query(query)
-        except ParseException as e:
-            raise OMSPARQLParseError(u"%s\n %s" % (query, e))
 
-        # Generator expression
-        return (self.get(id=unicode(r[0])) for r in results)
+        if eager:
+            return self._filter_eagerly(query, pre_cache_properties)
+        # Lazy (by default)
+        return self._filter_lazily(query)
 
     def sparql_filter(self, query):
         """Finds the :class:`~oldman.resource.Resource` objects matching a given query.
@@ -183,6 +189,99 @@ class ResourceFinder(object):
             self._logger.warn(u"Multiple resources have the same base_uri: %s\n. "
                               u"The first one is selected." % resources)
         return resources[0]
+
+    def _filter_lazily(self, query):
+        """ Lazy filtering """
+        self._logger.debug(u"Filter query: %s" % query)
+        try:
+            results = self._manager.union_graph.query(query)
+        except ParseException as e:
+            raise OMSPARQLParseError(u"%s\n %s" % (query, e))
+
+        # Generator expression
+        return (self.get(id=unicode(r[0])) for r in results)
+
+    def _filter_eagerly(self, sub_query, pre_cache_properties, erase_cache=False):
+        """ Eager: requests all the properties of all returned resource
+        within one single SPARQL query.
+
+        One big query instead of a long sequence of small ones.
+        """
+        if pre_cache_properties is not None:
+            properties = [u"<%s>" % p for p in pre_cache_properties]
+            query = u"""SELECT DISTINCT ?s ?s2 ?p2 ?o2
+            WHERE
+            {
+                 {
+                  %s
+                 }
+                 {
+                   ?s2 ?p2 ?o2 .
+                   FILTER (?s = ?s2)
+                 }
+                 UNION
+                 {
+                   ?s ?sp ?s2 .
+                   ?s2 ?p2 ?o2 .
+                   VALUES ?sp { %s }
+                 }
+                FILTER (isIRI(?s2)) .
+            }""" % (sub_query, " ".join(properties))
+        else:
+            query = u"""SELECT DISTINCT ?s ?p ?o
+            WHERE
+            {
+              ?s ?p ?o .
+                 {
+                  %s
+                 }
+            }""" % sub_query
+
+        self._logger.debug(u"Filter query: %s" % query)
+        try:
+            results = self._manager.union_graph.query(query)
+        except ParseException as e:
+            raise OMSPARQLParseError(u"%s\n %s" % (query, e))
+
+        main_resource_iris = set()
+        resource_iris = set()
+        graph = Graph()
+
+        if pre_cache_properties is not None:
+            for s, s2, p2, o2 in results:
+                main_resource_iris.add(s)
+                resource_iris.add(s2)
+                graph.add((s2, p2, o2))
+        else:
+            # Same set
+            resource_iris = main_resource_iris
+            for s, p, o in results:
+                # Also add it implicitly in main_resource_iris
+                resource_iris.add(s)
+                graph.add((s, p, o))
+
+        main_resources = []
+        if erase_cache:
+            new_resource_iris = resource_iris
+        else:
+            new_resource_iris = []
+            # Resource from cache
+            for iri in resource_iris:
+                resource = self._manager.resource_cache.get_resource(iri)
+                if resource is None:
+                    new_resource_iris.append(iri)
+                elif iri in main_resource_iris:
+                    main_resources.append(resource)
+
+        #TODO: retrieve list values on new resource iris
+
+        for iri in new_resource_iris:
+            # Resource created and set in the cache
+            resource = self._new_resource_object(iri, graph)
+            if iri in main_resource_iris:
+                main_resources.append(resource)
+
+        return main_resources
 
 
 def _find_attribute(models, name):

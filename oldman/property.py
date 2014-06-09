@@ -195,8 +195,7 @@ class OMProperty(object):
             elif language is None:
                 raise NotImplementedError(u"Untyped JSON-LD value (with no language) are not (yet?) supported")
 
-        if len([md for md in self._tmp_attr_mds
-                    if md.name == name]) > 0:
+        if len([md for md in self._tmp_attr_mds if md.name == name]) > 0:
             raise OMInternalError(u"Multiple attribute named %s" % name)
 
         self._tmp_attr_mds.append(OMAttributeMetadata(name, self, language, jsonld_type, container,
