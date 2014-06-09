@@ -34,9 +34,10 @@ By adopting a declarative style:
  * Your schema (including validation constraints) can be published and reused by **hypermedia-driven** Web clients.
  * Your declared domain logic becomes independent of Python and its frameworks.
 
-There is also one secret mission: make you manipulate IRIs only when you want to see them, i.e.,
-when it is relevant for you to see them.
-Short names and objects are nice, especially when they map to IRIs!
+It also acknowledges that IRIs or `compact URIs (CURIEs)<http://www.w3.org/TR/curie/>`_-like strings
+are not always pleasant to use. Arbitrary short names and objects are usually more user-friendly.
+However, everything remains mapped to IRIs so you can still manipulate IRIs when it is relevant for you to do so.
+
 
 Quickstart
 ==========
@@ -78,7 +79,7 @@ Status
    :target: https://coveralls.io/r/oldm/OldMan
 
 OldMan is a young project **under active development** started in April 2014.
-Feel free to `fork, fill issues, make some pull requests <https://github.com/oldm/OldMan>`_ and to subscribe
+Feel free to `contribute <https://github.com/oldm/OldMan>`_ and to subscribe
 to our mailing list `oldman AT librelist.com`.
 
 Only Python 2.7 is currently supported, but support for Python 3.x is of course something we would like to consider.

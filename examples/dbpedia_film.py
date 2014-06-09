@@ -1,5 +1,7 @@
 """
-Inspired by https://gist.github.com/olberger/c6ebd26bb389e270da72
+Inspired by https://gist.github.com/olberger/c6ebd26bb389e270da72 .
+
+See http://oldman.readthedocs.org/en/latest/examples/dbpedia.html .
 """
 
 from rdflib import Graph
