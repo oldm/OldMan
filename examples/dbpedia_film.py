@@ -30,7 +30,7 @@ def extract_name(person):
 
 if __name__ == "__main__":
     # Main SPARQL requests
-    display_some_requests = True
+    display_some_requests = False
     if display_some_requests:
         logger = logging.getLogger('oldman')
         logger.setLevel(logging.DEBUG)
@@ -59,8 +59,9 @@ if __name__ == "__main__":
     print "----------------------------------------------------"
     q1_start_time = time.time()
     for film in film_model.filter(subjects=["http://dbpedia.org/resource/Category:French_films"],
-                                  limit=10, eager=True,
-                                  pre_cache_properties=["http://dbpedia.org/ontology/starring"]):
+                                  limit=10
+                                  , eager=True, pre_cache_properties=["http://dbpedia.org/ontology/starring"]
+                                  ):
         title = extract_title(film)
         if film.actors is None:
             print "   %s %s (no actor declared)" % (title, film.id)
@@ -69,10 +70,23 @@ if __name__ == "__main__":
             print "   %s starring %s" % (title, actor_names)
     print "Done in %.3f seconds" % (time.time() - q1_start_time)
 
+    print "Again, with the cache:"
+    q1_start_time = time.time()
+    for film in film_model.filter(subjects=["http://dbpedia.org/resource/Category:French_films"],
+                                  limit=10
+                                  #, eager=True, pre_cache_properties=["http://dbpedia.org/ontology/starring"]
+                                  ):
+        title = extract_title(film)
+        if film.actors is not None:
+            [extract_name(a) for a in film.actors]
+    print "Done in %.3f seconds" % (time.time() - q1_start_time)
+
     print "Films starring Michel Piccoli (with OldMan)"
     print "-------------------------------------------"
     q2_start_time = time.time()
-    for film in film_model.filter(actors=["http://dbpedia.org/resource/Michel_Piccoli"], eager=True):
+    for film in film_model.filter(actors=["http://dbpedia.org/resource/Michel_Piccoli"]
+                                  , eager=True
+                                  ):
         print "   %s" % extract_title(film)
     print "Done in %.3f seconds" % (time.time() - q2_start_time)
 
@@ -139,7 +153,7 @@ if __name__ == "__main__":
             print "   %s %s (no actor declared)" % (title, film_iri)
         else:
             actor_names = ", ".join(film_actors[film_iri])
-            print "   %s starring %s" % (title, actor_names)
+            print "   %s with %s" % (title, actor_names)
     print "Done in %.3f seconds" % (time.time() - q3_start_time)
 
     print "Films starring Michel Piccoli (without OldMan)"

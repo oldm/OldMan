@@ -19,6 +19,7 @@ User's Guide
    foreword
    installation
    quickstart
+   examples
 
 
 API reference
