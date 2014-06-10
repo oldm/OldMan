@@ -41,7 +41,7 @@ Install OldMan and its dependencies
 
     $ mkdir src
     $ cd src
-    $ git clone https://gitlab.bcgl.fr/benjamin/oldman.git
+    $ git clone https://github.com/oldm/OldMan.git oldman
     $ cd oldman
 
 Install first the concrete requirements::

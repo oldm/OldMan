@@ -160,7 +160,7 @@ JSON-LD::
 
     >>> print john.to_jsonld()
     {
-      "@context": "https://gitlab.bcgl.fr/benjamin/oldman/raw/master/examples/quickstart_context.jsonld",
+      "@context": "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_context.jsonld",
       "emails": [
         "john@example.org"
       ],
