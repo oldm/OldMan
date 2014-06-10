@@ -1,8 +1,8 @@
 .. _dbpedia:
 
-================
-DBpedia querying
-================
+============================
+DBpedia querying (read-only)
+============================
 
 `Source code <https://github.com/oldm/OldMan/blob/master/examples/dbpedia_film.py>`_
 
@@ -149,7 +149,7 @@ Query 2
     ...     if film_iri not in film_titles:
     ...         for t in [title_fr, title_en, film_iri]:
     ...             if t is not None:
-    ...                 print "    %s" % t
+    ...                 print t
     ...                 break
         La Diagonale du fou
         Le Journal d'une femme de chambre (film, 1964)
@@ -263,9 +263,11 @@ By default, OldMan behaves lazily::
 
 1. OldMan loads a :class:`~oldman.resource.Resource` object for each film or actor that is displayed.
    Loading a :class:`~oldman.resource.Resource` object implies to retrieve all the triples in which
-   the resource is the subject. In DBpedia, there is often many triples with a long textual literal value
-   for a film or an actor. Thus it retrieves much more information than we need for our specific query.
-2. By default OldMan is lazy so it retrieves each a :class:`~oldman.resource.Resource` object at the least moment,
+   the resource is the subject. In DBpedia, entries like films and actors have often many triples. Some
+   of them have long textual literal values (localized paragraphs from Wikipedia).
+   For instance, see `<http://dbpedia.org/resource/Penelope_Cruz>`_.
+   This approach retrieves much more information than we need for our specific query.
+2. By default OldMan is lazy so it retrieves each a :class:`~oldman.resource.Resource` object at the last time,
    *one by one in sequence*. The execution of this long sequence of queries takes a long time, partly because of
    the network latency that is multiplied by the number of queries.
 
@@ -296,7 +298,7 @@ If we re-query it again lazily, thanks to the cache it makes just one lightweigh
     >>> print "Done in %.3f seconds" % (time.time() - q1_start_time)
     Done in 0.182 seconds
 
-But if we re-query it eagerly, the heavy query will be sent again. The cache is thus of little interest::
+But if we re-query it eagerly, the heavy query will be sent again. The cache is then of little interest::
 
     >>> # Code and results not shown
     >>> print "Done in %.3f seconds" % (time.time() - q1_start_time)
