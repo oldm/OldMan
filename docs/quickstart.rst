@@ -18,15 +18,19 @@ and create a RDF dataset that contains our `data_graph` and `schema_graph`::
     data_graph = default_graph.get_context("http://localhost/data")
     schema_graph = default_graph.get_context("http://localhost/schema")
 
-The data graph is where we store regular data.
+The data graph is where we store the data that we generate.
+In this example, no specific :class:`rdflib.store.Store` is given to the `default_graph` so the
+graph is stored in memory.
 
 The role of the schema graph is to contain most of the domain logic necessary to build our models.
-In this example, we load it from a RDF file::
+In this example, we load it
+`from a RDF file <https://github.com/oldm/OldMan/blob/master/examples/quickstart_schema.ttl>`_::
 
     schema_url = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_schema.ttl"
     parse_graph_safely(schema_graph, schema_url, format="turtle")
 
-Another main piece of the domain logic is found in the JSON-LD context.
+Another main piece of the domain logic is found in
+`the JSON-LD context <https://github.com/oldm/OldMan/blob/master/examples/quickstart_context.jsonld>`_.
 Here, we just need its IRI::
 
     context_iri = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_context.jsonld"
@@ -156,6 +160,7 @@ JSON::
         "http://xmlns.com/foaf/0.1/Person"
       ]
     }
+
 JSON-LD::
 
     >>> print john.to_jsonld()
@@ -217,7 +222,7 @@ Domain logic
 
 Here is the declared domain logic that we used:
 
-JSON-LD context::
+JSON-LD context `<https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_context.jsonld>`_::
 
     {
       "@context": {
@@ -259,7 +264,7 @@ JSON-LD context::
     }
 
 
-Schema (uses the Hydra vocabulary)::
+Schema (uses the Hydra vocabulary) `<https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_schema.ttl>`_::
 
     @prefix bio: <http://purl.org/vocab/bio/0.1/> .
     @prefix foaf: <http://xmlns.com/foaf/0.1/> .
@@ -282,3 +287,4 @@ Schema (uses the Hydra vocabulary)::
                 hydra:required true ],
             [ hydra:property foaf:name ;
                 hydra:required true ].
+

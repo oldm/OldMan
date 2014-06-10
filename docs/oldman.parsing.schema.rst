@@ -1,9 +1,6 @@
 oldman.parsing.schema package
 =============================
 
-Submodules
-----------
-
 oldman.parsing.schema.attribute module
 --------------------------------------
 
@@ -28,11 +25,3 @@ oldman.parsing.schema.property module
     :undoc-members:
     :show-inheritance:
 
-
-Module contents
----------------
-
-.. automodule:: oldman.parsing.schema
-    :members:
-    :undoc-members:
-    :show-inheritance:

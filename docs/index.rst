@@ -19,17 +19,21 @@ User's Guide
    foreword
    installation
    quickstart
+   core_concepts
    examples
 
 
 API reference
 =============
 
-First, you may have a look to the three main classes that end-users manipulate:
-the :class:`~oldman.management.manager.ResourceManager`, the :class:`~oldman.model.Model`
-and the :class:`~oldman.resource.Resource`.
+Main classes manipulated by end-users: :class:`~oldman.management.manager.ResourceManager`,
+:class:`~oldman.model.Model` and :class:`~oldman.resource.Resource`.
 
-If you want to choose a specific :class:`~oldman.iri.IriGenerator` class, look at the :class:`oldman.iri` module.
+:class:`~oldman.iri.IriGenerator` classes can be found in the :class:`oldman.iri` module.
 
-The whole API is accessible from the :ref:`oldman <oldman>` package, the :ref:`modindex`, the  :ref:`genindex`
-and the :ref:`search`.
+.. toctree::
+   :maxdepth: 2
+
+   oldman
+
+:ref:`modindex`, :ref:`genindex` and :ref:`search`.

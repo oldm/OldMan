@@ -152,7 +152,7 @@ class Model(object):
 
         The `class_iri` attribute is added to the `types`.
 
-        See :func:`oldman.management.finder.Finder.filter` for further details."""
+        See :func:`oldman.management.finder.ResourceFinder.filter` for further details."""
         types, kwargs = self._update_kwargs_and_types(kwargs)
         return self._manager.filter(types=types, base_iri=base_iri, limit=limit, eager=eager,
                                     pre_cache_properties=pre_cache_properties, **kwargs)

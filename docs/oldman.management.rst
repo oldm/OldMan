@@ -1,9 +1,6 @@
 oldman.management package
 =========================
 
-Submodules
-----------
-
 oldman.management.ancestry module
 ---------------------------------
 
@@ -40,15 +37,6 @@ oldman.management.registry module
 ---------------------------------
 
 .. automodule:: oldman.management.registry
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
-Module contents
----------------
-
-.. automodule:: oldman.management
     :members:
     :undoc-members:
     :show-inheritance:

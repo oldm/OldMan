@@ -1,0 +1,130 @@
+=============
+Core concepts
+=============
+
+Resource
+--------
+A :class:`~oldman.resource.Resource` object represents a `Web resource <https://en.wikipedia.org/wiki/Web_resource>`_
+identified by a regular `IRI (internationalized URI) <https://en.wikipedia.org/wiki/Internationalized_resource_identifier>`_ or
+or a `skolem IRI <http://www.w3.org/TR/2014/REC-rdf11-concepts-20140225/#section-skolemization>`_ (if it should treated
+as a `blank node <https://en.wikipedia.org/wiki/Blank_node>`_).
+
+In OldMan, Web resources are described in conformance to the
+`Resource Description Framework (RDF) <https://en.wikipedia.org/wiki/Resource_Description_Framework>`_.
+A :class:`~oldman.resource.Resource` object may have some attributes that provide the *predicate*
+(also called property) and the *object* terms of RDF triples describing the resource.
+The resource itself is the *subject* of the triple.
+Its attributes have arbitrary short names as defined in the JSON-LD context.
+
+A :class:`~oldman.resource.Resource` object access to its attributes through the
+:class:`~oldman.model.Model` objects to which it relates (through its :attr:`~oldman.resource.Resource.types`).
+Thus, if it has no *type* or its types that are not related to a :class:`~oldman.model.Model` object,
+a :class:`~oldman.resource.Resource` object has no "RDF" attribute.
+
+In OldMan, the relation between :class:`~oldman.resource.Resource` and :class:`~oldman.model.Model` objects
+is *many-to-many*.
+It differs from traditional ORMs where the relation is *one-to-many* (the resource is usually
+an instance of the model and the latter is a Python class in these frameworks).
+However, we expect that most :class:`~oldman.resource.Resource` objects will relate to one
+:class:`~oldman.model.Model` object, but this is not a requirement.
+It is common for a resource in RDF to be instance of multiple RDFS classes so OldMan had to be ok with this practise.
+
+Some inherited Python methods may also be provided by the :class:`~oldman.model.Model` objects.
+
+
+Functionalities
+~~~~~~~~~~~~~~~
+
+1. Edit its properties::
+
+    >>> # We assume that a model has been created for the RDFS class schema:Person.
+    >>> alice = Resource(resource_manager, types=["http://schema.org/Person"])
+    >>> alice.name = "Alice"
+    >>> print alice.name
+    Alice
+    >>> print alice.id
+    'http://localhost/person/3#me'
+    >>> alice.add_type("http://schema.org/Researcher")
+    >>> print alice.types
+    [u'http://schema.org/Person', u'http://schema.org/Researcher']
+
+2. Persist its new values in the triplestore::
+
+    alice.save()
+
+3. Call inherited methods::
+
+    alice.do_that()
+
+4. Serialize to JSON, JSON-LD or any other RDF format::
+
+    >>> alice.to_jsonld()
+    {
+      "@context": "https://example.com/context.jsonld",
+      "id": "http://localhost/person/3#me",
+      "name": "Alice",
+      "types": [
+        "http://schema.org/Person",
+        "http://schema.org/Researcher"
+      ]
+    }
+    >>> alice.to_rdf(format="turtle")
+    @prefix schema: <http://schema.org/> .
+    @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+    <http://localhost/persons/3#me> a schema:Person, schema:Researcher ;
+                foaf:name "Alice"^^xsd:string .
+
+ResourceManager
+---------------
+A :class:`~oldman.management.manager.ResourceManager` object is the central object of OldMan.
+
+It creates :class:`~oldman.model.Model` objects (:func:`~oldman.management.manager.ResourceManager.create_model`)
+and retrieves :class:`~oldman.resource.Resource` objects  (:func:`~oldman.management.manager.ResourceManager.get`,
+:func:`~oldman.management.manager.ResourceManager.filter`
+and :func:`~oldman.management.manager.ResourceManager.sparql_filter`).
+
+It accepts Python method declarations if they happen before the creation of :class:`~oldman.model.Model` objects
+(:func:`~oldman.management.manager.ResourceManager.declare_method`).
+
+It also provide helper functions to create new :class:`~oldman.resource.Resource` objects
+(:func:`~oldman.management.manager.ResourceManager.create` and :func:`~oldman.management.manager.ResourceManager.new`)
+but it is usually simpler to use those of a :class:`~oldman.model.Model` object.
+
+Instantiation
+~~~~~~~~~~~~~
+For creating the :class:`~oldman.management.manager.ResourceManager` object, at least two graphs must be given:
+the schema graph and the data graph.
+
+Basically, the schema graph describes which properties should be expected for a given RDFS class, which are
+required and what are the constraints.
+
+The data graph is where regular resources are saved and loaded.
+
+The default graph (:class:`rdflib.graph.ConjunctiveGraph` or :class:`rdflib.graph.Dataset`) may also be
+given as a third graph.
+Its only constraint is to include the content of the data graph in its default graph.
+
+The :class:`dogpile.cache.region.CacheRegion` object may also be given to enable the
+:class:`~oldman.management.cache.ResourceCache` object.
+By default the latter is disabled so it does not cache the :class:`~oldman.resource.Resource` objects loaded
+from and stored in the data graph.
+
+
+Model
+-----
+
+In OldMan, models are not Python classes but :class:`~oldman.model.Model` objects.
+However, on the RDF side, they correspond to `RDFS classes <https://en.wikipedia.org/wiki/RDFS>`_ (their
+:attr:`~oldman.model.Model.class_iri` attributes).
+
+
+Their main role is to provide attributes and methods to :class:`~oldman.resource.Resource` objects, as explained
+above.
+
+:class:`~oldman.model.Model` objects are created by the :class:`~oldman.management.manager.ResourceManager` object.
+
+A model provide some helpers above the :class:`~oldman.management.manager.ResourceManager` object (
+:func:`~oldman.model.Model.get`, :func:`~oldman.model.Model.filter`, :func:`~oldman.model.Model.new` and
+:func:`~oldman.model.Model.create`) that include the :attr:`~oldman.model.Model.class_iri` to the `types`
+parameter of these methods.

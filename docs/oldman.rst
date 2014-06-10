@@ -3,20 +3,6 @@
 oldman package
 ==============
 
-Subpackages
------------
-
-.. toctree::
-
-    oldman.management
-    oldman.parsing
-    oldman.rest
-    oldman.utils
-    oldman.validation
-
-Submodules
-----------
-
 oldman.attribute module
 -----------------------
 
@@ -72,3 +58,14 @@ oldman.vocabulary module
     :members:
     :undoc-members:
     :show-inheritance:
+
+Sub-packages
+------------
+
+.. toctree::
+
+    oldman.management
+    oldman.parsing
+    oldman.rest
+    oldman.utils
+    oldman.validation
