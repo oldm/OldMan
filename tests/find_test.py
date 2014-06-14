@@ -61,12 +61,6 @@ class FindTest(unittest.TestCase):
         }""" % alice_name
         self.assertEquals({r.id for r in manager.sparql_filter(r2)}, {alice.id})
 
-        r3 = """SELECT ?name ?s WHERE {
-            ?s foaf:name ?name .
-        }"""
-        # The names are used as IRIs (legal)
-        self.assertEquals({r.id for r in manager.sparql_filter(r3)}, {alice_name, bob_name, john_name})
-
     def test_no_filter_get(self):
         self.assertEquals(manager.get(), None)
         alice = create_alice()
