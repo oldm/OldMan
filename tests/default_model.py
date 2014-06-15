@@ -20,9 +20,9 @@ logging.config.fileConfig(path.join(path.dirname(__file__), 'logging.ini'))
 sesame_iri = "http://localhost:8080/openrdf-sesame/repositories/test"
 #store = SPARQLUpdateStore(queryEndpoint=sesame_iri, update_endpoint=sesame_iri + "/statements")
 #store.setCredentials("paul", "heyjude")
-store = SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
-                          update_endpoint="http://localhost:3030/test/update")
-#store = None
+#store = SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
+#                          update_endpoint="http://localhost:3030/test/update")
+store = 'default'
 default_graph = ConjunctiveGraph(store)
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
 data_graph = default_graph.get_context(URIRef("http://localhost/data"))
