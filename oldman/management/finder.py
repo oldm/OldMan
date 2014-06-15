@@ -19,7 +19,7 @@ class ResourceFinder(object):
         self._manager = manager
         self._logger = logging.getLogger(__name__)
 
-    def filter(self, types=None, base_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
+    def filter(self, types=None, hashless_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
         """Finds the :class:`~oldman.resource.Resource` objects matching the given criteria.
 
         The `kwargs` dict can contains:
@@ -28,7 +28,7 @@ class ResourceFinder(object):
            2. the special attribute `id`. If given, :func:`~oldman.management.finder.Finder.get` is called.
 
         :param types: IRIs of the RDFS classes filtered resources must be instance of. Defaults to `None`.
-        :param base_iri: base IRI of filtered resources. Defaults to `None`.
+        :param hashless_iri: Hash-less IRI of filtered resources. Defaults to `None`.
         :param limit: Upper bound on the number of solutions returned (SPARQL LIMIT). Positive integer.
                       Defaults to `None`.
         :param eager: If `True` loads all the Resource objects within one single SPARQL query.
@@ -45,13 +45,13 @@ class ResourceFinder(object):
         id = kwargs.pop("id") if "id" in kwargs else None
         type_iris = types if types is not None else []
         if id is not None:
-            return self.get(id=id, types=types, base_iri=base_iri, **kwargs)
+            return self.get(id=id, types=types, hashless_iri=hashless_iri, **kwargs)
 
         if len(type_iris) == 0 and len(kwargs) > 0:
             raise OMAttributeAccessError(u"No type given in filter() so attributes %s are ambiguous."
                                          % kwargs.keys())
         elif len(type_iris) == 0 and len(kwargs) == 0:
-            if base_iri is None:
+            if hashless_iri is None:
                 self._logger.warn(u"filter() called without parameter. Returns every resource in the union graph.")
             lines = u"?s ?p ?o . \n"
         else:
@@ -69,11 +69,11 @@ class ResourceFinder(object):
                 if value:
                     lines += attr.serialize_value_into_lines(value)
 
-        if base_iri is not None:
-            if "#" in base_iri:
-                raise OMHashIriError(u"%s is not a base IRI" % base_iri)
+        if hashless_iri is not None:
+            if "#" in hashless_iri:
+                raise OMHashIriError(u"%s is not a hash-less IRI" % hashless_iri)
             lines += u"""FILTER (REGEX(STR(?s), CONCAT(?base, "#")) || (STR(?s) = ?base) )""".replace(
-                u"?base", u'"%s"' % base_iri)
+                u"?base", u'"%s"' % hashless_iri)
 
         query = build_query_part(u"SELECT DISTINCT ?s WHERE", u"?s", lines)
         if limit is not None:
@@ -99,7 +99,7 @@ class ResourceFinder(object):
             raise OMSPARQLError(u"%s\n %s" % (query, e))
         return (self.get(id=unicode(r[0])) for r in results)
 
-    def get(self, id=None, types=None, base_iri=None, **kwargs):
+    def get(self, id=None, types=None, hashless_iri=None, **kwargs):
         """Gets the first :class:`~oldman.resource.Resource` object matching the given criteria.
 
         The `kwargs` dict can contains regular attribute key-values.
@@ -111,7 +111,7 @@ class ResourceFinder(object):
 
         :param id: IRI of the resource. Defaults to `None`.
         :param types: IRIs of the RDFS classes filtered resources must be instance of. Defaults to `None`.
-        :param base_iri: base IRI of filtered resources. Defaults to `None`.
+        :param hashless_iri: Hash-less IRI of filtered resources. Defaults to `None`.
         :return: A :class:`~oldman.resource.Resource` object or `None` if no resource has been found.
         """
         types = set(types) if types is not None else set()
@@ -125,7 +125,7 @@ class ResourceFinder(object):
                 self._logger.warn(u"get(): id given so attributes %s are just ignored" % kwargs.keys())
             return resource
 
-        elif base_iri is None and len(kwargs) == 0:
+        elif hashless_iri is None and len(kwargs) == 0:
             self._logger.warn(u"get() called without parameter. Returns the first resource found in the union graph.")
             query = u"SELECT ?s WHERE { ?s ?p ?o } LIMIT 1"
             try:
@@ -137,12 +137,12 @@ class ResourceFinder(object):
             # If no resource in the union graph
             return None
 
-        if base_iri is not None:
-            resources = self.filter(types=types, base_iri=base_iri, **kwargs)
-            return self._select_resource_from_base_iri(base_iri, list(resources))
+        if hashless_iri is not None:
+            resources = self.filter(types=types, hashless_iri=hashless_iri, **kwargs)
+            return self._select_resource_from_hashless_iri(hashless_iri, list(resources))
 
         # First found
-        resources = self.filter(types=types, base_iri=base_iri, limit=1, **kwargs)
+        resources = self.filter(types=types, hashless_iri=hashless_iri, limit=1, **kwargs)
         for resource in resources:
             return resource
 
@@ -178,12 +178,12 @@ class ResourceFinder(object):
         self._manager.resource_cache.set_resource(resource)
         return resource
 
-    def _select_resource_from_base_iri(self, base_iri, resources):
+    def _select_resource_from_hashless_iri(self, hashless_iri, resources):
         if len(resources) == 0:
-            raise OMObjectNotFoundError(u"No resource with base iri %s" % base_iri)
+            raise OMObjectNotFoundError(u"No resource with hash-less iri %s" % hashless_iri)
         elif len(resources) > 1:
             for r in resources:
-                if r.id == base_iri:
+                if r.id == hashless_iri:
                     return r
             # TODO: avoid such arbitrary selection
             self._logger.warn(u"Multiple resources have the same base_uri: %s\n. "

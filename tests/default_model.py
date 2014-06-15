@@ -10,16 +10,20 @@ from oldman import ResourceManager, parse_graph_safely
 from oldman.attribute import OMAttributeTypeCheckError, OMRequiredPropertyError
 from oldman.exception import OMClassInstanceError, OMAttributeAccessError, OMUniquenessError
 from oldman.exception import OMWrongResourceError, OMObjectNotFoundError, OMHashIriError, OMEditError
-from oldman.exception import OMDifferentBaseIRIError, OMForbiddenSkolemizedIRIError, OMUnauthorizedTypeChangeError
+from oldman.exception import OMDifferentHashlessIRIError, OMForbiddenSkolemizedIRIError, OMUnauthorizedTypeChangeError
 from oldman.rest.crud import CRUDController
 
 
 logging.config.fileConfig(path.join(path.dirname(__file__), 'logging.ini'))
 
 
-#default_graph = ConjunctiveGraph(SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
-#                                                   update_endpoint="http://localhost:3030/test/update"))
-default_graph = ConjunctiveGraph()
+sesame_iri = "http://localhost:8080/openrdf-sesame/repositories/test"
+#store = SPARQLUpdateStore(queryEndpoint=sesame_iri, update_endpoint=sesame_iri + "/statements")
+#store.setCredentials("paul", "heyjude")
+store = SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
+                          update_endpoint="http://localhost:3030/test/update")
+#store = None
+default_graph = ConjunctiveGraph(store)
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
 data_graph = default_graph.get_context(URIRef("http://localhost/data"))
 

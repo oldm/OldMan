@@ -38,7 +38,7 @@ class Model(object):
 
     def __init__(self, manager, name, class_iri, ancestry_iris, context, om_attributes,
                  id_generator, methods=None):
-        reserved_names = ["id", "base_iri", "_types", "types"]
+        reserved_names = ["id", "hashless_iri", "_types", "types"]
         for field in reserved_names:
             if field in om_attributes:
                 raise OMReservedAttributeNameError("%s is reserved" % field)
@@ -130,7 +130,7 @@ class Model(object):
         if hasattr(self._id_generator, "reset_counter"):
             self._id_generator.reset_counter()
 
-    def new(self, id=None, base_iri=None, **kwargs):
+    def new(self, id=None, hashless_iri=None, **kwargs):
         """Creates a new :class:`~oldman.resource.Resource` object without saving it.
 
         The `class_iri` attribute is added to the `types`.
@@ -138,33 +138,33 @@ class Model(object):
         See :func:`~oldman.management.manager.ResourceManager.new` for more details.
         """
         types, kwargs = self._update_kwargs_and_types(kwargs, include_ancestry=True)
-        return self._manager.new(id=id, base_iri=base_iri, types=types, **kwargs)
+        return self._manager.new(id=id, hashless_iri=hashless_iri, types=types, **kwargs)
 
-    def create(self, id=None, base_iri=None, **kwargs):
+    def create(self, id=None, hashless_iri=None, **kwargs):
         """ Creates a new resource and saves it.
 
         See :func:`~oldman.model.Model.new` for more details.
         """
-        return self.new(id=id, base_iri=base_iri, **kwargs).save()
+        return self.new(id=id, hashless_iri=hashless_iri, **kwargs).save()
 
-    def filter(self, base_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
+    def filter(self, hashless_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
         """Finds the :class:`~oldman.resource.Resource` objects matching the given criteria.
 
         The `class_iri` attribute is added to the `types`.
 
         See :func:`oldman.management.finder.ResourceFinder.filter` for further details."""
         types, kwargs = self._update_kwargs_and_types(kwargs)
-        return self._manager.filter(types=types, base_iri=base_iri, limit=limit, eager=eager,
+        return self._manager.filter(types=types, hashless_iri=hashless_iri, limit=limit, eager=eager,
                                     pre_cache_properties=pre_cache_properties, **kwargs)
 
-    def get(self, id=None, base_iri=None, **kwargs):
+    def get(self, id=None, hashless_iri=None, **kwargs):
         """Gets the first :class:`~oldman.resource.Resource` object matching the given criteria.
 
         The `class_iri` attribute is added to the `types`.
 
         See :func:`oldman.management.finder.Finder.get` for further details."""
         types, kwargs = self._update_kwargs_and_types(kwargs)
-        return self._manager.get(id=id, types=types, base_iri=base_iri, **kwargs)
+        return self._manager.get(id=id, types=types, hashless_iri=hashless_iri, **kwargs)
 
     def all(self, limit=None, eager=False):
         """Finds every :class:`~oldman.resource.Resource` object that is instance

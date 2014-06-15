@@ -191,7 +191,7 @@ class ResourceManager(object):
         self._registry.register(model, is_default=is_default)
         return model
 
-    def new(self, id=None, types=None, base_iri=None, **kwargs):
+    def new(self, id=None, types=None, hashless_iri=None, **kwargs):
         """Creates a new :class:`~oldman.resource.Resource` object **without saving it** in the `data_graph`.
 
         The `kwargs` dict can contains regular attribute key-values that will be assigned to
@@ -202,7 +202,7 @@ class ResourceManager(object):
         :param types: IRIs of RDFS classes the resource is instance of. Defaults to `None`.
                       Note that these IRIs are used to find the models of the resource
                       (see :func:`~oldman.management.manager.ResourceManager.find_models_and_types` for more details).
-        :param base_iri: base IRI that MAY be considered when generating an IRI for the new resource.
+        :param hashless_iri: hash-less IRI that MAY be considered when generating an IRI for the new resource.
                          Defaults to `None`. Ignored if `id` is given.
         :return: A new :class:`~oldman.resource.Resource` object.
         """
@@ -210,22 +210,22 @@ class ResourceManager(object):
             name = id if id is not None else ""
             self._logger.info(u"""New resource %s has no type nor attribute.
             As such, nothing is stored in the data graph.""" % name)
-        return Resource(self, id=id, types=types, base_iri=base_iri, **kwargs)
+        return Resource(self, id=id, types=types, hashless_iri=hashless_iri, **kwargs)
 
-    def create(self, id=None, types=None, base_iri=None, **kwargs):
+    def create(self, id=None, types=None, hashless_iri=None, **kwargs):
         """Creates a new resource and save it in the `data_graph`.
 
         See :func:`~oldman.management.manager.ResourceManager.new` for more details.
         """
-        return self.new(id=id, types=types, base_iri=base_iri, **kwargs).save()
+        return self.new(id=id, types=types, hashless_iri=hashless_iri, **kwargs).save()
 
-    def get(self, id=None, types=None, base_iri=None, **kwargs):
+    def get(self, id=None, types=None, hashless_iri=None, **kwargs):
         """See :func:`oldman.management.finder.ResourceFinder.get`."""
-        return self._finder.get(id=id, types=types, base_iri=base_iri, **kwargs)
+        return self._finder.get(id=id, types=types, hashless_iri=hashless_iri, **kwargs)
 
-    def filter(self, types=None, base_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
+    def filter(self, types=None, hashless_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
         """See :func:`oldman.management.finder.ResourceFinder.filter`."""
-        return self._finder.filter(types=types, base_iri=base_iri, limit=limit, eager=eager,
+        return self._finder.filter(types=types, hashless_iri=hashless_iri, limit=limit, eager=eager,
                                    pre_cache_properties=pre_cache_properties, **kwargs)
 
     def sparql_filter(self, query):

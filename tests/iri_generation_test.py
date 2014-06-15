@@ -4,7 +4,7 @@ from rdflib import ConjunctiveGraph, URIRef, RDF, BNode, Graph
 
 from oldman import ResourceManager
 from oldman.iri import UUIDFragmentIriGenerator
-from oldman.exception import OMRequiredBaseIRIError
+from oldman.exception import OMRequiredHashlessIRIError
 from oldman.rest.crud import CRUDController
 
 
@@ -39,30 +39,30 @@ class DatatypeTest(TestCase):
         data_graph.update("CLEAR DEFAULT")
 
     def test_generation(self):
-        base_iri = "http://example.org/doc1"
-        obj1 = model.new(base_iri=base_iri)
-        self.assertEquals(obj1.base_iri, base_iri)
-        self.assertTrue(base_iri in obj1.id)
+        hashless_iri = "http://example.org/doc1"
+        obj1 = model.new(hashless_iri=hashless_iri)
+        self.assertEquals(obj1.hashless_iri, hashless_iri)
+        self.assertTrue(hashless_iri in obj1.id)
 
-        obj2 = model.create(base_iri=base_iri)
-        self.assertEquals(obj2.base_iri, base_iri)
-        self.assertTrue(base_iri in obj2.id)
+        obj2 = model.create(hashless_iri=hashless_iri)
+        self.assertEquals(obj2.hashless_iri, hashless_iri)
+        self.assertTrue(hashless_iri in obj2.id)
         self.assertNotEquals(obj1.id, obj2.id)
 
-        with self.assertRaises(OMRequiredBaseIRIError):
+        with self.assertRaises(OMRequiredHashlessIRIError):
             model.new()
-        with self.assertRaises(OMRequiredBaseIRIError):
-            model.new(base_iri="http://localhost/not#a-base-iri")
+        with self.assertRaises(OMRequiredHashlessIRIError):
+            model.new(hashless_iri="http://localhost/not#a-base-iri")
 
     def test_controller_put(self):
-        base_iri = "http://example.org/doc2"
+        hashless_iri = "http://example.org/doc2"
         g = Graph()
         g.add((BNode(), RDF.type, URIRef(EXAMPLE + "MyClass")))
-        crud_controller.update(base_iri, g.serialize(format="turtle"), "turtle")
+        crud_controller.update(hashless_iri, g.serialize(format="turtle"), "turtle")
 
-        resource = manager.get(base_iri=base_iri)
+        resource = manager.get(hashless_iri=hashless_iri)
         self.assertTrue(resource is not None)
-        self.assertTrue(base_iri in resource.id)
+        self.assertTrue(hashless_iri in resource.id)
         self.assertTrue('#' in resource.id)
 
     def test_relative_iri(self):
@@ -74,7 +74,7 @@ class DatatypeTest(TestCase):
 
         <#this> rdf:type <http://localhost/vocab#MyClass> .
         """
-        base_iri = "http://example.org/doc3"
-        crud_controller.update(base_iri, ttl, "turtle", allow_new_type=True)
-        resource = manager.get(base_iri=base_iri)
-        self.assertEquals(resource.id, base_iri + "#this")
+        hashless_iri = "http://example.org/doc3"
+        crud_controller.update(hashless_iri, ttl, "turtle", allow_new_type=True)
+        resource = manager.get(hashless_iri=hashless_iri)
+        self.assertEquals(resource.id, hashless_iri + "#this")

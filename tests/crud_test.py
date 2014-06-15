@@ -12,20 +12,20 @@ class CrudTest(unittest.TestCase):
     def test_bob_controller_get(self):
         bob = create_bob()
         bob_iri = bob.id
-        bob_base_iri = bob.base_iri
-        bob2 = crud_controller.get(bob_base_iri)
+        bob_hashless_iri = bob.hashless_iri
+        bob2 = crud_controller.get(bob_hashless_iri)
 
         self.assertEquals(bob.to_rdf("turtle"), bob2)
-        self.assertEquals(bob.to_json(), crud_controller.get(bob_base_iri, "application/json"))
-        self.assertEquals(bob.to_json(), crud_controller.get(bob_base_iri, "json"))
-        self.assertEquals(bob.to_jsonld(), crud_controller.get(bob_base_iri, "application/ld+json"))
-        self.assertEquals(bob.to_jsonld(), crud_controller.get(bob_base_iri, "json-ld"))
-        self.assertEquals(bob.to_rdf("turtle"), crud_controller.get(bob_base_iri, "text/turtle"))
-        self.assertEquals(bob.to_rdf("turtle"), crud_controller.get(bob_base_iri))
+        self.assertEquals(bob.to_json(), crud_controller.get(bob_hashless_iri, "application/json"))
+        self.assertEquals(bob.to_json(), crud_controller.get(bob_hashless_iri, "json"))
+        self.assertEquals(bob.to_jsonld(), crud_controller.get(bob_hashless_iri, "application/ld+json"))
+        self.assertEquals(bob.to_jsonld(), crud_controller.get(bob_hashless_iri, "json-ld"))
+        self.assertEquals(bob.to_rdf("turtle"), crud_controller.get(bob_hashless_iri, "text/turtle"))
+        self.assertEquals(bob.to_rdf("turtle"), crud_controller.get(bob_hashless_iri))
 
         with self.assertRaises(OMHashIriError):
             # Hash URI
-            crud_controller.get(bob_base_iri + "#hashed")
+            crud_controller.get(bob_hashless_iri + "#hashed")
         with self.assertRaises(OMObjectNotFoundError):
             crud_controller.get("http://nowhere/no-one", "text/turtle")
 
@@ -37,7 +37,7 @@ class CrudTest(unittest.TestCase):
         doc = json.loads(crud_controller.get(doc_iri, "json"))
         self.assertEquals(doc["id"], doc_iri)
 
-        resources = manager.filter(base_iri=doc_iri)
+        resources = manager.filter(hashless_iri=doc_iri)
         self.assertEquals({bob_iri, doc_iri}, {r.id for r in resources})
 
     def test_bob_controller_delete(self):
@@ -98,7 +98,7 @@ class CrudTest(unittest.TestCase):
 
     def test_controller_put_change_name(self):
         bob = create_bob()
-        doc_iri = bob.base_iri
+        doc_iri = bob.hashless_iri
         alice = lp_model.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
                                 short_bio_en=alice_bio_en)
         alice_ref = URIRef(alice.id)
@@ -127,7 +127,7 @@ class CrudTest(unittest.TestCase):
     def test_controller_put_json(self):
         alice = create_alice()
         alice_iri = alice.id
-        alice_base_iri = alice.base_iri
+        alice_hashless_iri = alice.hashless_iri
         alice_ref = URIRef(alice_iri)
 
         new_alice_name = "New alice"
@@ -139,26 +139,26 @@ class CrudTest(unittest.TestCase):
 
         self.assertEquals(unicode(data_graph.value(alice_ref, FOAF.name)), alice_name)
 
-        crud_controller.update(alice_base_iri, jsld_dump, "application/ld+json")
+        crud_controller.update(alice_hashless_iri, jsld_dump, "application/ld+json")
         self.assertEquals(unicode(data_graph.value(alice_ref, FOAF.name)), new_new_alice_name)
 
-        crud_controller.update(alice_base_iri, js_dump, "application/json")
+        crud_controller.update(alice_hashless_iri, js_dump, "application/json")
         self.assertEquals(unicode(data_graph.value(alice_ref, FOAF.name)), new_alice_name)
 
     def test_controller_put_scope(self):
         alice = create_alice()
         alice_ref = URIRef(alice.id)
         bob = create_bob()
-        bob_base_iri = bob.base_iri
+        bob_hashless_iri = bob.hashless_iri
 
         bob_graph = Graph().parse(data=bob.to_rdf("xml"), format="xml")
         # No problem
-        crud_controller.update(bob_base_iri, bob_graph.serialize(format="turtle"), "turtle")
+        crud_controller.update(bob_hashless_iri, bob_graph.serialize(format="turtle"), "turtle")
 
         new_alice_name = alice_name + " A."
         bob_graph.add((alice_ref, FOAF.name, Literal(new_alice_name, datatype=XSD.string)))
-        with self.assertRaises(OMDifferentBaseIRIError):
-            crud_controller.update(bob_base_iri, bob_graph.serialize(format="xml"), "xml")
+        with self.assertRaises(OMDifferentHashlessIRIError):
+            crud_controller.update(bob_hashless_iri, bob_graph.serialize(format="xml"), "xml")
 
     def test_controller_put_skolemized_iris(self):
         alice = create_alice()
@@ -169,12 +169,12 @@ class CrudTest(unittest.TestCase):
 
         bob = create_bob()
         bob_graph = Graph().parse(data=bob.to_rdf("xml"), format="xml")
-        crud_controller.update(bob.base_iri, bob_graph.serialize(format="turtle"), "turtle")
+        crud_controller.update(bob.hashless_iri, bob_graph.serialize(format="turtle"), "turtle")
 
         wot_fingerprint = URIRef(WOT + "fingerprint")
         bob_graph.add((gpg_skolem_ref, wot_fingerprint, Literal("DEADBEEF", datatype=XSD.hexBinary)))
         with self.assertRaises(OMForbiddenSkolemizedIRIError):
-            crud_controller.update(bob.base_iri, bob_graph.serialize(format="turtle"), "turtle")
+            crud_controller.update(bob.hashless_iri, bob_graph.serialize(format="turtle"), "turtle")
 
         # No modification
         self.assertEquals({unicode(r) for r in data_graph.objects(gpg_skolem_ref, wot_fingerprint)},

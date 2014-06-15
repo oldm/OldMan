@@ -1,6 +1,6 @@
 from threading import Lock
 from uuid import uuid1
-from .exception import OMDataStoreError, OMRequiredBaseIRIError
+from .exception import OMDataStoreError, OMRequiredHashlessIRIError
 
 
 class IriGenerator(object):
@@ -25,7 +25,7 @@ class PrefixedUUIDIriGenerator(IriGenerator):
     Recommended generator because UUID1 is robust and fast (no DB access).
 
     :param prefix: IRI prefix.
-    :param fragment: IRI fragment to append to the base IRI. Defaults to `None`.
+    :param fragment: IRI fragment to append to the hash-less IRI. Defaults to `None`.
     """
 
     def __init__(self, prefix, fragment=None):
@@ -62,7 +62,7 @@ class IncrementalIriGenerator(IriGenerator):
     :param class_iri: IRI of the RDFS class of which new :class:`~oldman.resource.Resource` objects are instance of.
                       Usually corresponds to the class IRI of the :class:`~oldman.model.Model` object that
                       owns this generator.
-    :param fragment: IRI fragment to append to the base IRI. Defaults to `None`.
+    :param fragment: IRI fragment to append to the hash-less IRI. Defaults to `None`.
     """
 
     _mutex = Lock()
@@ -133,18 +133,18 @@ class IncrementalIriGenerator(IriGenerator):
 
 
 class UUIDFragmentIriGenerator(IriGenerator):
-    """Generates an hashed IRI from a base IRI.
+    """Generates an hashed IRI from a hash-less IRI.
 
     Its fragment is a unique UUID1 number.
     """
 
-    def generate(self, base_iri):
+    def generate(self, hashless_iri):
         """See :func:`oldman.iri.IriGenerator.generate`."""
-        if base_iri is None:
-            raise OMRequiredBaseIRIError(u"Base IRI is required to generate an IRI")
-        if '#' in base_iri:
-            raise OMRequiredBaseIRIError(u"%s is not a valid base IRI" % base_iri)
-        return u"%s#%s" % (base_iri, uuid1().hex)
+        if hashless_iri is None:
+            raise OMRequiredHashlessIRIError(u"Hash-less IRI is required to generate an IRI")
+        if '#' in hashless_iri:
+            raise OMRequiredHashlessIRIError(u"%s is not a valid hash-less IRI" % hashless_iri)
+        return u"%s#%s" % (hashless_iri, uuid1().hex)
 
 
 def _skolemize(prefix=u"http://localhost/.well-known/genid/"):

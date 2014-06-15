@@ -96,8 +96,8 @@ class OMWrongResourceError(OMEditError):
     pass
 
 
-class OMDifferentBaseIRIError(OMEditError):
-    """When creating or updating an object with a different base IRI is forbidden.
+class OMDifferentHashlessIRIError(OMEditError):
+    """When creating or updating an object with a different hashless IRI is forbidden.
 
         Blank nodes are not concerned.
     """
@@ -109,8 +109,8 @@ class OMForbiddenSkolemizedIRIError(OMEditError):
     pass
 
 
-class OMRequiredBaseIRIError(OMEditError):
-    """No base IRI or an invalid IRI has been given."""
+class OMRequiredHashlessIRIError(OMEditError):
+    """No hash-less IRI has been given."""
     pass
 
 
@@ -142,7 +142,7 @@ class OMObjectNotFoundError(OMAccessError):
 
 
 class OMHashIriError(OMAccessError):
-    """A hash IRI has been given instead of a base IRI."""
+    """A hash IRI has been given instead of a hash-less IRI."""
     pass
 
 

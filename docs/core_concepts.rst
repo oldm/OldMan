@@ -32,8 +32,8 @@ It is common for a resource in RDF to be instance of multiple RDFS classes so Ol
 Some inherited Python methods may also be provided by the :class:`~oldman.model.Model` objects.
 
 
-Functionalities
-~~~~~~~~~~~~~~~
+Features
+~~~~~~~~
 
 1. Edit its properties::
 
