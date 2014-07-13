@@ -182,17 +182,21 @@ class OMAttribute(object):
         """
         return resource in self._former_values
 
-    def pop_former_value(self, resource):
-        """Pops out the former value that has been replaced.
-
-        After calling this method, the former value cannot be retrieved anymore.
+    def get_former_value(self, resource):
+        """Gets out the former value that has been replaced.
 
         :param resource: :class:`~oldman.resource.Resource` object.
-        :return: its former attribute value.
+        :return: its former attribute value or `None`.
+        """
+        return self._former_values.get(resource)
+
+    def delete_former_value(self, resource):
+        """Clears the former value that has been replaced.
+
+        :param resource: :class:`~oldman.resource.Resource` object.
         """
         if resource in self._former_values:
-            return self._former_values.pop(resource)
-        return None
+            self._former_values.pop(resource)
 
     def serialize_current_value_into_line(self, resource):
         """Converts its current attribute value into SPARQL-encoded lines.
@@ -260,7 +264,7 @@ class OMAttribute(object):
         setattr(resource, self.name, values)
         if initial:
             # Clears "None" former value
-            self.pop_former_value(resource)
+            self.delete_former_value(resource)
 
     def _encode_value(self, value, language=None):
         """Encodes an atomic value into a SPARQL line.

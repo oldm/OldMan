@@ -1,7 +1,9 @@
 import json
 import logging
 from urlparse import urlparse
+
 from rdflib import Graph
+
 from oldman.model import Model
 from oldman.resource import Resource
 from oldman.exception import OMUndeclaredClassNameError, OMExpiredMethodDeclarationTimeSlotError, OMError
@@ -9,8 +11,6 @@ from oldman.iri import PrefixedUUIDIriGenerator, IncrementalIriGenerator, BlankN
 from oldman.parsing.schema.attribute import OMAttributeExtractor
 from .registry import ModelRegistry
 from .ancestry import ClassAncestry
-from .cache import ResourceCache
-from .finder import ResourceFinder
 
 
 DEFAULT_MODEL_NAME = "Thing"
@@ -45,16 +45,13 @@ class ResourceManager(object):
     """
     _managers = {}
 
-    def __init__(self, schema_graph, data_graph, union_graph=None, attr_extractor=None,
-                 cache_region=None, manager_name="default"):
+    def __init__(self, schema_graph, data_store, attr_extractor=None,
+                 manager_name="default"):
         self._attr_extractor = attr_extractor if attr_extractor is not None else OMAttributeExtractor()
         self._schema_graph = schema_graph
-        self._union_graph = union_graph if union_graph is not None else data_graph
-        self._data_graph = data_graph
+        self._data_store = data_store
         self._methods = {}
         self._registry = ModelRegistry()
-        self._finder = ResourceFinder(self)
-        self._resource_cache = ResourceCache(cache_region)
         self._logger = logging.getLogger(__name__)
         self._name = manager_name
         if manager_name in self._managers:
@@ -65,18 +62,12 @@ class ResourceManager(object):
         self._create_model(DEFAULT_MODEL_NAME, {u"@context": {}}, untyped=True,
                            iri_prefix=u"http://localhost/.well-known/genid/default/", is_default=True)
 
-    @property
-    def data_graph(self):
-        """:class:`rdflib.Graph` attribute where all the non-schema resources are stored by default."""
-        return self._data_graph
+        # Register it
+        self._data_store.manager = self
 
     @property
-    def union_graph(self):
-        """Union of all the named graphs of a :class:`rdflib.ConjunctiveGraph` or a :class:`rdflib.Dataset`.
-        Super-set of `data_graph` and may also include `schema_graph`.
-        Read-only attribute.
-        """
-        return self._union_graph
+    def data_store(self):
+        return self._data_store
 
     @property
     def name(self):
@@ -85,11 +76,6 @@ class ResourceManager(object):
         class method :func:`~oldman.management.manager.ResourceManager.get_manager`.
         """
         return self._name
-
-    @property
-    def resource_cache(self):
-        """:class:`~oldman.management.cache.ResourceCache` object."""
-        return self._resource_cache
 
     @classmethod
     def get_manager(cls, name):
@@ -176,7 +162,7 @@ class ResourceManager(object):
             id_generator = iri_generator
         elif iri_prefix is not None:
             if incremental_uri:
-                id_generator = IncrementalIriGenerator(iri_prefix, self._data_graph,
+                id_generator = IncrementalIriGenerator(iri_prefix, self._data_store,
                                                        class_iri, fragment=iri_fragment)
             else:
                 id_generator = PrefixedUUIDIriGenerator(iri_prefix, fragment=iri_fragment)
@@ -221,16 +207,16 @@ class ResourceManager(object):
 
     def get(self, id=None, types=None, hashless_iri=None, **kwargs):
         """See :func:`oldman.management.finder.ResourceFinder.get`."""
-        return self._finder.get(id=id, types=types, hashless_iri=hashless_iri, **kwargs)
+        return self._data_store.get(id=id, types=types, hashless_iri=hashless_iri, **kwargs)
 
     def filter(self, types=None, hashless_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
         """See :func:`oldman.management.finder.ResourceFinder.filter`."""
-        return self._finder.filter(types=types, hashless_iri=hashless_iri, limit=limit, eager=eager,
+        return self._data_store.filter(types=types, hashless_iri=hashless_iri, limit=limit, eager=eager,
                                    pre_cache_properties=pre_cache_properties, **kwargs)
 
     def sparql_filter(self, query):
         """See :func:`oldman.management.finder.ResourceFinder.sparql_filter`."""
-        return self._finder.sparql_filter(query)
+        return self._data_store.sparql_filter(query)
 
     def find_models_and_types(self, type_set):
         """See :func:`oldman.management.registry.ModelRegistry.find_models_and_types`."""

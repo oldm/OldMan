@@ -119,7 +119,7 @@ class SerializationTest(unittest.TestCase):
         bob.keys = {rsa_key}
         bob.save()
         # If any cache
-        manager.resource_cache.remove_resource(bob)
+        data_store.resource_cache.remove_resource(bob)
 
         bob = lp_model.get(id=bob_iri)
         bob_jsonld = json.loads(bob.to_jsonld())

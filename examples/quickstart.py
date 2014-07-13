@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from rdflib import Dataset,ConjunctiveGraph
-from oldman import ResourceManager, parse_graph_safely
+from oldman import ResourceManager, parse_graph_safely, SPARQLDataStore
 
 # In-memory main graph that will be divided into named sub-graphs
 default_graph = Dataset()
@@ -20,7 +20,8 @@ parse_graph_safely(schema_graph, "https://raw.githubusercontent.com/oldm/OldMan/
 context_iri = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_context.jsonld"
 
 #Resource manager (will generate the model objects)
-manager = ResourceManager(schema_graph, data_graph)
+data_store = SPARQLDataStore(data_graph)
+manager = ResourceManager(schema_graph, data_store)
 
 #LocalPerson model
 lp_model = manager.create_model("LocalPerson", context_iri, iri_prefix="http://localhost/persons/",

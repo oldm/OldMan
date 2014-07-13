@@ -1,23 +1,47 @@
 import logging
+from threading import Lock
 from rdflib import URIRef, Graph, RDF
 from rdflib.plugins.sparql.parser import ParseException
+from oldman.utils.sparql import build_query_part, build_update_query_part
 from oldman.resource import Resource
-from oldman.utils.sparql import build_query_part
 from oldman.exception import OMSPARQLParseError, OMAttributeAccessError, OMClassInstanceError, OMSPARQLError
 from oldman.exception import OMHashIriError, OMObjectNotFoundError
+from oldman.exception import OMDataStoreError
+from .datastore import DataStore
 
 
-class ResourceFinder(object):
+class SPARQLDataStore(DataStore):
     """A :class:`~oldman.management.finder.ResourceFinder` object retrieves
     :class:`~oldman.resource.Resource` objects.
 
     :param manager: The :class:`~oldman.management.manager.ResourceManager` object.
                     It gives access to RDF graphs.
     """
+    _iri_mutex = Lock()
+    _counter_query_req = u"""
+            PREFIX oldman: <urn:oldman:>
+            SELECT ?number
+            WHERE {
+                ?class_iri oldman:nextNumber ?number .
+            }"""
+    _counter_update_req = u"""
+            PREFIX oldman: <urn:oldman:>
+            DELETE {
+                ?class_iri oldman:nextNumber ?current .
+            }
+            INSERT {
+                ?class_iri oldman:nextNumber ?next .
+            }
+            WHERE {
+                ?class_iri oldman:nextNumber ?current .
+                BIND (?current+1 AS ?next)
+            }"""
 
-    def __init__(self, manager):
-        self._manager = manager
+    def __init__(self, data_graph, union_graph=None, cache_region=None):
+        DataStore.__init__(self, cache_region)
         self._logger = logging.getLogger(__name__)
+        self._data_graph = data_graph
+        self._union_graph = union_graph if union_graph is not None else data_graph
 
     def filter(self, types=None, hashless_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
         """Finds the :class:`~oldman.resource.Resource` objects matching the given criteria.
@@ -38,6 +62,8 @@ class ResourceFinder(object):
                       added to the cache. Defaults to `[]`. If given, `eager` must be `True`.
                       Disabled if there is no cache.
         :return: A generator (if lazy) or a list (if eager) of :class:`~oldman.resource.Resource` objects.
+
+        TODO: refactor
         """
         if not eager and pre_cache_properties is not None:
             raise AttributeError(u"Eager properties are incompatible with lazyness. Please set eager to True.")
@@ -50,13 +76,17 @@ class ResourceFinder(object):
         if len(type_iris) == 0 and len(kwargs) > 0:
             raise OMAttributeAccessError(u"No type given in filter() so attributes %s are ambiguous."
                                          % kwargs.keys())
-        elif len(type_iris) == 0 and len(kwargs) == 0:
+
+        return self._filter(type_iris, hashless_iri, limit, eager, pre_cache_properties, **kwargs)
+
+    def _filter(self, type_iris, hashless_iri, limit, eager, pre_cache_properties, **kwargs):
+        if len(type_iris) == 0 and len(kwargs) == 0:
             if hashless_iri is None:
                 self._logger.warn(u"filter() called without parameter. Returns every resource in the union graph.")
             lines = u"?s ?p ?o . \n"
         else:
-            type_set = set(types) if types is not None else set()
-            models, _ = self._manager.find_models_and_types(type_set)
+            type_set = set(type_iris)
+            models, _ = self.manager.find_models_and_types(type_set)
 
             lines = u""
             for type_iri in type_iris:
@@ -94,7 +124,7 @@ class ResourceFinder(object):
         if "SELECT" not in query:
             raise OMSPARQLError(u"Not a SELECT query. Query: %s" % query)
         try:
-            results = self._manager.union_graph.query(query)
+            results = self._union_graph.query(query)
         except ParseException as e:
             raise OMSPARQLError(u"%s\n %s" % (query, e))
         return (self.get(id=unicode(r[0])) for r in results)
@@ -129,7 +159,7 @@ class ResourceFinder(object):
             self._logger.warn(u"get() called without parameter. Returns the first resource found in the union graph.")
             query = u"SELECT ?s WHERE { ?s ?p ?o } LIMIT 1"
             try:
-                results = self._manager.union_graph.query(query)
+                results = self._union_graph.query(query)
             except ParseException as e:
                 raise OMSPARQLParseError(u"%s\n %s" % (query, e))
             for r, in results:
@@ -149,12 +179,12 @@ class ResourceFinder(object):
         return None
 
     def _get_by_id(self, id):
-        resource = self._manager.resource_cache.get_resource(id)
+        resource = self.resource_cache.get_resource(id)
         if resource:
             return resource
         resource_graph = Graph()
         iri = URIRef(id)
-        resource_graph += self._manager.union_graph.triples((iri, None, None))
+        resource_graph += self._union_graph.triples((iri, None, None))
         self._logger.debug(u"All triples with subject %s loaded from the union_graph" % iri)
         # Extracts lists
         list_items_request = u"""
@@ -165,7 +195,7 @@ class ResourceFinder(object):
           ?subList rdf:first ?value .
           OPTIONAL { ?previous rdf:rest ?subList }
         }""" % id
-        results = list(self._manager.union_graph.query(list_items_request))
+        results = list(self._union_graph.query(list_items_request))
         for subList, value, previous in results:
             if previous is not None:
                 resource_graph.add((previous, RDF.rest, subList))
@@ -175,7 +205,7 @@ class ResourceFinder(object):
 
     def _new_resource_object(self, id, resource_graph):
         resource = Resource.load_from_graph(self._manager, id, resource_graph, is_new=(len(resource_graph) == 0))
-        self._manager.resource_cache.set_resource(resource)
+        self.resource_cache.set_resource(resource)
         return resource
 
     def _select_resource_from_hashless_iri(self, hashless_iri, resources):
@@ -194,7 +224,7 @@ class ResourceFinder(object):
         """ Lazy filtering """
         self._logger.debug(u"Filter query: %s" % query)
         try:
-            results = self._manager.union_graph.query(query)
+            results = self._union_graph.query(query)
         except ParseException as e:
             raise OMSPARQLParseError(u"%s\n %s" % (query, e))
 
@@ -239,7 +269,7 @@ class ResourceFinder(object):
 
         self._logger.debug(u"Filter query: %s" % query)
         try:
-            results = self._manager.union_graph.query(query)
+            results = self._union_graph.query(query)
         except ParseException as e:
             raise OMSPARQLParseError(u"%s\n %s" % (query, e))
 
@@ -267,7 +297,7 @@ class ResourceFinder(object):
             new_resource_iris = []
             # Resource from cache
             for iri in resource_iris:
-                resource = self._manager.resource_cache.get_resource(iri)
+                resource = self.resource_cache.get_resource(iri)
                 if resource is None:
                     new_resource_iris.append(iri)
                 elif iri in main_resource_iris:
@@ -282,6 +312,98 @@ class ResourceFinder(object):
                 main_resources.append(resource)
 
         return main_resources
+
+    def _save_resource_attributes(self, resource, attributes, former_types):
+        id = resource.id
+
+        former_lines = u""
+        new_lines = u""
+        for attr in attributes:
+            if not attr.has_new_value(resource):
+                continue
+
+            former_value = attr.get_former_value(resource)
+            former_lines += attr.serialize_value_into_lines(former_value)
+            new_lines += attr.serialize_current_value_into_line(resource)
+
+        if former_types is not None:
+            types = set(resource.types)
+            # New type
+            for t in types.difference(former_types):
+                type_line = u"<%s> a <%s> .\n" % (id, t)
+                new_lines += type_line
+            # Removed type
+            for t in former_types.difference(types):
+                type_line = u"<%s> a <%s> .\n" % (id, t)
+                former_lines += type_line
+
+        query = build_update_query_part(u"DELETE DATA", id, former_lines)
+        if len(query) > 0:
+            query += u" ;"
+        query += build_update_query_part(u"INSERT DATA", id, new_lines)
+        if len(query) > 0:
+            self._logger.debug("Query: %s" % query)
+            try:
+                self._data_graph.update(query)
+            except ParseException as e:
+                raise OMSPARQLParseError(u"%s\n %s" % (query, e))
+
+    def exists(self, id):
+        return bool(self._union_graph.query(u"ASK {?id ?p ?o .}", initBindings={'id': URIRef(id)}))
+
+    def generate_instance_number(self, class_iri):
+        """ Needed for generating incremental IRIs
+        """
+        counter_query_req = unicode(self._counter_query_req).replace("?class_iri", u"<%s>" % class_iri)
+        counter_update_req = unicode(self._counter_update_req).replace("?class_iri", u"<%s>" % class_iri)
+
+        # Critical section
+        self._iri_mutex.acquire()
+        try:
+            self._data_graph.update(counter_update_req)
+            numbers = [int(r) for r, in self._data_graph.query(counter_query_req)]
+        finally:
+            self._iri_mutex.release()
+
+        if len(numbers) == 0:
+            raise OMDataStoreError(u"No counter for class %s (has disappeared)" % class_iri)
+        elif len(numbers) > 1:
+            raise OMDataStoreError(u"Multiple counter for class %s" % class_iri)
+
+        return numbers[0]
+
+    def check_counter(self, class_iri):
+        """ Inits if needed.
+        """
+        counter_query_req = unicode(self._counter_query_req).replace("?class_iri", u"<%s>" % class_iri)
+        numbers = list(self._data_graph.query(counter_query_req))
+        # Inits if no counter
+        if len(numbers) == 0:
+            self.reset_instance_counter(class_iri)
+        elif len(numbers) > 1:
+            raise OMDataStoreError(u"Multiple counter for class %s" % class_iri)
+
+    def reset_instance_counter(self, class_iri):
+        """Resets the counter.
+
+        For test purposes **only**.
+        """
+        delete_req = u"""
+            PREFIX oldman: <urn:oldman:>
+            DELETE {
+                ?class_iri oldman:nextNumber ?number .
+            }
+            WHERE {
+                ?class_iri oldman:nextNumber ?number .
+            }""".replace("?class_iri", "<%s>" % class_iri)
+        self._data_graph.update(delete_req)
+
+        insert_req = u"""
+            PREFIX oldman: <urn:oldman:>
+            INSERT DATA {
+                <%s> oldman:nextNumber 0 .
+                }""" % class_iri
+        self._data_graph.update(insert_req)
 
 
 def _find_attribute(models, name):

@@ -4,10 +4,8 @@ import logging
 import json
 from types import GeneratorType
 from rdflib import URIRef, Graph, RDF
-from rdflib.plugins.sparql.parser import ParseException
-from .exception import OMSPARQLParseError, OMUnauthorizedTypeChangeError, OMInternalError
+from .exception import OMUnauthorizedTypeChangeError, OMInternalError
 from .exception import OMAttributeAccessError, OMUniquenessError, OMWrongResourceError, OMEditError
-from oldman.utils.sparql import build_update_query_part
 from oldman.common import OBJECT_PROPERTY
 
 
@@ -81,7 +79,6 @@ class Resource(object):
     :param kwargs: values indexed by their attribute names.
     """
 
-    _existence_query = u"ASK {?id ?p ?o .}"
     _special_attribute_names = ["_models", "_id", "_types", "_is_blank_node", "_manager",
                                 "_former_types", "_logger"]
     _pickle_attribute_names = ["_id", '_types']
@@ -96,11 +93,8 @@ class Resource(object):
         if id is not None:
             # Anticipated because used in __hash__
             self._id = id
-            if is_new:
-                exist = bool(self._manager.union_graph.query(self._existence_query,
-                                                             initBindings={'id': URIRef(self._id)}))
-                if exist:
-                    raise OMUniquenessError("Object %s already exist" % self._id)
+            if is_new and self._manager.data_store.exists(id):
+                raise OMUniquenessError("Object %s already exist" % self._id)
         else:
             self._id = main_model.generate_iri(hashless_iri=hashless_iri)
         self._init_non_persistent_attributes(self._id)
@@ -290,7 +284,7 @@ class Resource(object):
                 attribute = self._get_om_attribute(name)
                 attribute.set(self, value)
                 # Clears former values (allows modification)
-                attribute.pop_former_value(self)
+                attribute.delete_former_value(self)
 
     def add_type(self, additional_type):
         """Declares that the resource is instance of another RDFS class.
@@ -328,64 +322,68 @@ class Resource(object):
         attributes = self._extract_attribute_list()
         for attr in attributes:
             attr.check_validity(self, is_end_user)
-        self._save(attributes)
 
-        # Cache
-        self._manager.resource_cache.set_resource(self)
-        return self
-
-    def _save(self, attributes):
-        """Makes a SPARQL DELETE-INSERT request to save the changes into the `data_graph`.
-
-        Deletes unaffected external resources, if the test :func:`~oldman.resource.should_delete_resource`
-        is passed.
-
-        :param attributes: ordered list of :class:`~oldman.attribute.OMAttribute` objects.
-        """
+        # Find objects to delete
         objects_to_delete = []
-        former_lines = u""
-        new_lines = u""
         for attr in attributes:
             if not attr.has_new_value(self):
                 continue
-            # Beware: has a side effect!
-            former_value = attr.pop_former_value(self)
-            former_lines += attr.serialize_value_into_lines(former_value)
-            new_lines += attr.serialize_current_value_into_line(self)
 
             # Some former objects may be deleted
             if attr.om_property.type == OBJECT_PROPERTY:
+                former_value = attr.get_former_value(self)
+
                 if isinstance(former_value, dict):
                     raise NotImplementedError("Object dicts are not yet supported.")
                 former_value = former_value if isinstance(former_value, (set, list)) else [former_value]
                 objects_to_delete += [self._manager.get(id=v) for v in former_value
                                       if v is not None and is_blank_node(v)]
 
-        if self._former_types is not None:
-            types = set(self._types)
-            # New type
-            for t in types.difference(self._former_types):
-                type_line = u"<%s> a <%s> .\n" % (self._id, t)
-                new_lines += type_line
-            # Removed type
-            for t in self._former_types.difference(types):
-                type_line = u"<%s> a <%s> .\n" % (self._id, t)
-                former_lines += type_line
+        # Update literal values
+        self._manager.data_store.save(self, attributes, self._former_types)
 
-        query = build_update_query_part(u"DELETE DATA", self._id, former_lines)
-        if len(query) > 0:
-            query += u" ;"
-        query += build_update_query_part(u"INSERT DATA", self._id, new_lines)
-        if len(query) > 0:
-            self._logger.debug("Query: %s" % query)
-            try:
-                self._manager.data_graph.update(query)
-            except ParseException as e:
-                raise OMSPARQLParseError(u"%s\n %s" % (query, e))
-
-        self._former_types = None
+        # Delete the objects
         for obj in objects_to_delete:
             obj.delete()
+
+        # Clears former values
+        self._former_types = None
+        for attr in attributes:
+            attr.delete_former_value(self)
+
+        return self
+
+    def delete(self):
+        """Removes the resource from the `data_graph` and the `resource_cache`.
+
+        Cascade deletion is done for related resources satisfying the test
+        :func:`~oldman.resource.should_delete_resource`.
+        """
+        attributes = self._extract_attribute_list()
+        for attr in attributes:
+            # Delete blank nodes recursively
+            if attr.om_property.type == OBJECT_PROPERTY:
+                objs = getattr(self, attr.name)
+                if objs is not None:
+                    if isinstance(objs, (list, set, GeneratorType)):
+                        for obj in objs:
+                            if should_delete_resource(obj):
+                                self._logger.debug(u"%s deleted with %s" % (obj.id, self._id))
+                                obj.delete()
+                            else:
+                                self._logger.debug(u"%s not deleted with %s" % (obj.id, self._id))
+                    elif should_delete_resource(objs):
+                        objs.delete()
+
+            setattr(self, attr.name, None)
+
+        #Types
+        self._change_types(set())
+        self._manager.data_store.delete(self, attributes, self._former_types)
+
+        # Clears former values
+        for attr in attributes:
+            attr.delete_former_value(self)
 
     def _extract_attribute_list(self):
         """:return: An ordered list of list of :class:`~oldman.attribute.OMAttribute` objects."""
@@ -496,35 +494,6 @@ class Resource(object):
                 return value.id
         # Literal
         return value
-
-    def delete(self):
-        """Removes the resource from the `data_graph` and the `resource_cache`.
-
-        Cascade deletion is done for related resources satisfying the test
-        :func:`~oldman.resource.should_delete_resource`.
-        """
-        attributes = self._extract_attribute_list()
-        for attr in attributes:
-            # Delete blank nodes recursively
-            if attr.om_property.type == OBJECT_PROPERTY:
-                objs = getattr(self, attr.name)
-                if objs is not None:
-                    if isinstance(objs, (list, set, GeneratorType)):
-                        for obj in objs:
-                            if should_delete_resource(obj):
-                                self._logger.debug(u"%s deleted with %s" % (obj.id, self._id))
-                                obj.delete()
-                            else:
-                                self._logger.debug(u"%s not deleted with %s" % (obj.id, self._id))
-                    elif should_delete_resource(objs):
-                        objs.delete()
-
-            setattr(self, attr.name, None)
-
-        #Types
-        self._change_types(set())
-        self._save(attributes)
-        self._manager.resource_cache.remove_resource(self)
 
     def full_update(self, full_dict, is_end_user=True, allow_new_type=False, allow_type_removal=False,
                     save=True):

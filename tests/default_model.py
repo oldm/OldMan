@@ -6,7 +6,7 @@ from rdflib import ConjunctiveGraph, Graph, URIRef, Literal, RDF, XSD
 from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
 from rdflib.namespace import FOAF
 
-from oldman import ResourceManager, parse_graph_safely
+from oldman import ResourceManager, parse_graph_safely, SPARQLDataStore
 from oldman.attribute import OMAttributeTypeCheckError, OMRequiredPropertyError
 from oldman.exception import OMClassInstanceError, OMAttributeAccessError, OMUniquenessError
 from oldman.exception import OMWrongResourceError, OMObjectNotFoundError, OMHashIriError, OMEditError
@@ -228,7 +228,8 @@ default_graph.namespace_manager.bind("cert", CERT)
 cache_region = None
 #cache_region = make_region().configure('dogpile.cache.memory_pickle')
 
-manager = ResourceManager(schema_graph, data_graph, cache_region=cache_region)
+data_store = SPARQLDataStore(data_graph, cache_region=cache_region)
+manager = ResourceManager(schema_graph, data_store)
 # Model classes are generated here!
 #lp_name_or_iri = "LocalPerson"
 lp_name_or_iri = MY_VOC + "LocalPerson"
@@ -276,12 +277,12 @@ def tear_down():
         for iri in iris:
             cache_region.delete(iri)
     default_graph.update("CLEAR GRAPH <%s>" % data_graph.identifier)
-    manager.resource_cache.invalidate_cache()
+    data_store.resource_cache.invalidate_cache()
 
 
 def set_up(use_default_cache_region=True):
     if use_default_cache_region:
-        manager.resource_cache.change_cache_region(cache_region)
+        data_store.resource_cache.change_cache_region(cache_region)
 
 
 def create_bob():
