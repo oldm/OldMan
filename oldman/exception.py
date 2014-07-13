@@ -172,3 +172,7 @@ class OMAlreadyGeneratedAttributeError(OMInternalError):
 class OMDataStoreError(OMError):
     """Error detected in the stored data."""
     pass
+
+
+class UnsupportedDataStorageFeature(OMDataStoreError):
+    """Feature not supported by the data store."""

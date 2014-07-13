@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
-from rdflib import Dataset,ConjunctiveGraph
+from rdflib import Dataset
 from oldman import ResourceManager, parse_graph_safely, SPARQLDataStore
 
-# In-memory main graph that will be divided into named sub-graphs
-default_graph = Dataset()
+# In-memory store
+store = "default"
 
-#from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
-#default_graph = ConjunctiveGraph(SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
-#                                                   update_endpoint="http://localhost:3030/test/update"))
+# from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
+# store = SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
+#                           update_endpoint="http://localhost:3030/test/update")
+
+# The dataset will contain the two named graphs
+dataset = Dataset(store)
 
 # Graph containing all the schema RDF triples
-schema_graph = default_graph.get_context("http://localhost/schema")
-data_graph = default_graph.get_context("http://localhost/data")
+schema_graph = dataset.graph("http://localhost/schema")
+data_graph = dataset.graph("http://localhost/data")
 
 # Load the schema
 parse_graph_safely(schema_graph, "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_schema.ttl",

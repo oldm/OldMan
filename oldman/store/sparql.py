@@ -3,19 +3,17 @@ from threading import Lock
 from rdflib import URIRef, Graph, RDF
 from rdflib.plugins.sparql.parser import ParseException
 from oldman.utils.sparql import build_query_part, build_update_query_part
-from oldman.resource import Resource
-from oldman.exception import OMSPARQLParseError, OMAttributeAccessError, OMClassInstanceError, OMSPARQLError
-from oldman.exception import OMHashIriError, OMObjectNotFoundError
+from oldman.exception import OMSPARQLParseError, OMAttributeAccessError, OMSPARQLError
+from oldman.exception import OMHashIriError
 from oldman.exception import OMDataStoreError
 from .datastore import DataStore
 
 
 class SPARQLDataStore(DataStore):
-    """A :class:`~oldman.management.finder.ResourceFinder` object retrieves
+    """A :class:`~oldman.store.sparql.SPARQLDataStore` object retrieves
     :class:`~oldman.resource.Resource` objects.
 
-    :param manager: The :class:`~oldman.management.manager.ResourceManager` object.
-                    It gives access to RDF graphs.
+    TODO: continue
     """
     _iri_mutex = Lock()
     _counter_query_req = u"""
@@ -43,41 +41,42 @@ class SPARQLDataStore(DataStore):
         self._data_graph = data_graph
         self._union_graph = union_graph if union_graph is not None else data_graph
 
-    def filter(self, types=None, hashless_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
-        """Finds the :class:`~oldman.resource.Resource` objects matching the given criteria.
+    def _get_first_resource_found(self):
+        self._logger.warn(u"get() called without parameter. Returns the first resource found in the union graph.")
+        query = u"SELECT ?s WHERE { ?s ?p ?o } LIMIT 1"
+        try:
+            results = self._union_graph.query(query)
+        except ParseException as e:
+            raise OMSPARQLParseError(u"%s\n %s" % (query, e))
+        for r, in results:
+            return self._get_by_id(unicode(r))
+        # If no resource in the union graph
+        return None
 
-        The `kwargs` dict can contains:
+    def _get_by_id(self, id):
+        resource = self.resource_cache.get_resource(id)
+        if resource:
+            return resource
+        resource_graph = Graph()
+        iri = URIRef(id)
+        resource_graph += self._union_graph.triples((iri, None, None))
+        self._logger.debug(u"All triples with subject %s loaded from the union_graph" % iri)
+        # Extracts lists
+        list_items_request = u"""
+        SELECT ?subList ?value ?previous
+        WHERE {
+          <%s> ?p ?l .
+          ?l rdf:rest* ?subList .
+          ?subList rdf:first ?value .
+          OPTIONAL { ?previous rdf:rest ?subList }
+        }""" % id
+        results = list(self._union_graph.query(list_items_request))
+        for subList, value, previous in results:
+            if previous is not None:
+                resource_graph.add((previous, RDF.rest, subList))
+            resource_graph.add((subList, RDF.first, value))
 
-           1. regular attribute key-values ;
-           2. the special attribute `id`. If given, :func:`~oldman.management.finder.Finder.get` is called.
-
-        :param types: IRIs of the RDFS classes filtered resources must be instance of. Defaults to `None`.
-        :param hashless_iri: Hash-less IRI of filtered resources. Defaults to `None`.
-        :param limit: Upper bound on the number of solutions returned (SPARQL LIMIT). Positive integer.
-                      Defaults to `None`.
-        :param eager: If `True` loads all the Resource objects within one single SPARQL query.
-                      Defaults to `False` (lazy).
-        :param pre_cache_properties: List of RDF ObjectProperties to pre-cache eagerly.
-                      Their values (:class:`~oldman.resource.Resource` objects) are loaded and
-                      added to the cache. Defaults to `[]`. If given, `eager` must be `True`.
-                      Disabled if there is no cache.
-        :return: A generator (if lazy) or a list (if eager) of :class:`~oldman.resource.Resource` objects.
-
-        TODO: refactor
-        """
-        if not eager and pre_cache_properties is not None:
-            raise AttributeError(u"Eager properties are incompatible with lazyness. Please set eager to True.")
-
-        id = kwargs.pop("id") if "id" in kwargs else None
-        type_iris = types if types is not None else []
-        if id is not None:
-            return self.get(id=id, types=types, hashless_iri=hashless_iri, **kwargs)
-
-        if len(type_iris) == 0 and len(kwargs) > 0:
-            raise OMAttributeAccessError(u"No type given in filter() so attributes %s are ambiguous."
-                                         % kwargs.keys())
-
-        return self._filter(type_iris, hashless_iri, limit, eager, pre_cache_properties, **kwargs)
+        return self._new_resource_object(id, resource_graph)
 
     def _filter(self, type_iris, hashless_iri, limit, eager, pre_cache_properties, **kwargs):
         if len(type_iris) == 0 and len(kwargs) == 0:
@@ -128,97 +127,6 @@ class SPARQLDataStore(DataStore):
         except ParseException as e:
             raise OMSPARQLError(u"%s\n %s" % (query, e))
         return (self.get(id=unicode(r[0])) for r in results)
-
-    def get(self, id=None, types=None, hashless_iri=None, **kwargs):
-        """Gets the first :class:`~oldman.resource.Resource` object matching the given criteria.
-
-        The `kwargs` dict can contains regular attribute key-values.
-
-        When `id` is given, types are then checked.
-        An :exc:`~oldman.exception.OMClassInstanceError` is raised if the resource
-        is not instance of these classes.
-        **Other criteria are not checked**.
-
-        :param id: IRI of the resource. Defaults to `None`.
-        :param types: IRIs of the RDFS classes filtered resources must be instance of. Defaults to `None`.
-        :param hashless_iri: Hash-less IRI of filtered resources. Defaults to `None`.
-        :return: A :class:`~oldman.resource.Resource` object or `None` if no resource has been found.
-        """
-        types = set(types) if types is not None else set()
-
-        if id is not None:
-            resource = self._get_by_id(id)
-            if not types.issubset(resource.types):
-                missing_types = types.difference(resource.types)
-                raise OMClassInstanceError(u"%s found, but is not instance of %s" % (id, missing_types))
-            if len(kwargs) > 0:
-                self._logger.warn(u"get(): id given so attributes %s are just ignored" % kwargs.keys())
-            return resource
-
-        elif hashless_iri is None and len(kwargs) == 0:
-            self._logger.warn(u"get() called without parameter. Returns the first resource found in the union graph.")
-            query = u"SELECT ?s WHERE { ?s ?p ?o } LIMIT 1"
-            try:
-                results = self._union_graph.query(query)
-            except ParseException as e:
-                raise OMSPARQLParseError(u"%s\n %s" % (query, e))
-            for r, in results:
-                return self._get_by_id(unicode(r))
-            # If no resource in the union graph
-            return None
-
-        if hashless_iri is not None:
-            resources = self.filter(types=types, hashless_iri=hashless_iri, **kwargs)
-            return self._select_resource_from_hashless_iri(hashless_iri, list(resources))
-
-        # First found
-        resources = self.filter(types=types, hashless_iri=hashless_iri, limit=1, **kwargs)
-        for resource in resources:
-            return resource
-
-        return None
-
-    def _get_by_id(self, id):
-        resource = self.resource_cache.get_resource(id)
-        if resource:
-            return resource
-        resource_graph = Graph()
-        iri = URIRef(id)
-        resource_graph += self._union_graph.triples((iri, None, None))
-        self._logger.debug(u"All triples with subject %s loaded from the union_graph" % iri)
-        # Extracts lists
-        list_items_request = u"""
-        SELECT ?subList ?value ?previous
-        WHERE {
-          <%s> ?p ?l .
-          ?l rdf:rest* ?subList .
-          ?subList rdf:first ?value .
-          OPTIONAL { ?previous rdf:rest ?subList }
-        }""" % id
-        results = list(self._union_graph.query(list_items_request))
-        for subList, value, previous in results:
-            if previous is not None:
-                resource_graph.add((previous, RDF.rest, subList))
-            resource_graph.add((subList, RDF.first, value))
-
-        return self._new_resource_object(id, resource_graph)
-
-    def _new_resource_object(self, id, resource_graph):
-        resource = Resource.load_from_graph(self._manager, id, resource_graph, is_new=(len(resource_graph) == 0))
-        self.resource_cache.set_resource(resource)
-        return resource
-
-    def _select_resource_from_hashless_iri(self, hashless_iri, resources):
-        if len(resources) == 0:
-            raise OMObjectNotFoundError(u"No resource with hash-less iri %s" % hashless_iri)
-        elif len(resources) > 1:
-            for r in resources:
-                if r.id == hashless_iri:
-                    return r
-            # TODO: avoid such arbitrary selection
-            self._logger.warn(u"Multiple resources have the same base_uri: %s\n. "
-                              u"The first one is selected." % resources)
-        return resources[0]
 
     def _filter_lazily(self, query):
         """ Lazy filtering """
