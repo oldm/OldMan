@@ -96,7 +96,7 @@ class SPARQLDataStore(DataStore):
                 attr = _find_attribute(models, name)
                 value = kwargs[name]
                 if value:
-                    lines += attr.serialize_value_into_lines(value)
+                    lines += attr.value_to_nt(value)
 
         if hashless_iri is not None:
             if "#" in hashless_iri:
@@ -231,8 +231,8 @@ class SPARQLDataStore(DataStore):
                 continue
 
             former_value = attr.get_former_value(resource)
-            former_lines += attr.serialize_value_into_lines(former_value)
-            new_lines += attr.serialize_current_value_into_line(resource)
+            former_lines += attr.value_to_nt(former_value)
+            new_lines += attr.to_nt(resource)
 
         if former_types is not None:
             types = set(resource.types)
