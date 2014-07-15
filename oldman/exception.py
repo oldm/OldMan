@@ -174,5 +174,5 @@ class OMDataStoreError(OMError):
     pass
 
 
-class UnsupportedDataStorageFeature(OMDataStoreError):
+class UnsupportedDataStorageFeatureException(OMDataStoreError):
     """Feature not supported by the data store."""

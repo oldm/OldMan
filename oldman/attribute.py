@@ -9,7 +9,7 @@ from oldman.iri import _skolemize
 
 
 OMAttributeMetadata = namedtuple("OMAttributeMetadata", ["name", "property", "language", "jsonld_type",
-                                                           "container", "reversed"])
+                                                         "container", "reversed"])
 
 
 class OMAttribute(object):

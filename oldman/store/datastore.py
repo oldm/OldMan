@@ -1,11 +1,28 @@
 import logging
-from oldman.management.cache import ResourceCache
-from oldman.exception import UnsupportedDataStorageFeature, OMAttributeAccessError
+
+from oldman.store.cache import ResourceCache
+from oldman.exception import UnsupportedDataStorageFeatureException, OMAttributeAccessError
 from oldman.exception import OMObjectNotFoundError, OMClassInstanceError
 from oldman.resource import Resource
 
 
 class DataStore(object):
+    """A :class:`~oldman.store.datastore.DataStore` object manages CRUD operations on
+    :class:`~oldman.resource.Resource` objects.
+
+    In the future, non-CRUD operations may also be supported.
+
+    Manages the cache (:class:`~oldman.management.cache.ResourceCache` object) of
+    :class:`~oldman.resource.Resource` object.
+
+    A :class:`~oldman.management.manager.ResourceManager` object must be assigned
+    after instantiation of this object.
+
+    :param cache_region: :class:`dogpile.cache.region.CacheRegion` object.
+                         This object must already be configured.
+                         Defaults to None (no cache).
+                         See :class:`~oldman.store.cache.ResourceCache` for further details.
+    """
 
     def __init__(self, cache_region=None):
         self._manager = None
@@ -14,12 +31,16 @@ class DataStore(object):
 
     @property
     def manager(self):
+        """The :class:`~oldman.management.manager.ResourceManager` object.
+
+        Necessary for creating new :class:`~oldman.resource.Resource` objects
+        and accessing to :class:`~oldman.model.Model` objects.
+        """
         return self._manager
 
     @manager.setter
     def manager(self, resource_manager):
-        """ Please call it
-        """
+        """ Must be called after instantiation. """
         self._manager = resource_manager
 
     @property
@@ -32,9 +53,8 @@ class DataStore(object):
 
         The `kwargs` dict can contains regular attribute key-values.
 
-        When `id` is given, types are then checked.
-        An :exc:`~oldman.exception.OMClassInstanceError` is raised if the resource
-        is not instance of these classes.
+        When `id` is given, types are then checked. An :exc:`~oldman.exception.OMClassInstanceError`
+        is raised if the resource is not instance of these classes.
         **Other criteria are not checked**.
 
         :param id: IRI of the resource. Defaults to `None`.
@@ -73,21 +93,19 @@ class DataStore(object):
         The `kwargs` dict can contains:
 
            1. regular attribute key-values ;
-           2. the special attribute `id`. If given, :func:`~oldman.management.finder.Finder.get` is called.
+           2. the special attribute `id`. If given, :func:`~oldman.store.datastore.DataStore.get` is called.
 
         :param types: IRIs of the RDFS classes filtered resources must be instance of. Defaults to `None`.
         :param hashless_iri: Hash-less IRI of filtered resources. Defaults to `None`.
-        :param limit: Upper bound on the number of solutions returned (SPARQL LIMIT). Positive integer.
+        :param limit: Upper bound on the number of solutions returned (e.g. SPARQL LIMIT). Positive integer.
                       Defaults to `None`.
-        :param eager: If `True` loads all the Resource objects within one single SPARQL query.
-                      Defaults to `False` (lazy).
+        :param eager: If `True` loads all the Resource objects within the minimum number of queries
+                      (e.g. one single SPARQL query). Defaults to `False` (lazy).
         :param pre_cache_properties: List of RDF ObjectProperties to pre-cache eagerly.
                       Their values (:class:`~oldman.resource.Resource` objects) are loaded and
                       added to the cache. Defaults to `[]`. If given, `eager` must be `True`.
                       Disabled if there is no cache.
         :return: A generator (if lazy) or a list (if eager) of :class:`~oldman.resource.Resource` objects.
-
-        TODO: refactor
         """
         if not eager and pre_cache_properties is not None:
             raise AttributeError(u"Eager properties are incompatible with lazyness. Please set eager to True.")
@@ -104,68 +122,95 @@ class DataStore(object):
         return self._filter(type_iris, hashless_iri, limit, eager, pre_cache_properties, **kwargs)
 
     def sparql_filter(self, query):
-        """Not supported by default."""
-        raise UnsupportedDataStorageFeature("This datastore %s does not support the SPARQL protocol."
+        """Finds the :class:`~oldman.resource.Resource` objects matching a given query.
+
+        Raises an :class:`~oldman.exception.UnsupportedDataStorageFeatureException` exception
+        if the SPARQL protocol is not supported by the concrete data_store.
+
+        :param query: SPARQL SELECT query where the first variable assigned
+                      corresponds to the IRIs of the resources that will be returned.
+        :return: A generator of :class:`~oldman.resource.Resource` objects.
+"""
+        raise UnsupportedDataStorageFeatureException("This datastore %s does not support the SPARQL protocol."
                                             % self.__class__.__name__)
 
     def save(self, resource, attributes, former_types):
-        """End-users should not call it directly. Call Resource.save() instead.
+        """End-users should not call it directly. Call :func:`oldman.Resource.save()` instead.
 
-        TODO: update this comment
-        Makes a SPARQL DELETE-INSERT request to save the changes into the `data_graph`.
-
-        Deletes unaffected external resources, if the test :func:`~oldman.resource.should_delete_resource`
-        is passed.
-
-        :param attributes: ordered list of :class:`~oldman.attribute.OMAttribute` objects.
+        :param resource: :class:`~oldman.resource.Resource` object.
+        :param attributes: Ordered list of :class:`~oldman.attribute.OMAttribute` objects.
+        :param former_types: List of RDFS class IRIs previously saved.
         """
         self._save_resource_attributes(resource, attributes, former_types)
         # Cache
         self._resource_cache.set_resource(resource)
 
     def delete(self, resource, attributes, former_types):
+        """End-users should not call it directly. Call :func:`oldman.Resource.delete()` instead.
+
+        :param resource: :class:`~oldman.resource.Resource` object.
+        :param attributes: Ordered list of :class:`~oldman.attribute.OMAttribute` objects.
+        :param former_types: List of RDFS class IRIs previously saved.
+        """
         self._save_resource_attributes(resource, attributes, former_types)
         # Cache
         self._resource_cache.remove_resource(resource)
 
     def exists(self, resource_iri):
-        raise UnsupportedDataStorageFeature("This datastore %s cannot test the existence of an IRI."
-                                            % self.__class__.__name__)
+        """ Tests if the IRI of the resource is present in the data_store.
+
+        May raise an :class:`~oldman.exception.UnsupportedDataStorageFeatureException` exception.
+
+        :param resource_iri: IRI of the :class:`~oldman.resource.Resource` object.
+        :return: `True` if exists.
+        """
+        raise UnsupportedDataStorageFeatureException("This datastore %s cannot test the existence of an IRI."
+                                                     % self.__class__.__name__)
 
     def generate_instance_number(self, class_iri):
-        """ Needed for generating incremental IRIs
+        """ Generates a new incremented number for a given RDFS class IRI.
+
+        May raise an :class:`~oldman.exception.UnsupportedDataStorageFeatureException` exception.
+
+        :param class_iri: RDFS class IRI.
+        :return: Incremented number.
         """
-        raise UnsupportedDataStorageFeature("This datastore %s does not generate instance numbers."
-                                            % self.__class__.__name__)
+        raise UnsupportedDataStorageFeatureException("This datastore %s does not generate instance numbers."
+                                                     % self.__class__.__name__)
 
     def reset_instance_counter(self, class_iri):
-        """ Needed for generating incremental IRIs
-        """
-        raise UnsupportedDataStorageFeature("This datastore %s does not manage instance counters."
-                                            % self.__class__.__name__)
+        """ Reset the counter related to a given RDFS class.
 
-    def check_counter(self, class_iri):
-        """ Needed for generating incremental IRIs
+        For test purposes **only**.
+
+        :param class_iri: RDFS class IRI.
         """
-        raise UnsupportedDataStorageFeature("This datastore %s does not manage instance counters."
-                                            % self.__class__.__name__)
+        raise UnsupportedDataStorageFeatureException("This datastore %s does not manage instance counters."
+                                                     % self.__class__.__name__)
+
+    def check_and_repair_counter(self, class_iri):
+        """ Checks the counter of a given RDFS class and repairs (inits) it if needed.
+
+        :param class_iri: RDFS class IRI.
+        """
+        raise UnsupportedDataStorageFeatureException("This datastore %s does not manage instance counters."
+                                                     % self.__class__.__name__)
 
     def _get_first_resource_found(self):
-        raise UnsupportedDataStorageFeature("This datastore %s cannot get a resource at random."
-                                            % self.__class__.__name__)
+        raise UnsupportedDataStorageFeatureException("This datastore %s cannot get a resource at random."
+                                                     % self.__class__.__name__)
 
     def _get_by_id(self, id):
-        raise UnsupportedDataStorageFeature("This datastore %s cannot get a resource from its IRI."
-                                            % self.__class__.__name__)
+        raise UnsupportedDataStorageFeatureException("This datastore %s cannot get a resource from its IRI."
+                                                     % self.__class__.__name__)
 
     def _filter(self, type_iris, hashless_iri, limit, eager, pre_cache_properties, **kwargs):
-        """Not supported by default."""
-        raise UnsupportedDataStorageFeature("This datastore %s does not support filtering queries."
-                                            % self.__class__.__name__)
+        raise UnsupportedDataStorageFeatureException("This datastore %s does not support filtering queries."
+                                                     % self.__class__.__name__)
 
     def _save_resource_attributes(self, resource, attributes):
-        raise UnsupportedDataStorageFeature("This datastore %s cannot update resources (read-only)."
-                                            % self.__class__.__name__)
+        raise UnsupportedDataStorageFeatureException("This datastore %s cannot update resources (read-only)."
+                                                     % self.__class__.__name__)
 
     def _new_resource_object(self, id, resource_graph):
         resource = Resource.load_from_graph(self._manager, id, resource_graph, is_new=(len(resource_graph) == 0))

@@ -70,7 +70,7 @@ class IncrementalIriGenerator(IriGenerator):
         self._class_iri = class_iri
         self._fragment = fragment
 
-        self._data_store.check_counter(class_iri)
+        self._data_store.check_and_repair_counter(class_iri)
 
     def generate(self, **kwargs):
         """See :func:`oldman.iri.IriGenerator.generate`."""

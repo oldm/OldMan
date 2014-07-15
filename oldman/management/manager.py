@@ -19,28 +19,19 @@ DEFAULT_MODEL_NAME = "Thing"
 class ResourceManager(object):
     """The `resource_manager` is the central object of this OLDM.
 
-    It gives access to the graphs and creates :class:`~oldman.model.Model` objects.
+    It gives access to the :class:`~oldman.store.datastore.DataStore` object
+    and creates :class:`~oldman.model.Model` objects.
     It also creates, retrieves and caches :class:`~oldman.resource.Resource` objects.
 
-    Internally, it owns three objects a :class:`~oldman.management.finder.ResourceFinder`,
-    a :class:`~oldman.management.registry.ModelRegistry` and a :class:`~oldman.management.cache.ResourceCache`.
+    Internally, it owns a :class:`~oldman.management.registry.ModelRegistry` object.
 
-    :param schema_graph: :class:`rdflib.Graph` object containing all the schema triples. May be independent of
-                         `union_graph`.
-    :param data_graph: :class:`rdflib.Graph` object where all the non-schema resources are stored by default.
-    :param union_graph: Union of all the named graphs of a :class:`rdflib.ConjunctiveGraph` or a
-                        :class:`rdflib.Dataset`.
-                        Super-set of `data_graph` and may also include `schema_graph`.
-                        Defaults to `data_graph`.
-                        Read-only.
+    :param schema_graph: :class:`rdflib.Graph` object containing all the schema triples.
+    :param data_store: :class:`~oldman.store.datastore.DataStore` object. Supports CRUD operations on
+                       `:class:`~oldman.resource.Resource` objects`.
     :param attr_extractor: :class:`~oldman.parsing.attribute.OMAttributeExtractor` object that
                             will extract :class:`~oldman.attribute.OMAttribute` for generating
                             new :class:`~oldman.model.Model` objects.
                             Defaults to a new instance of :class:`~oldman.parsing.attribute.OMAttributeExtractor`.
-    :param cache_region: :class:`dogpile.cache.region.CacheRegion` object.
-                         This object must already be configured.
-                         Defaults to None (no cache).
-                         See :class:`~oldman.management.cache.ResourceCache` for further details.
     :param manager_name: Name of this manager. Defaults to `"default"`. This name must be unique.
     """
     _managers = {}
@@ -67,6 +58,9 @@ class ResourceManager(object):
 
     @property
     def data_store(self):
+        """:class:`~oldman.store.datastore.DataStore` object. Supports CRUD operations on
+        `:class:`~oldman.resource.Resource` objects`.
+        """
         return self._data_store
 
     @property
@@ -178,7 +172,7 @@ class ResourceManager(object):
         return model
 
     def new(self, id=None, types=None, hashless_iri=None, **kwargs):
-        """Creates a new :class:`~oldman.resource.Resource` object **without saving it** in the `data_graph`.
+        """Creates a new :class:`~oldman.resource.Resource` object **without saving it** in the `data_store`.
 
         The `kwargs` dict can contains regular attribute key-values that will be assigned to
         :class:`~oldman.attribute.OMAttribute` objects.
@@ -199,23 +193,23 @@ class ResourceManager(object):
         return Resource(self, id=id, types=types, hashless_iri=hashless_iri, **kwargs)
 
     def create(self, id=None, types=None, hashless_iri=None, **kwargs):
-        """Creates a new resource and save it in the `data_graph`.
+        """Creates a new resource and save it in the `data_store`.
 
         See :func:`~oldman.management.manager.ResourceManager.new` for more details.
         """
         return self.new(id=id, types=types, hashless_iri=hashless_iri, **kwargs).save()
 
     def get(self, id=None, types=None, hashless_iri=None, **kwargs):
-        """See :func:`oldman.management.finder.ResourceFinder.get`."""
+        """See :func:`oldman.store.datastore.DataStore.get`."""
         return self._data_store.get(id=id, types=types, hashless_iri=hashless_iri, **kwargs)
 
     def filter(self, types=None, hashless_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
-        """See :func:`oldman.management.finder.ResourceFinder.filter`."""
+        """See :func:`oldman.store.datastore.DataStore.filter`."""
         return self._data_store.filter(types=types, hashless_iri=hashless_iri, limit=limit, eager=eager,
-                                   pre_cache_properties=pre_cache_properties, **kwargs)
+                                       pre_cache_properties=pre_cache_properties, **kwargs)
 
     def sparql_filter(self, query):
-        """See :func:`oldman.management.finder.ResourceFinder.sparql_filter`."""
+        """See :func:`oldman.store.datastore.DataStore.sparql_filter`."""
         return self._data_store.sparql_filter(query)
 
     def find_models_and_types(self, type_set):

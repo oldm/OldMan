@@ -10,10 +10,19 @@ from .datastore import DataStore
 
 
 class SPARQLDataStore(DataStore):
-    """A :class:`~oldman.store.sparql.SPARQLDataStore` object retrieves
-    :class:`~oldman.resource.Resource` objects.
+    """A :class:`~oldman.store.sparql.SPARQLDataStore` is a :class:`~oldman.store.datastore.DataStore` object
+    relying on a SPARQL 1.1 endpoint (Query and Update).
 
-    TODO: continue
+    :param data_graph: :class:`rdflib.graph.Graph` object where all the non-schema resources are stored by default.
+    :param union_graph: Union of all the named graphs of a :class:`rdflib.ConjunctiveGraph` or a
+                        :class:`rdflib.Dataset`.
+                        Super-set of `data_graph` and may also include `schema_graph`.
+                        Defaults to `data_graph`.
+                        Read-only.
+    :param cache_region: :class:`dogpile.cache.region.CacheRegion` object.
+                         This object must already be configured.
+                         Defaults to None (no cache).
+                         See :class:`~oldman.store.cache.ResourceCache` for further details.
     """
     _iri_mutex = Lock()
     _counter_query_req = u"""
@@ -40,6 +49,81 @@ class SPARQLDataStore(DataStore):
         self._logger = logging.getLogger(__name__)
         self._data_graph = data_graph
         self._union_graph = union_graph if union_graph is not None else data_graph
+
+    def sparql_filter(self, query):
+        """Finds the :class:`~oldman.resource.Resource` objects matching a given query.
+
+        :param query: SPARQL SELECT query where the first variable assigned
+                      corresponds to the IRIs of the resources that will be returned.
+        :return: A generator of :class:`~oldman.resource.Resource` objects.
+        """
+        if "SELECT" not in query:
+            raise OMSPARQLError(u"Not a SELECT query. Query: %s" % query)
+        try:
+            results = self._union_graph.query(query)
+        except ParseException as e:
+            raise OMSPARQLError(u"%s\n %s" % (query, e))
+        return (self.get(id=unicode(r[0])) for r in results)
+
+    def exists(self, id):
+        return bool(self._union_graph.query(u"ASK {?id ?p ?o .}", initBindings={'id': URIRef(id)}))
+
+    def generate_instance_number(self, class_iri):
+        """ Needed for generating incremental IRIs. """
+        counter_query_req = unicode(self._counter_query_req).replace("?class_iri", u"<%s>" % class_iri)
+        counter_update_req = unicode(self._counter_update_req).replace("?class_iri", u"<%s>" % class_iri)
+
+        # Critical section
+        self._iri_mutex.acquire()
+        try:
+            self._data_graph.update(counter_update_req)
+            numbers = [int(r) for r, in self._data_graph.query(counter_query_req)]
+        finally:
+            self._iri_mutex.release()
+
+        if len(numbers) == 0:
+            raise OMDataStoreError(u"No counter for class %s (has disappeared)" % class_iri)
+        elif len(numbers) > 1:
+            raise OMDataStoreError(u"Multiple counter for class %s" % class_iri)
+
+        return numbers[0]
+
+    def check_and_repair_counter(self, class_iri):
+        """ Checks the counter of a given RDFS class and repairs (inits) it if needed.
+
+        :param class_iri: RDFS class IRI.
+        """
+        counter_query_req = unicode(self._counter_query_req).replace("?class_iri", u"<%s>" % class_iri)
+        numbers = list(self._data_graph.query(counter_query_req))
+        # Inits if no counter
+        if len(numbers) == 0:
+            self.reset_instance_counter(class_iri)
+        elif len(numbers) > 1:
+            raise OMDataStoreError(u"Multiple counter for class %s" % class_iri)
+
+    def reset_instance_counter(self, class_iri):
+        """ Reset the counter related to a given RDFS class.
+
+        For test purposes **only**.
+
+        :param class_iri: RDFS class IRI.
+        """
+        delete_req = u"""
+            PREFIX oldman: <urn:oldman:>
+            DELETE {
+                ?class_iri oldman:nextNumber ?number .
+            }
+            WHERE {
+                ?class_iri oldman:nextNumber ?number .
+            }""".replace("?class_iri", "<%s>" % class_iri)
+        self._data_graph.update(delete_req)
+
+        insert_req = u"""
+            PREFIX oldman: <urn:oldman:>
+            INSERT DATA {
+                <%s> oldman:nextNumber 0 .
+                }""" % class_iri
+        self._data_graph.update(insert_req)
 
     def _get_first_resource_found(self):
         self._logger.warn(u"get() called without parameter. Returns the first resource found in the union graph.")
@@ -113,21 +197,6 @@ class SPARQLDataStore(DataStore):
         # Lazy (by default)
         return self._filter_lazily(query)
 
-    def sparql_filter(self, query):
-        """Finds the :class:`~oldman.resource.Resource` objects matching a given query.
-
-        :param query: SPARQL SELECT query where the first variable assigned
-                      corresponds to the IRIs of the resources that will be returned.
-        :return: A generator of :class:`~oldman.resource.Resource` objects.
-        """
-        if "SELECT" not in query:
-            raise OMSPARQLError(u"Not a SELECT query. Query: %s" % query)
-        try:
-            results = self._union_graph.query(query)
-        except ParseException as e:
-            raise OMSPARQLError(u"%s\n %s" % (query, e))
-        return (self.get(id=unicode(r[0])) for r in results)
-
     def _filter_lazily(self, query):
         """ Lazy filtering """
         self._logger.debug(u"Filter query: %s" % query)
@@ -140,7 +209,7 @@ class SPARQLDataStore(DataStore):
         return (self.get(id=unicode(r[0])) for r in results)
 
     def _filter_eagerly(self, sub_query, pre_cache_properties, erase_cache=False):
-        """ Eager: requests all the properties of all returned resource
+        """Eager: requests all the properties of all returned resource
         within one single SPARQL query.
 
         One big query instead of a long sequence of small ones.
@@ -222,6 +291,7 @@ class SPARQLDataStore(DataStore):
         return main_resources
 
     def _save_resource_attributes(self, resource, attributes, former_types):
+        """Makes a SPARQL DELETE-INSERT request to save the changes into the `data_graph`."""
         id = resource.id
 
         former_lines = u""
@@ -255,63 +325,6 @@ class SPARQLDataStore(DataStore):
                 self._data_graph.update(query)
             except ParseException as e:
                 raise OMSPARQLParseError(u"%s\n %s" % (query, e))
-
-    def exists(self, id):
-        return bool(self._union_graph.query(u"ASK {?id ?p ?o .}", initBindings={'id': URIRef(id)}))
-
-    def generate_instance_number(self, class_iri):
-        """ Needed for generating incremental IRIs
-        """
-        counter_query_req = unicode(self._counter_query_req).replace("?class_iri", u"<%s>" % class_iri)
-        counter_update_req = unicode(self._counter_update_req).replace("?class_iri", u"<%s>" % class_iri)
-
-        # Critical section
-        self._iri_mutex.acquire()
-        try:
-            self._data_graph.update(counter_update_req)
-            numbers = [int(r) for r, in self._data_graph.query(counter_query_req)]
-        finally:
-            self._iri_mutex.release()
-
-        if len(numbers) == 0:
-            raise OMDataStoreError(u"No counter for class %s (has disappeared)" % class_iri)
-        elif len(numbers) > 1:
-            raise OMDataStoreError(u"Multiple counter for class %s" % class_iri)
-
-        return numbers[0]
-
-    def check_counter(self, class_iri):
-        """ Inits if needed.
-        """
-        counter_query_req = unicode(self._counter_query_req).replace("?class_iri", u"<%s>" % class_iri)
-        numbers = list(self._data_graph.query(counter_query_req))
-        # Inits if no counter
-        if len(numbers) == 0:
-            self.reset_instance_counter(class_iri)
-        elif len(numbers) > 1:
-            raise OMDataStoreError(u"Multiple counter for class %s" % class_iri)
-
-    def reset_instance_counter(self, class_iri):
-        """Resets the counter.
-
-        For test purposes **only**.
-        """
-        delete_req = u"""
-            PREFIX oldman: <urn:oldman:>
-            DELETE {
-                ?class_iri oldman:nextNumber ?number .
-            }
-            WHERE {
-                ?class_iri oldman:nextNumber ?number .
-            }""".replace("?class_iri", "<%s>" % class_iri)
-        self._data_graph.update(delete_req)
-
-        insert_req = u"""
-            PREFIX oldman: <urn:oldman:>
-            INSERT DATA {
-                <%s> oldman:nextNumber 0 .
-                }""" % class_iri
-        self._data_graph.update(insert_req)
 
 
 def _find_attribute(models, name):
