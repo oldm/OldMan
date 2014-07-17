@@ -201,6 +201,9 @@ Let's first create two :class:`~oldman.model.Model` objects: `film_model` and `p
 `context <https://raw.githubusercontent.com/oldm/OldMan/master/examples/dbpedia_film_context.jsonld>`_
 and `schema <https://raw.githubusercontent.com/oldm/OldMan/master/examples/dbpedia_film_schema.ttl>`_::
 
+    from oldman import ResourceManager, SPARQLDataStore
+    from dogpile.cache import make_region
+
     schema_url = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/dbpedia_film_schema.ttl"
     schema_graph = Graph().parse(schema_url, format="turtle")
 
@@ -209,8 +212,11 @@ and `schema <https://raw.githubusercontent.com/oldm/OldMan/master/examples/dbped
     # In-memory cache
     cache_region = make_region().configure('dogpile.cache.memory_pickle')
 
+    # SPARQL data store
+    data_store = SPARQLDataStore(data_graph, cache_region=cache_region)
+
     # Resource Manager and Models
-    manager = ResourceManager(schema_graph, data_graph, cache_region=cache_region)
+    manager = ResourceManager(schema_graph, data_store)
     film_model = manager.create_model("http://dbpedia.org/ontology/Film", context_url)
     # JSON-LD terms can be used instead of IRIs
     person_model = manager.create_model("Person", context_url)

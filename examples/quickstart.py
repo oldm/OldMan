@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from rdflib import Dataset
+from rdflib import Graph
 from oldman import ResourceManager, parse_graph_safely, SPARQLDataStore
 
 # In-memory store
@@ -9,12 +9,8 @@ store = "default"
 # store = SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
 #                           update_endpoint="http://localhost:3030/test/update")
 
-# The dataset will contain the two named graphs
-dataset = Dataset(store)
-
 # Graph containing all the schema RDF triples
-schema_graph = dataset.graph("http://localhost/schema")
-data_graph = dataset.graph("http://localhost/data")
+schema_graph = Graph()
 
 # Load the schema
 parse_graph_safely(schema_graph, "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_schema.ttl",
@@ -22,8 +18,10 @@ parse_graph_safely(schema_graph, "https://raw.githubusercontent.com/oldm/OldMan/
 
 context_iri = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_context.jsonld"
 
-#Resource manager (will generate the model objects)
+data_graph = Graph()
 data_store = SPARQLDataStore(data_graph)
+
+#Resource manager (will generate the model objects)
 manager = ResourceManager(schema_graph, data_store)
 
 #LocalPerson model

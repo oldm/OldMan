@@ -27,7 +27,7 @@ class ResourceManager(object):
 
     :param schema_graph: :class:`rdflib.Graph` object containing all the schema triples.
     :param data_store: :class:`~oldman.store.datastore.DataStore` object. Supports CRUD operations on
-                       `:class:`~oldman.resource.Resource` objects`.
+                       :class:`~oldman.resource.Resource` objects.
     :param attr_extractor: :class:`~oldman.parsing.attribute.OMAttributeExtractor` object that
                             will extract :class:`~oldman.attribute.OMAttribute` for generating
                             new :class:`~oldman.model.Model` objects.

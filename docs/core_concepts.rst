@@ -91,24 +91,11 @@ It also provide helper functions to create new :class:`~oldman.resource.Resource
 (:func:`~oldman.management.manager.ResourceManager.create` and :func:`~oldman.management.manager.ResourceManager.new`)
 but it is usually simpler to use those of a :class:`~oldman.model.Model` object.
 
-Instantiation
-~~~~~~~~~~~~~
-For creating the :class:`~oldman.management.manager.ResourceManager` object, at least two graphs must be given:
-the schema graph and the data graph.
+For creating the :class:`~oldman.management.manager.ResourceManager` object, the schema graph
+and the data store (:class:`~oldman.store.datastore.DataStore`) must be given.
 
 Basically, the schema graph describes which properties should be expected for a given RDFS class, which are
 required and what are the constraints.
-
-The data graph is where regular resources are saved and loaded.
-
-The default graph (:class:`rdflib.graph.ConjunctiveGraph` or :class:`rdflib.graph.Dataset`) may also be
-given as a third graph.
-Its only constraint is to include the content of the data graph in its default graph.
-
-The :class:`dogpile.cache.region.CacheRegion` object may also be given to enable the
-:class:`~oldman.management.cache.ResourceCache` object.
-By default the latter is disabled so it does not cache the :class:`~oldman.resource.Resource` objects loaded
-from and stored in the data graph.
 
 
 Model
@@ -117,7 +104,6 @@ Model
 In OldMan, models are not Python classes but :class:`~oldman.model.Model` objects.
 However, on the RDF side, they correspond to `RDFS classes <https://en.wikipedia.org/wiki/RDFS>`_ (their
 :attr:`~oldman.model.Model.class_iri` attributes).
-
 
 Their main role is to provide attributes and methods to :class:`~oldman.resource.Resource` objects, as explained
 above.
@@ -128,3 +114,31 @@ A model provide some helpers above the :class:`~oldman.management.manager.Resour
 :func:`~oldman.model.Model.get`, :func:`~oldman.model.Model.filter`, :func:`~oldman.model.Model.new` and
 :func:`~oldman.model.Model.create`) that include the :attr:`~oldman.model.Model.class_iri` to the `types`
 parameter of these methods.
+
+DataStore
+---------
+
+A :class:`~oldman.store.datastore.DataStore` implements the CRUD operations on Web Resources exposed by the
+:class:`~oldman.management.manager.ResourceManager` and :class:`~oldman.model.Model` objects.
+
+The vision of OldMan is to include a large choice of data stores. But currently, only SPARQL endpoints
+are supported.
+
+Non-CRUD operations may also be introduced in the future (in discussion).
+
+Any data store accepts a :class:`dogpile.cache.region.CacheRegion` object to enable its
+:class:`~oldman.store.cache.ResourceCache` object.
+By default the latter is disabled so it does not cache the :class:`~oldman.resource.Resource` objects loaded
+from and stored in the data store.
+
+SPARQLDataStore
+~~~~~~~~~~~~~~~
+
+A :class:`~oldman.store.sparql.SPARQLDataStore` object relies on one or two RDF graphs (:class:`rdflib.graph.Graph`):
+the data and default graphs.
+
+The data graph is where regular resources are saved and loaded.
+
+The default graph (:class:`rdflib.graph.ConjunctiveGraph` or :class:`rdflib.graph.Dataset`) may be
+given as an optional second graph.
+Its only constraint is to include the content of the data graph in its default graph.

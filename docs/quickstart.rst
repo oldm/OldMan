@@ -9,18 +9,15 @@ Model creation
 
 First, let's import some functions and classes::
 
-   from rdflib import Dataset
-   from oldman import ResourceManager, parse_graph_safely
+   from rdflib import Graph
+   from oldman import ResourceManager, parse_graph_safely, SPARQLDataStore
 
-and create a RDF dataset that contains our `data_graph` and `schema_graph`::
+and create the RDF graph `schema_graph` that will contain our schema::
 
-    default_graph = Dataset()
-    data_graph = default_graph.get_context("http://localhost/data")
-    schema_graph = default_graph.get_context("http://localhost/schema")
+    schema_graph = Graph()
 
 The data graph is where we store the data that we generate.
-In this example, no specific :class:`rdflib.store.Store` is given to the `default_graph` so the
-graph is stored in memory.
+By default, it stores data in memory.
 
 The role of the schema graph is to contain most of the domain logic necessary to build our models.
 In this example, we load it
@@ -35,15 +32,24 @@ Here, we just need its IRI::
 
     context_iri = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_context.jsonld"
 
-We now have almost enough information to create our models.
-But first of all, we first create the central object of this framework,
+We now have almost enough domain knowledge to create our models.
+
+
+But first of all, we have to decide where to store our data.
+Here we create an in-memory RDF graph and use it as a SPARQL endpoint (:class:`~oldman.store.sparql.SPARQLDataStore`)::
+
+    data_graph = Graph()
+    data_store = SPARQLDataStore(data_graph)
+
+
+Then we instantiate the central object of this framework,
 the :class:`~oldman.management.manager.ResourceManager` object.
-Basically, it gives access to the RDF graphs, creates :class:`~oldman.model.Model` objects and
-:class:`~oldman.resource.Resource` objects and can retrieve them::
+Basically, it creates :class:`~oldman.model.Model` objects and
+offers convenient method to retrieve and create :class:`~oldman.resource.Resource` objects::
 
-    manager = ResourceManager(schema_graph, data_graph)
+    manager = ResourceManager(schema_graph, data_store)
 
-Ok, let's create our `LocalPerson` :class:`~oldman.model.Model` object.
+Finally, we create our `LocalPerson` :class:`~oldman.model.Model` object.
 For that, we need:
  * The IRI or a JSON-LD term of the RDFS class of the model. Here `"LocalPerson"` is an alias
    for `<http://example.org/myvoc#LocalPerson>`_ defined in the context file ;
@@ -68,7 +74,7 @@ for two persons, Alice and Bob::
     bob = lp_model.new(name="Bob", blog="http://blog.example.com/",
                        short_bio_fr=u"J'ai grandi en ... .")
 
-Alice is already stored in the `data_graph` but not Bob.
+Alice is already stored in the `data_store` but not Bob.
 Actually, it cannot be saved yet because some information is still missing: its email addresses.
 This information is required by our domain logic. Let's satisfy this constraint and save Bob::
 

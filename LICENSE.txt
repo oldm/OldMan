@@ -1,4 +1,4 @@
-Copyright (c) 2014 Benjamin Cogrel.
+Copyright (c) 2014 OldMan developers.
 
 All rights reserved.
 
