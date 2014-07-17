@@ -10,8 +10,8 @@ import json
 from decimal import Decimal
 from copy import copy
 from datetime import date, datetime, time
-from oldman import ResourceManager, parse_graph_safely
-from oldman.exception import OMRequiredPropertyError, OMAttributeTypeCheckError
+from oldman import ResourceManager, parse_graph_safely, SPARQLDataStore
+from oldman.exception import OMAttributeTypeCheckError
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
@@ -147,7 +147,8 @@ context = {
     }
 }
 
-manager = ResourceManager(schema_graph, data_graph, manager_name="dt")
+data_store = SPARQLDataStore(data_graph)
+manager = ResourceManager(schema_graph, data_store, manager_name="dt")
 lc_model = manager.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
 default_list_en = ["w1", "w2"]
 

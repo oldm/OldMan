@@ -20,7 +20,7 @@ class UpdateDeleteTest(TestCase):
         with self.assertRaises(OMClassInstanceError):
             lp_model.get(id=str(jason_iri))
         # Cleans the cache
-        manager.resource_cache.remove_resource_from_id(jason_iri)
+        data_store.resource_cache.remove_resource_from_id(jason_iri)
 
         for class_iri in lp_model.ancestry_iris:
             data_graph.add((jason_iri, RDF.type, URIRef(class_iri)))
@@ -37,7 +37,7 @@ class UpdateDeleteTest(TestCase):
                          context=context, format="json-ld")
 
         # Clear the cache (out-of-band update)
-        manager.resource_cache.remove_resource(jason)
+        data_store.resource_cache.remove_resource(jason)
         jason = lp_model.get(id=jason_iri)
         self.assertEquals(jason.mboxes, mboxes)
         self.assertTrue(jason.is_valid())
@@ -239,7 +239,7 @@ class UpdateDeleteTest(TestCase):
         alice.full_update_from_graph(g2, allow_new_type=True)
 
         # If any cache
-        manager.resource_cache.remove_resource(alice)
+        data_store.resource_cache.remove_resource(alice)
         alice = lp_model.get(id=alice_iri)
         self.assertEquals(set(alice.types), set(lp_model.ancestry_iris + additional_types))
 
@@ -248,7 +248,7 @@ class UpdateDeleteTest(TestCase):
             alice.full_update_from_graph(g1)
         alice.full_update_from_graph(g1, allow_type_removal=True)
         # If any cache
-        manager.resource_cache.remove_resource(alice)
+        data_store.resource_cache.remove_resource(alice)
         alice = lp_model.get(id=alice_iri)
         self.assertEquals(set(alice.types), set(lp_model.ancestry_iris))
 

@@ -1,4 +1,3 @@
-from threading import Lock
 from uuid import uuid1
 from .exception import OMDataStoreError, OMRequiredHashlessIRIError
 
@@ -65,71 +64,28 @@ class IncrementalIriGenerator(IriGenerator):
     :param fragment: IRI fragment to append to the hash-less IRI. Defaults to `None`.
     """
 
-    _mutex = Lock()
-
-    def __init__(self, prefix, graph, class_iri, fragment=None):
+    def __init__(self, prefix, data_store, class_iri, fragment=None):
         self._prefix = prefix
-        self._graph = graph
+        self._data_store = data_store
         self._class_iri = class_iri
         self._fragment = fragment
 
-        self._counter_query_req = u"""
-            PREFIX oldman: <urn:oldman:>
-            SELECT ?number
-            WHERE {
-                ?class_uri oldman:nextNumber ?number .
-            }""".replace("?class_uri", u"<%s>" % self._class_iri)
-
-        self._counter_update_req = u"""
-            PREFIX oldman: <urn:oldman:>
-            DELETE {
-                ?class_uri oldman:nextNumber ?current .
-            }
-            INSERT {
-                ?class_uri oldman:nextNumber ?next .
-            }
-            WHERE {
-                ?class_uri oldman:nextNumber ?current .
-                BIND (?current+1 AS ?next)
-            }""".replace("?class_uri", "<%s>" % self._class_iri)
-
-        numbers = list(self._graph.query(self._counter_query_req))
-        # Inits if no counter
-        if len(numbers) == 0:
-            self.reset_counter()
-        elif len(numbers) > 1:
-            raise OMDataStoreError(u"Multiple counter for class %s" % self._class_iri)
-
-    def reset_counter(self):
-        """Resets the counter.
-
-        For test purposes **only**.
-        """
-        self._graph.update(u"""
-            PREFIX oldman: <urn:oldman:>
-            INSERT {
-                <%s> oldman:nextNumber 0 .
-                } WHERE {}""" % self._class_iri)
+        self._data_store.check_and_repair_counter(class_iri)
 
     def generate(self, **kwargs):
         """See :func:`oldman.iri.IriGenerator.generate`."""
-        # Critical section
-        self._mutex.acquire()
-        try:
-            self._graph.update(self._counter_update_req)
-            numbers = [int(r) for r, in self._graph.query(self._counter_query_req)]
-        finally:
-            self._mutex.release()
+        number = self._data_store.generate_instance_number(self._class_iri)
 
-        if len(numbers) == 0:
-            raise OMDataStoreError(u"No counter for class %s (has disappeared)" % self._class_iri)
-        elif len(numbers) > 1:
-            raise OMDataStoreError(u"Multiple counter for class %s" % self._class_iri)
-
-        partial_iri = u"%s%d" % (self._prefix, numbers[0])
+        partial_iri = u"%s%d" % (self._prefix, number)
         if self._fragment is not None:
             return u"%s#%s" % (partial_iri, self._fragment)
         return partial_iri
+
+    def reset_counter(self):
+        """
+        For test purposes only
+        """
+        self._data_store.reset_instance_counter(self._class_iri)
 
 
 class UUIDFragmentIriGenerator(IriGenerator):

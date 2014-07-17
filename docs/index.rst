@@ -5,7 +5,7 @@ OldMan: Python OLDM
 .. image:: _static/wiseoldman_small.png
   :alt: Wise old man from https://openclipart.org/detail/190655/wise-old-man-by-j4p4n-190655
 
-OldMan is a Python *Object Linked Data Mapper* (OLDM), an alternative name for *Object RDF Mapper*.
+OldMan is a Python *Object Linked Data Mapper* (OLDM).
 It relies on the popular `RDFlib <https://github.com/RDFLib/rdflib/>`_ Python library.
 See the :ref:`foreword <foreword>` for further characteristics.
 
@@ -30,6 +30,8 @@ Main classes manipulated by end-users: :class:`~oldman.management.manager.Resour
 :class:`~oldman.model.Model` and :class:`~oldman.resource.Resource`.
 
 :class:`~oldman.iri.IriGenerator` classes can be found in the :class:`oldman.iri` module.
+
+:class:`~oldman.store.datastore.DataStore` classes can be found in the package :class:`oldman.store.datastore`.
 
 .. toctree::
    :maxdepth: 2

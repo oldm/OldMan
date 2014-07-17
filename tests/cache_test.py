@@ -2,7 +2,7 @@ import unittest
 from default_model import *
 
 # Force the cache
-manager.resource_cache.change_cache_region(make_region().configure('dogpile.cache.memory_pickle'))
+data_store.resource_cache.change_cache_region(make_region().configure('dogpile.cache.memory_pickle'))
 
 
 class CacheTest(unittest.TestCase):
@@ -12,16 +12,16 @@ class CacheTest(unittest.TestCase):
     def test_direct_cache(self):
         alice1 = lp_model.new(name=alice_name, mboxes={alice_mail}, short_bio_en=alice_bio_en)
         #For test ONLY. Do not do that yourself
-        manager.resource_cache.set_resource(alice1)
-        alice2 = manager.resource_cache.get_resource(alice1.id)
+        data_store.resource_cache.set_resource(alice1)
+        alice2 = data_store.resource_cache.get_resource(alice1.id)
         self.assertFalse(alice1 is alice2)
         self.assertEquals(alice1.name, alice2.name)
         self.assertEquals(alice1.id, alice2.id)
         self.assertEquals(alice1.short_bio_en, alice2.short_bio_en)
         self.assertEquals(set(alice1.mboxes), set(alice2.mboxes))
 
-        manager.resource_cache.remove_resource(alice1)
-        self.assertFalse(manager.resource_cache.get_resource(alice1.id))
+        data_store.resource_cache.remove_resource(alice1)
+        self.assertFalse(data_store.resource_cache.get_resource(alice1.id))
 
     def test_simple_get(self):
         alice1 = create_alice()

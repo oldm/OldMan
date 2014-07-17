@@ -9,7 +9,7 @@ from oldman.iri import _skolemize
 
 
 OMAttributeMetadata = namedtuple("OMAttributeMetadata", ["name", "property", "language", "jsonld_type",
-                                                           "container", "reversed"])
+                                                         "container", "reversed"])
 
 
 class OMAttribute(object):
@@ -182,34 +182,38 @@ class OMAttribute(object):
         """
         return resource in self._former_values
 
-    def pop_former_value(self, resource):
-        """Pops out the former value that has been replaced.
-
-        After calling this method, the former value cannot be retrieved anymore.
+    def get_former_value(self, resource):
+        """Gets out the former value that has been replaced.
 
         :param resource: :class:`~oldman.resource.Resource` object.
-        :return: its former attribute value.
+        :return: its former attribute value or `None`.
+        """
+        return self._former_values.get(resource)
+
+    def delete_former_value(self, resource):
+        """Clears the former value that has been replaced.
+
+        :param resource: :class:`~oldman.resource.Resource` object.
         """
         if resource in self._former_values:
-            return self._former_values.pop(resource)
-        return None
+            self._former_values.pop(resource)
 
-    def serialize_current_value_into_line(self, resource):
-        """Converts its current attribute value into SPARQL-encoded lines.
+    def to_nt(self, resource):
+        """Converts its current attribute value to N-Triples (NT) triples.
 
-        Relies on :func:`~oldman.attribute.OMAttribute.serialize_value_into_lines`.
+        Relies on :func:`~oldman.attribute.OMAttribute.value_to_nt`.
 
         :param resource: :class:`~oldman.resource.Resource` object.
-        :return: SPARQL serialization of its attribute value.
+        :return: N-Triples serialization of its attribute value.
         """
         value = self._data.get(resource, None)
-        return self.serialize_value_into_lines(value)
+        return self.value_to_nt(value)
 
-    def serialize_value_into_lines(self, value):
-        """Converts an attribute value into SPARQL-encoded lines.
+    def value_to_nt(self, value):
+        """Converts value(s) to N-Triples (NT) triples.
 
-        :param value: Attribute value for a given resource.
-        :return: SPARQL serialization of this value.
+        :param value: Value of property.
+        :return: N-Triples serialization of this value.
         """
         if value is None:
             return ""
@@ -260,14 +264,14 @@ class OMAttribute(object):
         setattr(resource, self.name, values)
         if initial:
             # Clears "None" former value
-            self.pop_former_value(resource)
+            self.delete_former_value(resource)
 
     def _encode_value(self, value, language=None):
-        """Encodes an atomic value into a SPARQL line.
+        """Encodes an atomic value into a N-Triples line.
 
         :param value: Atomic value.
         :param language: language code. Defaults to `None`.
-        :return: SPARQL-encoded string (a line).
+        :return: N-Triples triple.
         """
         jsonld_type = self.jsonld_type
         if language is None:
@@ -374,7 +378,7 @@ class OMAttribute(object):
 
 class ObjectOMAttribute(OMAttribute):
     """An :class:`~oldman.attribute.ObjectOMAttribute` object is an :class:`~oldman.attribute.OMAttribute` object
-    that depends on a owl:ObjectProperty.
+    that depends on an owl:ObjectProperty.
 
     """
 

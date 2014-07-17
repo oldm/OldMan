@@ -2,11 +2,11 @@ from os import path
 import json
 import logging.config
 from dogpile.cache import make_region
-from rdflib import ConjunctiveGraph, Graph, URIRef, Literal, RDF, XSD
+from rdflib import Dataset, Graph, URIRef, Literal, RDF, XSD
 from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
 from rdflib.namespace import FOAF
 
-from oldman import ResourceManager, parse_graph_safely
+from oldman import ResourceManager, parse_graph_safely, SPARQLDataStore
 from oldman.attribute import OMAttributeTypeCheckError, OMRequiredPropertyError
 from oldman.exception import OMClassInstanceError, OMAttributeAccessError, OMUniquenessError
 from oldman.exception import OMWrongResourceError, OMObjectNotFoundError, OMHashIriError, OMEditError
@@ -23,9 +23,9 @@ sesame_iri = "http://localhost:8080/openrdf-sesame/repositories/test"
 #store = SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
 #                          update_endpoint="http://localhost:3030/test/update")
 store = 'default'
-default_graph = ConjunctiveGraph(store)
-schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
-data_graph = default_graph.get_context(URIRef("http://localhost/data"))
+dataset = Dataset(store)
+schema_graph = dataset.graph("http://localhost/schema")
+data_graph = dataset.graph("http://localhost/data")
 
 
 BIO = "http://purl.org/vocab/bio/0.1/"
@@ -219,16 +219,17 @@ context = {
     }
 }
 
-default_graph.namespace_manager.bind("foaf", FOAF)
-default_graph.namespace_manager.bind("wot", WOT)
-default_graph.namespace_manager.bind("rel", REL)
-default_graph.namespace_manager.bind("cert", CERT)
+dataset.namespace_manager.bind("foaf", FOAF)
+dataset.namespace_manager.bind("wot", WOT)
+dataset.namespace_manager.bind("rel", REL)
+dataset.namespace_manager.bind("cert", CERT)
 
 # Cache
 cache_region = None
 #cache_region = make_region().configure('dogpile.cache.memory_pickle')
 
-manager = ResourceManager(schema_graph, data_graph, cache_region=cache_region)
+data_store = SPARQLDataStore(data_graph, cache_region=cache_region)
+manager = ResourceManager(schema_graph, data_store)
 # Model classes are generated here!
 #lp_name_or_iri = "LocalPerson"
 lp_name_or_iri = MY_VOC + "LocalPerson"
@@ -275,13 +276,13 @@ def tear_down():
         iris = {unicode(r) for r in data_graph.query("SELECT DISTINCT ?s WHERE { ?s ?p ?o }")}
         for iri in iris:
             cache_region.delete(iri)
-    default_graph.update("CLEAR GRAPH <%s>" % data_graph.identifier)
-    manager.resource_cache.invalidate_cache()
+    dataset.update("CLEAR GRAPH <%s>" % data_graph.identifier)
+    data_store.resource_cache.invalidate_cache()
 
 
 def set_up(use_default_cache_region=True):
     if use_default_cache_region:
-        manager.resource_cache.change_cache_region(cache_region)
+        data_store.resource_cache.change_cache_region(cache_region)
 
 
 def create_bob():
