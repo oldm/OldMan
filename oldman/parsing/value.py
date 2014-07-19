@@ -15,8 +15,9 @@ class AttributeValueExtractor(object):
         self._logger = logging.getLogger(__name__)
         self._language = om_attribute.language
         self._value_format = om_attribute.value_format
-        self._property_uri = URIRef(om_attribute.om_property.iri)
+        self._property_iri = URIRef(om_attribute.om_property.iri)
         self._container = om_attribute.container
+        self._reversed = om_attribute.reversed
         try:
             self._extract_fct = AttributeValueExtractor._extract_fcts[self._container]
         except KeyError as e:
@@ -30,7 +31,10 @@ class AttributeValueExtractor(object):
         :return: Collection or atomic value.
         """
         instance_uri = URIRef(resource.id)
-        raw_rdf_values = list(subgraph.objects(instance_uri, self._property_uri))
+        if self._reversed:
+            raw_rdf_values = list(subgraph.subjects(self._property_iri, instance_uri))
+        else:
+            raw_rdf_values = list(subgraph.objects(instance_uri, self._property_iri))
         if len(raw_rdf_values) == 0:
             return None
         return self._extract_fct(self, raw_rdf_values, graph=subgraph)
@@ -51,7 +55,7 @@ class AttributeValueExtractor(object):
         """Filters by language (unique way to discriminate)."""
         if not self._language and len(raw_rdf_values) > 1:
             raise OMDataStoreError(u"Multiple list found for the property %s"
-                                   % self._property_uri)
+                                   % self._property_iri)
         final_list = None
         for vlist in raw_rdf_values:
             rdf_values = Collection(graph, vlist)
@@ -59,7 +63,7 @@ class AttributeValueExtractor(object):
             if len(values) > 0:
                 if final_list is not None:
                     raise OMDataStoreError(u"Same language in multiple list for the property %s"
-                                           % self._property_uri)
+                                           % self._property_iri)
                 final_list = values
             else:
                 self._logger.debug("Void list %s in graph %s"
