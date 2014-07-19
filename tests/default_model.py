@@ -43,7 +43,8 @@ local_person_def = {
             "bio": BIO,
             "rel": REL,
             "cert": CERT,
-            "wot": WOT
+            "wot": WOT,
+            "schema": "http://schema.org/"
         },
         #"http://www.w3.org/ns/hydra/core"
         json.load(open(path.join(path.dirname(__file__), "hydra_core.jsonld")))["@context"]
@@ -78,6 +79,9 @@ local_person_def = {
         },
         {
             "property": "wot:hasKey"
+        },
+        {
+            "property": "schema:employee"
         }
     ]
 }
@@ -146,6 +150,7 @@ context = {
         "bio": "http://purl.org/vocab/bio/0.1/",
         "xsd": "http://www.w3.org/2001/XMLSchema#",
         "rel": "http://purl.org/vocab/relationship/",
+        "schema": "http://schema.org/",
         "cert": CERT,
         "wot": WOT,
         "id": "@id",
@@ -180,10 +185,19 @@ context = {
             "@type": "@id",
             "@container": "@set"
         },
+        "employer": {
+            "@reverse": "schema:employee",
+            "@type": "@id"
+        },
         "children": {
             "@id": "rel:parentOf",
             "@type": "@id",
             "@container": "@list"
+        },
+        "parents": {
+            "@reverse": "rel:parentOf",
+            "@type": "@id",
+            "@container": "@set"
         },
         "gpg_key": {
             "@id": "wot:hasKey",

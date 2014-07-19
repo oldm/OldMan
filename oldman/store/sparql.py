@@ -143,7 +143,20 @@ class SPARQLDataStore(DataStore):
             return resource
         resource_graph = Graph()
         iri = URIRef(id)
-        resource_graph += self._union_graph.triples((iri, None, None))
+        triple_query = u"""SELECT ?s ?p ?o
+        WHERE {
+           {
+              ?s ?p ?o .
+              VALUES ?s { ?subject }
+           }
+           UNION
+           {
+             ?s ?p ?o .
+             VALUES ?o { ?subject }
+           }
+        }""".replace("?subject", "<%s>" % iri)
+        for s, p, o in self._union_graph.query(triple_query):
+            resource_graph.add((s, p, o))
         self._logger.debug(u"All triples with subject %s loaded from the union_graph" % iri)
         # Extracts lists
         list_items_request = u"""

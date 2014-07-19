@@ -268,3 +268,85 @@ class BasicEditingTest(unittest.TestCase):
         bob = lp_model.get(id=bob_id)
         self.assertEquals(bob.gpg_key.fingerprint, gpg_fingerprint)
         self.assertEquals(bob.gpg_key.hex_id, gpg_hex_id)
+
+    def test_inversed_property_set(self):
+        alice = create_alice()
+        bob = create_bob()
+        john = create_john()
+        john.parents = {bob}
+        john.save()
+
+        john_parent_bob_query = u"ASK { <%s> rel:parentOf <%s> . }" % (john.id, bob.id)
+        bob_parent_john_query = u"ASK { <%s> rel:parentOf <%s> . }" % (bob.id, john.id)
+
+        self.assertFalse(data_graph.query(john_parent_bob_query))
+        self.assertTrue(data_graph.query(bob_parent_john_query))
+
+        john.parents = {alice}
+        john.save()
+        john_parent_alice_query = u"ASK { <%s> rel:parentOf <%s> . }" % (john.id, alice.id)
+        alice_parent_john_query = u"ASK { <%s> rel:parentOf <%s> . }" % (alice.id, john.id)
+
+        self.assertFalse(data_graph.query(john_parent_bob_query))
+        self.assertFalse(data_graph.query(bob_parent_john_query))
+        self.assertFalse(data_graph.query(john_parent_alice_query))
+        self.assertTrue(data_graph.query(alice_parent_john_query))
+
+        john.parents = {bob.id, alice.id}
+        john.save()
+        self.assertFalse(data_graph.query(john_parent_bob_query))
+        self.assertTrue(data_graph.query(bob_parent_john_query))
+        self.assertFalse(data_graph.query(john_parent_alice_query))
+        self.assertTrue(data_graph.query(alice_parent_john_query))
+
+
+    def test_inversed_property_retrieval_set(self):
+        alice = create_alice()
+        bob = create_bob()
+        john = create_john()
+        john.parents = {alice, bob}
+        john.save()
+        self.assertEquals({alice.id, bob.id}, {p.id for p in john.parents})
+
+        # Loads John from the datastore (not from its cache)
+        john_iri = john.id
+        data_store.resource_cache.remove_resource(john)
+        john = lp_model.get(id=john_iri)
+        self.assertEquals({alice.id, bob.id}, {p.id for p in john.parents})
+
+    def test_inversed_property_single_value(self):
+        alice = create_alice()
+        bob = create_bob()
+        bob.employer = alice
+        bob.save()
+
+        alice_employer_bob_query = u"ASK { <%s> schema:employee <%s> . }" % (bob.id, alice.id)
+        bob_employer_alice_query = u"ASK { <%s> schema:employee <%s> . }" % (alice.id, bob.id)
+
+        self.assertFalse(data_graph.query(alice_employer_bob_query))
+        self.assertTrue(data_graph.query(bob_employer_alice_query))
+
+        john = create_john()
+        bob.employer = john
+        bob.save()
+        bob_employer_john_query = u"ASK { <%s> schema:employee <%s> . }" % (bob.id, john.id)
+        john_employer_bob_query = u"ASK { <%s> schema:employee <%s> . }" % (john.id, bob.id)
+
+        self.assertFalse(data_graph.query(alice_employer_bob_query))
+        self.assertFalse(data_graph.query(bob_employer_alice_query))
+        self.assertFalse(data_graph.query(bob_employer_john_query))
+        self.assertTrue(data_graph.query(john_employer_bob_query))
+
+
+    def test_inversed_property_retrieval_single_value(self):
+        alice = create_alice()
+        bob = create_bob()
+        bob.employer = alice
+        bob.save()
+        self.assertEquals(alice.id, bob.employer.id)
+
+        # Loads Bob from the datastore (not from its cache)
+        bob_iri = bob.id
+        data_store.resource_cache.remove_resource(bob)
+        bob = lp_model.get(id=bob_iri)
+        self.assertEquals(alice.id, bob.employer.id)

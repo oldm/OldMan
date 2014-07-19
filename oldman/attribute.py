@@ -62,9 +62,6 @@ class OMAttribute(object):
         if not self.container in [None, "@set", "@list", "@language"]:
             raise NotImplementedError(u"Container %s is not yet supported" % self.container)
 
-        #TODO: support
-        if self.reversed:
-            raise NotImplementedError(u"Reversed properties (like %s) are not yet supported" % self.name)
 
     @property
     def is_required(self):
@@ -243,8 +240,8 @@ class OMAttribute(object):
             serialized_values = converted_values
 
         if self.reversed:
-            assert(v.startswith(u"<") and v.endswith(u">"))
             for v in serialized_values:
+                assert(v.startswith(u"<") and v.endswith(u">"))
                 lines += u'  %s <%s> %s .\n' % (v, property_uri, u"{0}")
         else:
             for v in serialized_values:
