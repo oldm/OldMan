@@ -137,26 +137,43 @@ class SPARQLDataStore(DataStore):
         # If no resource in the union graph
         return None
 
-    def _get_by_id(self, id):
+    def _get_by_id(self, id, eager_with_reversed_attributes=True):
         resource = self.resource_cache.get_resource(id)
         if resource:
             return resource
         resource_graph = Graph()
         iri = URIRef(id)
-        triple_query = u"""SELECT ?s ?p ?o
-        WHERE {
-           {
-              ?s ?p ?o .
-              VALUES ?s { ?subject }
-           }
-           UNION
-           {
-             ?s ?p ?o .
-             VALUES ?o { ?subject }
-           }
-        }""".replace("?subject", "<%s>" % iri)
-        for s, p, o in self._union_graph.query(triple_query):
-            resource_graph.add((s, p, o))
+
+        eager = eager_with_reversed_attributes and self.manager.include_reversed_attributes
+        if eager:
+            #TODO: look at specific properties and see if it improves the performance
+            triple_query = u"""SELECT ?s ?p ?o
+            WHERE {
+               {
+                  ?s ?p ?o .
+                  VALUES ?s { ?subject }
+               }
+               UNION
+               {
+                 ?s ?p ?o .
+                 VALUES ?o { ?subject }
+               }
+            }""".replace("?subject", "<%s>" % iri)
+            for s, p, o in self._union_graph.query(triple_query):
+                resource_graph.add((s, p, o))
+        #Lazy
+        else:
+            resource_graph += self._union_graph.triples((iri, None, None))
+
+            if self.manager.include_reversed_attributes:
+                #Extracts the types
+                types = {unicode(o) for o in resource_graph.objects(iri, RDF.type)}
+                models, _ = self.manager.find_models_and_types(types)
+
+                #TODO: improve by looking at specific properties
+                if True in [m.include_reversed_attributes for m in models]:
+                    resource_graph += self._union_graph.triples((None, None, iri))
+
         self._logger.debug(u"All triples with subject %s loaded from the union_graph" % iri)
         # Extracts lists
         list_items_request = u"""

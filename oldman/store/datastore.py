@@ -48,7 +48,7 @@ class DataStore(object):
         """:class:`~oldman.management.cache.ResourceCache` object."""
         return self._resource_cache
 
-    def get(self, id=None, types=None, hashless_iri=None, **kwargs):
+    def get(self, id=None, types=None, hashless_iri=None, eager_with_reversed_attributes=True, **kwargs):
         """Gets the first :class:`~oldman.resource.Resource` object matching the given criteria.
 
         The `kwargs` dict can contains regular attribute key-values.
@@ -60,6 +60,9 @@ class DataStore(object):
         :param id: IRI of the resource. Defaults to `None`.
         :param types: IRIs of the RDFS classes filtered resources must be instance of. Defaults to `None`.
         :param hashless_iri: Hash-less IRI of filtered resources. Defaults to `None`.
+        :param eager_with_reversed_attributes: Allow to Look eagerly for reversed RDF properties.
+               May cause some overhead for some :class:`~oldman.resource.Resource` objects
+               that do not have reversed attributes. Defaults to `True`.
         :return: A :class:`~oldman.resource.Resource` object or `None` if no resource has been found.
         """
         types = set(types) if types is not None else set()

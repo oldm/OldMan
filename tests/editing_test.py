@@ -350,3 +350,9 @@ class BasicEditingTest(unittest.TestCase):
         data_store.resource_cache.remove_resource(bob)
         bob = lp_model.get(id=bob_iri)
         self.assertEquals(alice.id, bob.employer.id)
+
+        # Checks if the datastore still extract reversed attributes
+        # in "lazy" mode
+        data_store.resource_cache.remove_resource(bob)
+        bob = manager.get(id=bob_iri, eager_with_reversed_attributes=False)
+        self.assertEquals(alice.id, bob.employer.id)

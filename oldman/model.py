@@ -51,6 +51,8 @@ class Model(object):
         self._manager = manager
         self._methods = methods if methods else {}
 
+        self._has_reversed_attributes = True in [a.reversed for a in self._om_attributes.values()]
+
     @property
     def name(self):
         """Name attribute."""
@@ -84,6 +86,11 @@ class Model(object):
         See `<http://www.w3.org/TR/json-ld/#the-context>`_ for more details.
         """
         return self._context
+
+    @property
+    def has_reversed_attributes(self):
+        """Is `True` if one of its attributes is reversed."""
+        return self._has_reversed_attributes
 
     def is_subclass_of(self, model):
         """Returns `True` if its RDFS class is a sub-class *(rdfs:subClassOf)*
@@ -161,10 +168,17 @@ class Model(object):
         """Gets the first :class:`~oldman.resource.Resource` object matching the given criteria.
 
         The `class_iri` attribute is added to the `types`.
+        Also looks if reversed attributes should be considered eagerly.
 
         See :func:`oldman.management.finder.Finder.get` for further details."""
         types, kwargs = self._update_kwargs_and_types(kwargs)
-        return self._manager.get(id=id, types=types, hashless_iri=hashless_iri, **kwargs)
+
+        eager_with_reversed_attributes = kwargs.get("eager_with_reversed_attributes")
+        if eager_with_reversed_attributes is None:
+            eager_with_reversed_attributes = self._has_reversed_attributes
+
+        return self._manager.get(id=id, types=types, hashless_iri=hashless_iri,
+                                 eager_with_reversed_attributes=eager_with_reversed_attributes, **kwargs)
 
     def all(self, limit=None, eager=False):
         """Finds every :class:`~oldman.resource.Resource` object that is instance

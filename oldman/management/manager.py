@@ -49,12 +49,15 @@ class ResourceManager(object):
             raise OMError(u"Manager name %s is already allocated" % manager_name)
         self._managers[manager_name] = self
 
+        self._include_reversed_attributes = False
+
         # Registered with the "None" key
         self._create_model(DEFAULT_MODEL_NAME, {u"@context": {}}, untyped=True,
                            iri_prefix=u"http://localhost/.well-known/genid/default/", is_default=True)
 
         # Register it
         self._data_store.manager = self
+
 
     @property
     def data_store(self):
@@ -70,6 +73,11 @@ class ResourceManager(object):
         class method :func:`~oldman.management.manager.ResourceManager.get_manager`.
         """
         return self._name
+
+    @property
+    def include_reversed_attributes(self):
+        """Is `True` if at least one of its models use some reversed attributes."""
+        return self._include_reversed_attributes
 
     @classmethod
     def get_manager(cls, name):
@@ -169,6 +177,11 @@ class ResourceManager(object):
         model = Model(self, class_name_or_iri, class_iri, ancestry.bottom_up, context, om_attributes,
                       id_generator, methods=methods)
         self._registry.register(model, is_default=is_default)
+
+        # Reversed attributes awareness
+        if not self._include_reversed_attributes:
+            self._include_reversed_attributes = model.has_reversed_attributes
+
         return model
 
     def new(self, id=None, types=None, hashless_iri=None, **kwargs):
@@ -199,9 +212,10 @@ class ResourceManager(object):
         """
         return self.new(id=id, types=types, hashless_iri=hashless_iri, **kwargs).save()
 
-    def get(self, id=None, types=None, hashless_iri=None, **kwargs):
+    def get(self, id=None, types=None, hashless_iri=None, eager_with_reversed_attributes=True, **kwargs):
         """See :func:`oldman.store.datastore.DataStore.get`."""
-        return self._data_store.get(id=id, types=types, hashless_iri=hashless_iri, **kwargs)
+        return self._data_store.get(id=id, types=types, hashless_iri=hashless_iri,
+                                    eager_with_reversed_attributes=eager_with_reversed_attributes, **kwargs)
 
     def filter(self, types=None, hashless_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
         """See :func:`oldman.store.datastore.DataStore.filter`."""
