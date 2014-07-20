@@ -85,6 +85,9 @@ local_person_def = {
             "property": "wot:hasKey"
         },
         {
+            "property": "schema:employee"
+        },
+        {
             "property": "schema:employee",
             "hydra:reversed": True
         }
@@ -190,6 +193,10 @@ context = {
             "@type": "@id",
             "@container": "@set"
         },
+        "employee": {
+            "@id": "schema:employee",
+            "@type": "@id"
+        },
         "employer": {
             "@reverse": "schema:employee",
             "@type": "@id"
@@ -244,8 +251,8 @@ dataset.namespace_manager.bind("rel", REL)
 dataset.namespace_manager.bind("cert", CERT)
 
 # Cache
-cache_region = None
-#cache_region = make_region().configure('dogpile.cache.memory_pickle')
+#cache_region = None
+cache_region = make_region().configure('dogpile.cache.memory_pickle')
 
 data_store = SPARQLDataStore(data_graph, cache_region=cache_region)
 manager = ResourceManager(schema_graph, data_store)

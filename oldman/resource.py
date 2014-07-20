@@ -336,6 +336,15 @@ class Resource(object):
                 if isinstance(former_value, dict):
                     raise NotImplementedError("Object dicts are not yet supported.")
                 former_value = former_value if isinstance(former_value, (set, list)) else [former_value]
+
+                # Cache invalidation (because of possible reverse properties)
+                value = attr.get(self)
+                resources_to_invalidate = set(value) if isinstance(value, (set, list)) else {value}
+                resources_to_invalidate.update(former_value)
+                for r in resources_to_invalidate:
+                    if r is not None:
+                        self._manager.data_store.resource_cache.remove_resource_from_id(r)
+
                 objects_to_delete += [self._manager.get(id=v) for v in former_value
                                       if v is not None and is_blank_node(v)]
 
@@ -363,18 +372,18 @@ class Resource(object):
         for attr in attributes:
             # Delete blank nodes recursively
             if attr.om_property.type == OBJECT_PROPERTY:
-                objs = getattr(self, attr.name)
-                if objs is not None:
-                    if isinstance(objs, (list, set, GeneratorType)):
-                        for obj in objs:
-                            if should_delete_resource(obj):
-                                self._logger.debug(u"%s deleted with %s" % (obj.id, self._id))
-                                obj.delete()
-                            else:
-                                self._logger.debug(u"%s not deleted with %s" % (obj.id, self._id))
-                    elif should_delete_resource(objs):
-                        objs.delete()
-
+                value = getattr(self, attr.name)
+                if value is not None:
+                    objs = value if isinstance(value, (list, set, GeneratorType)) else [value]
+                    for obj in objs:
+                        if should_delete_resource(obj):
+                            self._logger.debug(u"%s deleted with %s" % (obj.id, self._id))
+                            obj.delete()
+                        else:
+                            self._logger.debug(u"%s not deleted with %s" % (obj.id, self._id))
+                            # Cache invalidation (because of possible reverse properties)
+                            self._manager.data_store.resource_cache.remove_resource(obj)
+                            
             setattr(self, attr.name, None)
 
         #Types

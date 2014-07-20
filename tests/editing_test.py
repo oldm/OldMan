@@ -356,3 +356,36 @@ class BasicEditingTest(unittest.TestCase):
         data_store.resource_cache.remove_resource(bob)
         bob = manager.get(id=bob_iri, eager_with_reversed_attributes=False)
         self.assertEquals(alice.id, bob.employer.id)
+
+    def test_inversed_and_regular_update(self):
+        alice = create_alice()
+        bob = create_bob()
+        bob.employer = alice
+        bob.save()
+
+        alice_iri = alice.id
+        alice = lp_model.get(alice_iri)
+        self.assertTrue(alice.employee is not None)
+        self.assertEquals(alice.employee.id, bob.id)
+
+        alice.employee = None
+        alice.save()
+
+        bob_iri = bob.id
+        bob = lp_model.get(bob_iri)
+        self.assertTrue(bob.employer is None)
+
+    def test_inversed_property_cache_invalidation_after_deletion(self):
+        alice = create_alice()
+        bob = create_bob()
+        bob.employer = alice
+        bob.save()
+
+        alice_iri = alice.id
+        alice = lp_model.get(alice_iri)
+        self.assertTrue(alice.employee is not None)
+        self.assertEquals(alice.employee.id, bob.id)
+
+        bob.delete()
+        alice = lp_model.get(alice_iri)
+        self.assertTrue(alice.employee is None)
