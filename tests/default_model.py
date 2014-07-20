@@ -75,13 +75,18 @@ local_person_def = {
             "property": "rel:parentOf"
         },
         {
+            "property": "rel:parentOf",
+            "hydra:reversed": True
+        },
+        {
             "property": "cert:key"
         },
         {
             "property": "wot:hasKey"
         },
         {
-            "property": "schema:employee"
+            "property": "schema:employee",
+            "hydra:reversed": True
         }
     ]
 }

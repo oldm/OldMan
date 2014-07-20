@@ -25,11 +25,14 @@ class JsonLdContextAttributeMdExtractor(OMAttributeMdExtractor):
     that extract attribute names and datatypes from the JSON-LD context.
     """
 
+    def __init__(self):
+        self._logger = logging.getLogger(__name__)
+
     def update(self, om_properties, context_js, schema_graph):
         """See :func:`oldman.parsing.schema.context.OMAttributeMdExtractor.update`."""
         context = Context(context_js)
 
-        for property_iri, om_property in om_properties.iteritems():
+        for (property_iri, reversed), om_property in om_properties.iteritems():
             # Efficient search
             term = context.find_term(property_iri)
             if term:
@@ -45,15 +48,20 @@ class JsonLdContextAttributeMdExtractor(OMAttributeMdExtractor):
                 # Not declared (worst case)
                 elif len(property_iri) == 0:
                     name = schema_graph.qname(property_iri).replace(":", "_")
-                    logger = logging.getLogger(__name__)
-                    logger.warn(u"No short name found for property %s. QName %s used instead" % (property_iri, name))
+                    self._logger.warn(u"No short name found for property %s. QName %s used instead"
+                                      % (property_iri, name))
                     om_property.add_attribute_metadata(name)
 
     def _update_property(self, om_property, term):
+        reversed = bool(term.reverse)
+        if reversed is not om_property.reversed:
+            self._logger.info(u"The term %s (reversed: %s) does not match with property %s (reversed: %s)"
+                              % (term.name, reversed, om_property.iri, om_property.reversed))
+            return
+
         kwargs = {'jsonld_type': term.type,
                   'language': term.language,
-                  'container': term.container,
-                  'reverse': term.reverse}
+                  'container': term.container}
         clean_fct = lambda v: None if v == UNDEF else v
         kwargs = {k: clean_fct(v) for k, v in kwargs.iteritems()}
-        om_property.add_attribute_metadata(term.name, **kwargs)
+        om_property.add_attribute_metadata(term.name, reversed=reversed, **kwargs)

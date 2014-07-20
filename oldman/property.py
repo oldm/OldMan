@@ -6,13 +6,20 @@ from oldman.common import DATATYPE_PROPERTY, OBJECT_PROPERTY
 
 
 class OMProperty(object):
-    """An :class:`~oldman.property.OMProperty` object represents a RDF property supported by a RDFS class.
+    """An :class:`~oldman.property.OMProperty` object represents the support of a RDF property by a RDFS class.
 
     It gathers some :class:`~oldman.attribute.OMAttribute` objects (usually one).
 
     An :class:`~oldman.property.OMProperty` object is in charge of generating its
     :class:`~oldman.attribute.OMAttribute` objects according to the metadata that
     has been extracted from the schema and JSON-LD context.
+
+    A property can be reversed: the :class:`~oldman.resource.Resource` object
+    to which the :class:`~oldman.attribute.OMAttribute` objects will be (indirectly)
+    attached is then the object of this property, not its subject (?o ?p ?s).
+
+    Consequently, two :class:`~oldman.property.OMProperty` objects can refer
+    to the same RDF property when one is reversed while the second is not.
 
     :param manager: :class:`~oldman.management.manager.ResourceManager` object.
     :param property_iri: IRI of the RDF property.
@@ -23,6 +30,7 @@ class OMProperty(object):
                       Defaults to `False`.
     :param write_only: If `True`, the value of the property cannot be read by a regular end-user.
                        Defaults to `False`.
+    :param reversed: If `True`, the property is reversed. Defaults to `False`.
     :param cardinality: Defaults to `None`. Not yet supported.
     :param property_type: String. In OWL, a property is either a DatatypeProperty or an ObjectProperty.
            Defaults to `None` (unknown).
@@ -30,7 +38,7 @@ class OMProperty(object):
     :param ranges: Set of class IRIs that are declared as the RDFS range of the property. Defaults to `set()`.
     """
     def __init__(self, manager, property_iri, supporter_class_iri, is_required=False, read_only=False,
-                 write_only=False, cardinality=None, property_type=None,
+                 write_only=False, reversed=False, cardinality=None, property_type=None,
                  domains=None, ranges=None):
         self._logger = logging.getLogger(__name__)
         self._manager = manager
@@ -49,6 +57,7 @@ class OMProperty(object):
             raise OMPropertyDefError(u"Property %s cannot be read-only and write-only" % property_iri)
         self._read_only = read_only
         self._write_only = write_only
+        self._reversed = reversed
 
         # Temporary list, before creating attributes
         self._tmp_attr_mds = []
@@ -97,6 +106,11 @@ class OMProperty(object):
     def is_write_only(self):
         """`True` if the property cannot be accessed by regular end-users."""
         return self._write_only
+
+    @property
+    def reversed(self):
+        """`True` if the property is reversed (?o ?p ?s)."""
+        return self._reversed
 
     def declare_is_required(self):
         """Makes the property be required. Is irreversible."""
@@ -158,7 +172,7 @@ class OMProperty(object):
         return self._om_attributes
 
     def add_attribute_metadata(self, name, jsonld_type=None, language=None, container=None,
-                               reverse=None):
+                               reversed=False):
         """Adds metadata about a future :class:`~oldman.attribute.OMAttribute` object.
 
         :param name: JSON-LD term representing the attribute.
@@ -166,14 +180,15 @@ class OMProperty(object):
         :param language: Defaults to `None`.
         :param container: JSON-LD container (`"@set"`, `"@list"`, `"@language"` or `"@index"`).
                           Defaults to `None`.
-        :param reverse: `True` if the object and subject in RDF triples should be reversed.
-                         Defaults to `None`. Not yet supported.
+        :param reversed: `True` if the object and subject in RDF triples should be reversed.
+                         Defaults to `False`.
         """
-        #TODO: support:
-        # - the container variable
-        # - reverse property
         if self._om_attributes:
             raise OMAlreadyGeneratedAttributeError(u"It is too late to add attribute metadata")
+
+        if self._reversed is not reversed:
+            raise OMInternalError(u"The property %s or the attribute %s is reversed while the latter is not"
+                                  % (self._iri, name))
         if jsonld_type:
             if jsonld_type == "@id":
                 self.type = OBJECT_PROPERTY
@@ -199,7 +214,7 @@ class OMProperty(object):
             raise OMInternalError(u"Multiple attribute named %s" % name)
 
         self._tmp_attr_mds.append(OMAttributeMetadata(name, self, language, jsonld_type, container,
-                                                      bool(reverse)))
+                                                      reversed))
 
     def generate_attributes(self, attr_format_selector):
         """Generates its :class:`~oldman.attribute.OMAttribute` objects.
