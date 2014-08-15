@@ -1,13 +1,13 @@
-from rdflib import BNode, Graph, RDF, URIRef
-from oldman.exception import OMDifferentHashlessIRIError, OMForbiddenSkolemizedIRIError, OMClassInstanceError
-from oldman.resource import Resource, is_blank_node
+from rdflib import BNode, Graph
+from oldman.utils.crud import create_blank_nodes, create_regular_resources
+from oldman.utils.crud import extract_subjects
 
-_JSON_TYPES = ["application/json", "json"]
-_JSON_LD_TYPES = ["application/ld+json", "json-ld"]
+JSON_TYPES = ["application/json", "json"]
+JSON_LD_TYPES = ["application/ld+json", "json-ld"]
 
 
-class CRUDController(object):
-    """A :class:`~oldman.rest.crud.CRUDController` object helps you to manipulate
+class HashLessCRUDer(object):
+    """A :class:`~oldman.rest.crud.HashlessCRUDer` object helps you to manipulate
     your :class:`~oldman.resource.Resource` objects in a RESTful-like manner.
 
     Please note that REST/HTTP only manipulates hash-less IRIs.
@@ -37,7 +37,7 @@ class CRUDController(object):
         If one has no fragment value, it is selected.
         Otherwise, this selection is currently arbitrary.
 
-        TODO: stop selecting the resources and returns the list.
+        TODO: stop selecting the resources and returns the graph containing these resources.
 
         Raises an :class:`~oldman.exception.ObjectNotFoundError` exception if no resource is found.
 
@@ -45,11 +45,12 @@ class CRUDController(object):
         :param content_type: Content type of its representation.
         :return: The selected :class:`~oldman.resource.Resource` object.
         """
+        #TODO: stop this practice
         resource = self._manager.get(hashless_iri=hashless_iri)
 
-        if content_type in _JSON_TYPES:
+        if content_type in JSON_TYPES:
             return resource.to_json()
-        elif content_type in _JSON_LD_TYPES:
+        elif content_type in JSON_LD_TYPES:
             return resource.to_jsonld()
         # Try as a RDF mime-type (may not be supported)
         else:
@@ -85,7 +86,7 @@ class CRUDController(object):
         """
         graph = Graph()
         #TODO: manage parsing exceptions
-        if content_type in _JSON_TYPES:
+        if content_type in JSON_TYPES:
             resource = self._manager.get(hashless_iri=hashless_iri)
             graph.parse(data=document_content, format="json-ld", publicID=hashless_iri,
                         context=resource.context)
@@ -95,18 +96,21 @@ class CRUDController(object):
         self._update_graph(hashless_iri, graph, allow_new_type, allow_type_removal)
 
     def _update_graph(self, hashless_iri, graph, allow_new_type, allow_type_removal):
-        subjects = set(graph.subjects())
-
-        # Non-skolemized blank nodes
-        bnode_subjects = filter(lambda x: isinstance(x, BNode), subjects)
-        other_subjects = subjects.difference(bnode_subjects)
+        # Extracts and classifies subjects
+        bnode_subjects, other_subjects = extract_subjects(graph)
 
         #Blank nodes (may obtain a regular IRI)
-        resources = self._create_blank_nodes(hashless_iri, graph, bnode_subjects, allow_new_type, allow_type_removal)
+        resources = create_blank_nodes(self._manager, graph, bnode_subjects, hashless_iri=hashless_iri)
 
         #Objects with an existing IRI
-        resources += self._create_regular_resources(hashless_iri, graph, other_subjects, allow_new_type,
-                                                    allow_type_removal)
+        reg_resources, resources_to_update = create_regular_resources(self._manager, graph, other_subjects,
+                                                                      hashless_iri=hashless_iri)
+        resources += reg_resources
+
+        # Subset of regular resources to update
+        for resource in resources_to_update:
+            resource.update_from_graph(graph, save=False, allow_new_type=allow_new_type,
+                                       allow_type_removal=allow_type_removal)
 
         #Check validity before saving
         #May raise a LDEditError
@@ -125,63 +129,3 @@ class CRUDController(object):
             r = self._manager.get(id=iri)
             if r is not None:
                 r.delete()
-
-    def _create_blank_nodes(self, hashless_iri, graph, bnode_subjects, allow_new_type, allow_type_removal):
-        resources = []
-        # Only former b-nodes
-        dependent_resources = []
-
-        for bnode in bnode_subjects:
-            types = {unicode(t) for t in graph.objects(bnode, RDF.type)}
-            resource = self._manager.new(hashless_iri=hashless_iri, types=types)
-            _alter_bnode_triples(graph, bnode, URIRef(resource.id))
-            resource.full_update_from_graph(graph, save=False, allow_new_type=allow_new_type,
-                                            allow_type_removal=allow_type_removal)
-            resources.append(resource)
-
-            deps = {o for _, p, o in graph.triples((bnode, None, None))
-                    if isinstance(o, BNode)}
-            if len(deps) > 0:
-                dependent_resources.append(resource)
-
-            if (not resource.is_blank_node()) and resource.hashless_iri != hashless_iri:
-                raise OMDifferentHashlessIRIError(u"%s is not the hash-less IRI of %s" % (hashless_iri, resource.id))
-
-        #When some Bnodes are interconnected
-        for resource in dependent_resources:
-            # Update again
-            resource.full_update_from_graph(graph, save=False)
-
-        return resources
-
-    def _create_regular_resources(self, hashless_iri, graph, other_subjects, allow_new_type, allow_type_removal):
-        resources = []
-        for iri in [unicode(s) for s in other_subjects]:
-            if is_blank_node(iri):
-                raise OMForbiddenSkolemizedIRIError(u"Skolemized IRI like %s are not allowed when updating a resource."
-                                                    % iri)
-            elif iri.split("#")[0] != hashless_iri:
-                raise OMDifferentHashlessIRIError(u"%s is not the hash-less IRI of %s" % (hashless_iri, iri))
-
-            try:
-                resource = self._manager.get(id=iri)
-                resource.full_update_from_graph(graph, save=False, allow_new_type=allow_new_type,
-                                                allow_type_removal=allow_type_removal)
-            except OMClassInstanceError:
-                # New object
-                resource = Resource.load_from_graph(self._manager, iri, graph, is_new=True)
-
-            resources.append(resource)
-        return resources
-
-
-def _alter_bnode_triples(graph, bnode, new_iri_ref):
-    subject_triples = list(graph.triples((bnode, None, None)))
-    for _, p, o in subject_triples:
-        graph.remove((bnode, p, o))
-        graph.add((new_iri_ref, p, o))
-
-    object_triples = list(graph.triples((None, None, bnode)))
-    for s, p, _ in object_triples:
-        graph.remove((s, p, bnode))
-        graph.add((s, p, new_iri_ref))

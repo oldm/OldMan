@@ -11,7 +11,7 @@ from oldman.attribute import OMAttributeTypeCheckError, OMRequiredPropertyError
 from oldman.exception import OMClassInstanceError, OMAttributeAccessError, OMUniquenessError
 from oldman.exception import OMWrongResourceError, OMObjectNotFoundError, OMHashIriError, OMEditError
 from oldman.exception import OMDifferentHashlessIRIError, OMForbiddenSkolemizedIRIError, OMUnauthorizedTypeChangeError
-from oldman.rest.crud import CRUDController
+from oldman.rest.crud import HashLessCRUDer
 
 
 logging.config.fileConfig(path.join(path.dirname(__file__), 'logging.ini'))
@@ -264,7 +264,7 @@ lp_model = manager.create_model(lp_name_or_iri, context, iri_prefix="http://loca
 rsa_model = manager.create_model("LocalRSAPublicKey", context)
 gpg_model = manager.create_model("LocalGPGPublicKey", context)
 
-crud_controller = CRUDController(manager)
+crud_controller = HashLessCRUDer(manager)
 
 bob_name = "Bob"
 bob_blog = "http://blog.example.com/"

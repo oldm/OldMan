@@ -94,7 +94,7 @@ class UUIDFragmentIriGenerator(IriGenerator):
     Its fragment is a unique UUID1 number.
     """
 
-    def generate(self, hashless_iri):
+    def generate(self, hashless_iri, **kwargs):
         """See :func:`oldman.iri.IriGenerator.generate`."""
         if hashless_iri is None:
             raise OMRequiredHashlessIRIError(u"Hash-less IRI is required to generate an IRI")

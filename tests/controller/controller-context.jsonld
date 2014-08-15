@@ -1,0 +1,21 @@
+{
+    "@context": {
+        "hydra": "http://www.w3.org/ns/hydra/core#",
+        "xsd": "http://www.w3.org/2001/XMLSchema#",
+        "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+        "dcterms": "http://purl.org/dc/terms/",
+        "test":  "urn:test:oldman:collection:",
+        "id": "@id",
+        "types": "@type",
+        "title": {
+                "@id": "dcterms:title",
+                "@type": "xsd:string"
+        },
+        "member": {
+            "@id": "hydra:member",
+            "@type": "@id"
+        },
+        "Collection": "test:Collection",
+        "Item": "test:Item"
+    }
+}
