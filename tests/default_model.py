@@ -24,9 +24,10 @@ sesame_iri = "http://localhost:8080/openrdf-sesame/repositories/test"
 #                          update_endpoint="http://localhost:3030/test/update")
 store = 'default'
 dataset = Dataset(store)
-schema_graph = dataset.graph("http://localhost/schema")
+#schema_graph = dataset.graph("http://localhost/schema")
 data_graph = dataset.graph("http://localhost/data")
 
+schema_graph = Graph()
 
 BIO = "http://purl.org/vocab/bio/0.1/"
 REL = "http://purl.org/vocab/relationship/"

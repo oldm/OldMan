@@ -1,6 +1,7 @@
 from rdflib import BNode, Graph
 from oldman.utils.crud import create_blank_nodes, create_regular_resources
 from oldman.utils.crud import extract_subjects
+from oldman.exception import BadRequestException
 
 JSON_TYPES = ["application/json", "json"]
 JSON_LD_TYPES = ["application/ld+json", "json-ld"]
@@ -91,6 +92,7 @@ class HashLessCRUDer(object):
             graph.parse(data=document_content, format="json-ld", publicID=hashless_iri,
                         context=resource.context)
         #RDF graph
+        #TODO: capture unknown type
         else:
             graph.parse(data=document_content, format=content_type, publicID=hashless_iri)
         self._update_graph(hashless_iri, graph, allow_new_type, allow_type_removal)
@@ -113,9 +115,9 @@ class HashLessCRUDer(object):
                                        allow_type_removal=allow_type_removal)
 
         #Check validity before saving
-        #May raise a LDEditError
         for r in resources:
-            r.check_validity()
+            if not r.is_valid():
+                raise BadRequestException()
 
         #TODO: improve it as a transaction (really necessary?)
         for r in resources:

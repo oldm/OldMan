@@ -33,12 +33,20 @@ class Operation(object):
         return self._function(resource, **kwargs)
 
 
-def append_to_hydra_collection(collection_resource, graph=None, new_resources=None, **kwargs):
+def append_to_hydra_collection(collection_resource, new_resources=None, graph=None, **kwargs):
     """TODO: improve the mechanism of operation """
+
+    if new_resources is not None and graph is not None:
+        #TODO: throw the right exception
+        raise Exception("Cannot add new_resources and graphs in the same time")
+    elif new_resources is not None:
+        return _append_resources_to_hydra_collection(collection_resource, new_resources)
+    else:
+        return _append_to_hydra_coll_from_graph(collection_resource, graph)
+
+def _append_to_hydra_coll_from_graph(collection_resource, graph):
     collection_iri = collection_resource.id
     manager = collection_resource.manager
-
-    #TODO:
 
     # Extracts and classifies subjects
     bnode_subjects, other_subjects = extract_subjects(graph)
@@ -51,6 +59,9 @@ def append_to_hydra_collection(collection_resource, graph=None, new_resources=No
     reg_resources, _ = create_regular_resources(manager, graph, other_subjects, collection_iri=collection_iri)
     new_resources += reg_resources
 
+    return _append_resources_to_hydra_collection(collection_resource, new_resources)
+
+def _append_resources_to_hydra_collection(collection_resource, new_resources):
     # Check that they are valid
     for new_resource in new_resources:
         if not new_resource.is_valid():

@@ -9,6 +9,7 @@ from rdflib.plugin import register, Parser, Serializer
 from .management.manager import ResourceManager
 from .store.sparql import SPARQLDataStore
 from .utils.sparql import parse_graph_safely
+from .rest.controller import HTTPController
 
 register('json-ld', Parser, 'rdflib_jsonld.parser', 'JsonLDParser')
 register('application/ld+json', Parser, 'rdflib_jsonld.parser', 'JsonLDParser')
