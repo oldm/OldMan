@@ -58,7 +58,6 @@ class ResourceManager(object):
         # Register it
         self._data_store.manager = self
 
-
     @property
     def data_store(self):
         """:class:`~oldman.store.datastore.DataStore` object. Supports CRUD operations on

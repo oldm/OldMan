@@ -17,6 +17,7 @@ from oldman.rest.crud import CRUDController
 logging.config.fileConfig(path.join(path.dirname(__file__), 'logging.ini'))
 
 
+
 sesame_iri = "http://localhost:8080/openrdf-sesame/repositories/test"
 #store = SPARQLUpdateStore(queryEndpoint=sesame_iri, update_endpoint=sesame_iri + "/statements")
 #store.setCredentials("paul", "heyjude")
@@ -24,9 +25,10 @@ sesame_iri = "http://localhost:8080/openrdf-sesame/repositories/test"
 #                          update_endpoint="http://localhost:3030/test/update")
 store = 'default'
 dataset = Dataset(store)
-schema_graph = dataset.graph("http://localhost/schema")
 data_graph = dataset.graph("http://localhost/data")
 
+#schema_graph = dataset.graph("http://localhost/schema")
+schema_graph = Graph()
 
 BIO = "http://purl.org/vocab/bio/0.1/"
 REL = "http://purl.org/vocab/relationship/"
@@ -245,16 +247,14 @@ context = {
     }
 }
 
-dataset.namespace_manager.bind("foaf", FOAF)
-dataset.namespace_manager.bind("wot", WOT)
-dataset.namespace_manager.bind("rel", REL)
-dataset.namespace_manager.bind("cert", CERT)
-
 # Cache
 #cache_region = None
 cache_region = make_region().configure('dogpile.cache.memory_pickle')
 
 data_store = SPARQLDataStore(data_graph, cache_region=cache_region)
+# Takes the prefixes from the schema graph
+data_store.extract_prefixes(schema_graph)
+
 manager = ResourceManager(schema_graph, data_store)
 # Model classes are generated here!
 #lp_name_or_iri = "LocalPerson"

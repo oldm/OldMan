@@ -41,6 +41,9 @@ Here we create an in-memory RDF graph and use it as a SPARQL endpoint (:class:`~
     data_graph = Graph()
     data_store = SPARQLDataStore(data_graph)
 
+We extract the prefix information from the schema graph::
+
+    data_store.extract_prefixes(schema_graph)
 
 Then we instantiate the central object of this framework,
 the :class:`~oldman.management.manager.ResourceManager` object.
