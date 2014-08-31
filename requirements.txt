@@ -9,3 +9,5 @@ python-coveralls
 -e git+https://github.com/RDFLib/rdflib-jsonld#egg=rdflib-jsonld
 
 -e .
+
+SPARQLWrapper
