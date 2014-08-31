@@ -1,6 +1,6 @@
 from rdflib import Graph
 from rdflib.plugin import PluginException, plugins
-from logging import Logger
+from logging import getLogger
 from rdflib.serializer import Serializer
 from .crud import HashLessCRUDer, JSON_TYPES
 from oldman.vocabulary import HTTP_POST
@@ -23,7 +23,7 @@ class HTTPController(object):
                       }
 
     def __init__(self, manager, config={}):
-        self._logger = Logger(__name__)
+        self._logger = getLogger(__name__)
         self._manager = manager
 
         # For operations except POST
@@ -64,7 +64,7 @@ class HTTPController(object):
             raise OMNotAcceptableException()
 
         content_type = str(accepted_type.content_type)
-        self._logger.debug("Accepted content-type: %s" % content_type)
+        self._logger.debug("Selected content-type: %s" % content_type)
 
         try:
             return self._cruder.get(hashless_iri, content_type)
@@ -87,7 +87,7 @@ class HTTPController(object):
         """
             TODO: categorize the resource to decide what to do.
 
-            Support declaration and implementatfion are required.
+            Support declaration and implementation are required.
 
         """
         if content_type is None:

@@ -1,5 +1,6 @@
 import unittest
 from default_model import *
+from oldman.exception import BadRequestException
 
 
 class CrudTest(unittest.TestCase):
@@ -121,7 +122,7 @@ class CrudTest(unittest.TestCase):
         g2.parse(data=data_graph.serialize())
         g2.remove((alice_ref, FOAF.name, Literal(new_alice_name, datatype=XSD.string)))
         # Alice name is required
-        with self.assertRaises(OMEditError):
+        with self.assertRaises(BadRequestException):
             crud_controller.update(doc_iri, g2.serialize(format="turtle"), "turtle")
 
     def test_controller_put_json(self):
