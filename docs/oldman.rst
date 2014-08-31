@@ -67,5 +67,6 @@ Sub-packages
     oldman.management
     oldman.parsing
     oldman.rest
+    oldman.store
     oldman.utils
     oldman.validation

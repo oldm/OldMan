@@ -17,6 +17,7 @@ setup(name="OldMan",
       include_package_data=True,
       #zip_safe = False,
       install_requires=['rdflib',
+                        'SPARQLWrapper',
                         'validate_email',
                         'dogpile.cache'
       ],
