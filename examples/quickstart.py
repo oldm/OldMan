@@ -20,6 +20,8 @@ context_iri = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/qui
 
 data_graph = Graph()
 data_store = SPARQLDataStore(data_graph)
+# Only for SPARQL data stores
+data_store.extract_prefixes(schema_graph)
 
 #Resource manager (will generate the model objects)
 manager = ResourceManager(schema_graph, data_store)

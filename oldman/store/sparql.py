@@ -50,6 +50,14 @@ class SPARQLDataStore(DataStore):
         self._data_graph = data_graph
         self._union_graph = union_graph if union_graph is not None else data_graph
 
+    def extract_prefixes(self, other_graph):
+        """Adds the RDF prefix (namespace) information from an other graph
+        to the namespace of the `data_graph`.
+        :param other_graph: `rdflib.graph.Graph` that some prefix information.
+        """
+        for prefix, namespace in other_graph.namespace_manager.namespaces():
+            self._data_graph.bind(prefix, namespace)
+
     def sparql_filter(self, query):
         """Finds the :class:`~oldman.resource.Resource` objects matching a given query.
 
