@@ -82,6 +82,13 @@ class OMMethodNotAllowedException(OMControllerException):
     pass
 
 
+class OMNotAcceptableException(OMControllerException):
+    """ 406 Not Acceptable
+
+    TODO: indicate the content-type
+    """
+    pass
+
 #---------------------------------------------------------------------
 # Pedantic exceptions
 # For clarity

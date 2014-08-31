@@ -1,8 +1,13 @@
 from rdflib import Graph
+from rdflib.plugin import PluginException, plugins
+from logging import Logger
+from rdflib.serializer import Serializer
 from .crud import HashLessCRUDer, JSON_TYPES
 from oldman.vocabulary import HTTP_POST
 from oldman.exception import OMResourceNotFoundException, OMForbiddenOperationException, OMRequiredAuthenticationException
-from oldman.exception import OMMethodNotAllowedException, BadRequestException
+from oldman.exception import OMMethodNotAllowedException, BadRequestException, OMObjectNotFoundError
+from oldman.exception import OMNotAcceptableException
+from negotiator import ContentNegotiator, ContentType, AcceptParameters
 
 
 class HTTPController(object):
@@ -18,6 +23,7 @@ class HTTPController(object):
                       }
 
     def __init__(self, manager, config={}):
+        self._logger = Logger(__name__)
         self._manager = manager
 
         # For operations except POST
@@ -26,16 +32,44 @@ class HTTPController(object):
         self._config = self.DEFAULT_CONFIG.copy()
         self._config.update(config)
 
-    def get(self, hashless_iri, content_type=None, **kwargs):
+        self._negotiator = None
+        self._init_content_negotiator()
+
+    def _init_content_negotiator(self):
+        #TODO: use config instead
+        default_content_type = "application/ld+json"
+        default_accept_params = AcceptParameters(ContentType(default_content_type))
+        # rdf types
+        rdf_types = set([plugin.name for plugin in plugins(kind=Serializer) if "/" in plugin.name])
+
+        #Blacklisted because mapped to TriX that requires a context-aware store
+        blacklisted_types = ["application/xml"]
+
+        #TODO: consider other types
+        accepted_types = list(rdf_types.difference(blacklisted_types)) + ["application/json"]
+        self._logger.debug("Accepted types: %s" % accepted_types)
+        acceptable_params = [default_accept_params] + [AcceptParameters(ContentType(ct)) for ct in accepted_types]
+
+        self._negotiator = ContentNegotiator(default_accept_params, acceptable_params)
+
+    def get(self, hashless_iri, accept_header="*/*", **kwargs):
         """
             TODO: describe.
 
             No support declaration required.
         """
-        if content_type is None:
-            raise BadRequestException("Content type is required")
+        self._logger.debug("Accept header: %s" % accept_header)
+        accepted_type = self._negotiator.negotiate(accept=accept_header)
+        if accepted_type is None:
+            raise OMNotAcceptableException()
 
-        return self._cruder.get(hashless_iri, content_type)
+        content_type = str(accepted_type.content_type)
+        self._logger.debug("Accepted content-type: %s" % content_type)
+
+        try:
+            return self._cruder.get(hashless_iri, content_type)
+        except OMObjectNotFoundError:
+            raise OMResourceNotFoundException()
 
     def head(self, hashless_iri, **kwargs):
         """
@@ -44,13 +78,16 @@ class HTTPController(object):
             No support declaration required.
         """
         #TODO: consider a more efficient implementation
-        self._cruder.get(hashless_iri, None)
+        try:
+            self._cruder.get(hashless_iri, None)
+        except OMObjectNotFoundError:
+            raise OMResourceNotFoundException()
 
     def post(self, hashless_iri, content_type=None, payload=None, **kwargs):
         """
             TODO: categorize the resource to decide what to do.
 
-            Support declaration and implementaion are required.
+            Support declaration and implementatfion are required.
 
         """
         if content_type is None:
@@ -67,12 +104,15 @@ class HTTPController(object):
         if operation is not None:
 
             graph = Graph()
-            if content_type in JSON_TYPES:
-                resource = self._manager.get(hashless_iri=hashless_iri)
-                graph.parse(data=payload, format="json-ld", publicID=hashless_iri,
-                            context=resource.context)
-            else:
-                graph.parse(data=payload, format=content_type, publicID=hashless_iri)
+            try:
+                if content_type in JSON_TYPES:
+                    resource = self._manager.get(hashless_iri=hashless_iri)
+                    graph.parse(data=payload, format="json-ld", publicID=hashless_iri,
+                                context=resource.context)
+                else:
+                    graph.parse(data=payload, format=content_type, publicID=hashless_iri)
+            except PluginException:
+                raise OMNotAcceptableException()
 
             #TODO: add arguments
             return operation(resource, graph=graph, content_type=content_type)

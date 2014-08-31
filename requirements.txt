@@ -9,3 +9,6 @@ python-coveralls
 -e git+https://github.com/RDFLib/rdflib-jsonld#egg=rdflib-jsonld
 
 -e .
+
+# TODO: port it to Python 3
+negotiator

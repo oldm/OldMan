@@ -1,7 +1,8 @@
 from rdflib import BNode, Graph
+from rdflib.plugin import PluginException
 from oldman.utils.crud import create_blank_nodes, create_regular_resources
 from oldman.utils.crud import extract_subjects
-from oldman.exception import BadRequestException
+from oldman.exception import BadRequestException, OMNotAcceptableException
 
 JSON_TYPES = ["application/json", "json"]
 JSON_LD_TYPES = ["application/ld+json", "json-ld"]
@@ -55,7 +56,10 @@ class HashLessCRUDer(object):
             return resource.to_jsonld()
         # Try as a RDF mime-type (may not be supported)
         else:
-            return resource.to_rdf(content_type)
+            try:
+                return resource.to_rdf(content_type)
+            except PluginException:
+                raise OMNotAcceptableException()
 
     def delete(self, hashless_iri):
         """Deletes every :class:`~oldman.resource.Resource` object having this hash-less IRI.
