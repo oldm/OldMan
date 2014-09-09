@@ -109,9 +109,9 @@ class HydraOperationExtractor(OperationExtractor):
 
         # Name (optional)
         short_names = {unicode(o) for o in schema_graph.objects(operation_ref, URIRef(OLDM_SHORTNAME))}
-        if len(returned_types) == 0:
+        if len(short_names) == 0:
             shortname = None
-        elif len(returned_types) > 1:
+        elif len(short_names) > 1:
             #TODO: find a better exception
             raise Exception("Multiple short names for operation %s of %s" % (http_methods, class_iri))
         else:

@@ -52,11 +52,12 @@ class OMControllerException(Exception):
     pass
 
 
-class BadRequestException(OMControllerException):
+class OMBadRequestException(OMControllerException):
     """TODO: describe
 
     Error: 400
     """
+
 
 class OMForbiddenOperationException(OMControllerException):
     """ No chance

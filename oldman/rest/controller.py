@@ -5,7 +5,7 @@ from rdflib.serializer import Serializer
 from .crud import HashLessCRUDer, JSON_TYPES
 from oldman.vocabulary import HTTP_POST
 from oldman.exception import OMResourceNotFoundException, OMForbiddenOperationException, OMRequiredAuthenticationException
-from oldman.exception import OMMethodNotAllowedException, BadRequestException, OMObjectNotFoundError
+from oldman.exception import OMMethodNotAllowedException, OMBadRequestException, OMObjectNotFoundError
 from oldman.exception import OMNotAcceptableException
 from negotiator import ContentNegotiator, ContentType, AcceptParameters
 
@@ -91,7 +91,7 @@ class HTTPController(object):
 
         """
         if content_type is None:
-            raise BadRequestException("Content type is required.")
+            raise OMBadRequestException("Content type is required.")
         #if payload is None:
         #    raise BadRequestException("No payload given.")
 
@@ -127,9 +127,9 @@ class HTTPController(object):
             No support declaration required.
         """
         if content_type is None:
-            raise BadRequestException("Content type is required.")
+            raise OMBadRequestException("Content type is required.")
         if payload is None:
-            raise BadRequestException("No payload given.")
+            raise OMBadRequestException("No payload given.")
         return self._cruder.update(self, hashless_iri, payload, content_type,
                                    allow_new_type=False, allow_type_removal=False,
                                    allow_put_new_resource=True)
@@ -149,7 +149,7 @@ class HTTPController(object):
     def patch(self, hashless_iri, content_type=None, payload=None, **kwargs):
         """ TODO: implement it  """
         if content_type is None:
-            raise BadRequestException("Content type is required.")
+            raise OMBadRequestException("Content type is required.")
         if payload is None:
-            raise BadRequestException("No payload given.")
+            raise OMBadRequestException("No payload given.")
         raise NotImplementedError("PATCH is not yet supported.")

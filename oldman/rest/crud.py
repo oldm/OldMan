@@ -2,7 +2,7 @@ from rdflib import BNode, Graph
 from rdflib.plugin import PluginException
 from oldman.utils.crud import create_blank_nodes, create_regular_resources
 from oldman.utils.crud import extract_subjects
-from oldman.exception import BadRequestException, OMNotAcceptableException
+from oldman.exception import OMBadRequestException, OMNotAcceptableException
 
 JSON_TYPES = ["application/json", "json"]
 JSON_LD_TYPES = ["application/ld+json", "json-ld"]
@@ -45,21 +45,22 @@ class HashLessCRUDer(object):
 
         :param hashless_iri: hash-less of the resource.
         :param content_type: Content type of its representation.
-        :return: The selected :class:`~oldman.resource.Resource` object.
+        :return: The representation of selected :class:`~oldman.resource.Resource` object and its content type
         """
         #TODO: stop this practice
         resource = self._manager.get(hashless_iri=hashless_iri)
 
         if content_type in JSON_TYPES:
-            return resource.to_json()
+            payload = resource.to_json()
         elif content_type in JSON_LD_TYPES:
-            return resource.to_jsonld()
+            payload = resource.to_jsonld()
         # Try as a RDF mime-type (may not be supported)
         else:
             try:
-                return resource.to_rdf(content_type)
+                payload = resource.to_rdf(content_type)
             except PluginException:
                 raise OMNotAcceptableException()
+        return payload, content_type
 
     def delete(self, hashless_iri):
         """Deletes every :class:`~oldman.resource.Resource` object having this hash-less IRI.
@@ -121,7 +122,7 @@ class HashLessCRUDer(object):
         #Check validity before saving
         for r in resources:
             if not r.is_valid():
-                raise BadRequestException()
+                raise OMBadRequestException()
 
         #TODO: improve it as a transaction (really necessary?)
         for r in resources:

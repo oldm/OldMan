@@ -1,6 +1,6 @@
 import unittest
 from default_model import *
-from oldman.exception import BadRequestException
+from oldman.exception import OMBadRequestException
 
 
 class CrudTest(unittest.TestCase):
@@ -14,15 +14,15 @@ class CrudTest(unittest.TestCase):
         bob = create_bob()
         bob_iri = bob.id
         bob_hashless_iri = bob.hashless_iri
-        bob2 = crud_controller.get(bob_hashless_iri)
+        bob2, content_type = crud_controller.get(bob_hashless_iri)
 
-        self.assertEquals(bob.to_rdf("turtle"), bob2)
-        self.assertEquals(bob.to_json(), crud_controller.get(bob_hashless_iri, "application/json"))
-        self.assertEquals(bob.to_json(), crud_controller.get(bob_hashless_iri, "json"))
-        self.assertEquals(bob.to_jsonld(), crud_controller.get(bob_hashless_iri, "application/ld+json"))
-        self.assertEquals(bob.to_jsonld(), crud_controller.get(bob_hashless_iri, "json-ld"))
-        self.assertEquals(bob.to_rdf("turtle"), crud_controller.get(bob_hashless_iri, "text/turtle"))
-        self.assertEquals(bob.to_rdf("turtle"), crud_controller.get(bob_hashless_iri))
+        self.assertEquals(bob.to_rdf(content_type), bob2)
+        self.assertEquals(bob.to_json(), crud_controller.get(bob_hashless_iri, "application/json")[0])
+        self.assertEquals(bob.to_json(), crud_controller.get(bob_hashless_iri, "json")[0])
+        self.assertEquals(bob.to_jsonld(), crud_controller.get(bob_hashless_iri, "application/ld+json")[0])
+        self.assertEquals(bob.to_jsonld(), crud_controller.get(bob_hashless_iri, "json-ld")[0])
+        self.assertEquals(bob.to_rdf("turtle"), crud_controller.get(bob_hashless_iri, "text/turtle")[0])
+        self.assertEquals(bob.to_rdf("turtle"), crud_controller.get(bob_hashless_iri)[0])
 
         with self.assertRaises(OMHashIriError):
             # Hash URI
@@ -35,7 +35,7 @@ class CrudTest(unittest.TestCase):
         bob_iri = bob.id
         doc_iri = bob_iri.split("#")[0]
         data_graph.add((URIRef(doc_iri), RDF.type, FOAF.Document))
-        doc = json.loads(crud_controller.get(doc_iri, "json"))
+        doc = json.loads(crud_controller.get(doc_iri, "json")[0])
         self.assertEquals(doc["id"], doc_iri)
 
         resources = manager.filter(hashless_iri=doc_iri)
@@ -122,7 +122,7 @@ class CrudTest(unittest.TestCase):
         g2.parse(data=data_graph.serialize())
         g2.remove((alice_ref, FOAF.name, Literal(new_alice_name, datatype=XSD.string)))
         # Alice name is required
-        with self.assertRaises(BadRequestException):
+        with self.assertRaises(OMBadRequestException):
             crud_controller.update(doc_iri, g2.serialize(format="turtle"), "turtle")
 
     def test_controller_put_json(self):

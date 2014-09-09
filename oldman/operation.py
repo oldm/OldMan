@@ -5,6 +5,7 @@ TODO: explain
 from rdflib import URIRef, Graph
 from oldman.vocabulary import HYDRA_MEMBER_IRI
 from oldman.utils.crud import extract_subjects, create_regular_resources, create_blank_nodes
+from oldman.exception import OMBadRequestException
 
 
 class Operation(object):
@@ -66,7 +67,7 @@ def _append_resources_to_hydra_collection(collection_resource, new_resources):
     for new_resource in new_resources:
         if not new_resource.is_valid():
             #TODO: find a better exception
-            raise Exception("One resource is not valid")
+            raise OMBadRequestException("One resource is not valid")
 
     collection_graph = Graph().parse(data=collection_resource.to_rdf(rdf_format="nt"), format="nt")
     for new_resource in new_resources:

@@ -6,7 +6,7 @@ import unittest
 
 schema_graph = Graph()
 schema_file = path.join(path.dirname(__file__), "controller-schema.ttl")
-schema_graph = parse_graph_safely(schema_graph, schema_file , format="turtle")
+schema_graph = parse_graph_safely(schema_graph, schema_file, format="turtle")
 
 context_file = path.join(path.dirname(__file__), "controller-context.jsonld")
 
