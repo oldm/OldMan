@@ -19,7 +19,8 @@ setup(name="OldMan",
       install_requires=['rdflib',
                         'validate_email',
                         'dogpile.cache',
-                        'requests'
+                        'requests',
+                        'negotiator'
       ],
       license="BSD",
       classifiers=[

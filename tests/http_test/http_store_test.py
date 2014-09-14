@@ -27,6 +27,7 @@ class HttpStoreTest(TestCase):
                             u'http://www.markus-lanthaler.com/hydra/api-demo/vocab#Comment',
                             u'http://www.markus-lanthaler.com/hydra/api-demo/vocab#EntryPoint',
                             u'http://www.markus-lanthaler.com/hydra/api-demo/vocab#Issue'}
-        supported_classes = {cls.id for cls in doc.supported_classes}
+        # Gets just the IRIs, not the Resource objects
+        supported_classes = doc.get_lightly("supported_classes")
         for cls in expected_classes:
             self.assertIn(cls, supported_classes, "Unsupported class: %s" % cls)
