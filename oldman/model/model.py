@@ -1,4 +1,4 @@
-from .exception import OMReservedAttributeNameError, OMAttributeAccessError
+from oldman.exception import OMReservedAttributeNameError, OMAttributeAccessError
 
 
 class Model(object):
@@ -15,12 +15,12 @@ class Model(object):
     .. admonition:: Model creation
 
         :class:`~oldman.model.Model` objects are normally created by a
-        :class:`~oldman.management.manager.ResourceManager` object. Please use the
-        :func:`oldman.management.manager.ResourceManager.create_model` method for creating new
+        :class:`~oldman.resource.manager.ResourceManager` object. Please use the
+        :func:`oldman.resource.manager.ResourceManager.create_model` method for creating new
         :class:`~oldman.model.Model` objects.
 
 
-    :param manager: :class:`~oldman.management.manager.ResourceManager` object
+    :param manager: :class:`~oldman.resource.manager.ResourceManager` object
                     that has created this model.
     :param name: Model name. Usually corresponds to a JSON-LD term or to a class IRI.
     :param class_iri: IRI of the RDFS class represented by this :class:`~oldman.model.Model` object.
@@ -154,7 +154,7 @@ class Model(object):
 
         The `class_iri` attribute is added to the `types`.
 
-        See :func:`~oldman.management.manager.ResourceManager.new` for more details.
+        See :func:`~oldman.resource.manager.ResourceManager.new` for more details.
         """
         types, kwargs = self._update_kwargs_and_types(kwargs, include_ancestry=True)
         return self._manager.new(id=id, hashless_iri=hashless_iri, collection_iri=collection_iri,
@@ -172,7 +172,7 @@ class Model(object):
 
         The `class_iri` attribute is added to the `types`.
 
-        See :func:`oldman.management.finder.ResourceFinder.filter` for further details."""
+        See :func:`oldman.resource.finder.ResourceFinder.filter` for further details."""
         types, kwargs = self._update_kwargs_and_types(kwargs)
         return self._manager.filter(types=types, hashless_iri=hashless_iri, limit=limit, eager=eager,
                                     pre_cache_properties=pre_cache_properties, **kwargs)

@@ -1,9 +1,10 @@
+import logging
+
 from rdflib import URIRef
+
 from oldman.vocabulary import HYDRA_SUPPORTED_OPERATION, HYDRA_METHOD, HYDRA_EXCEPTS
 from oldman.vocabulary import HYDRA_RETURNS, OLDM_SHORTNAME
-from oldman.resource import Resource
-from oldman.operation import Operation
-import logging
+from oldman.model.operation import Operation
 
 
 def get_operation_function(operation_functions, class_iri, ancestry, method):
@@ -46,11 +47,15 @@ class HydraOperationExtractor(OperationExtractor):
                                   operation_functions):
         """ Extracts operations supported by Hydra classes. """
 
+        operations = {}
+        # No schema, nothing to extract
+        if schema_graph is None:
+            return operations
+
         # Extracts the IRIs of the operations if needed
         if self._operation_iris is None:
             self._extract_operation_iris(schema_graph)
 
-        operations = {}
         # For each in the ancestry
         for class_iri in ancestry.bottom_up:
             cls_oper_iris = self._operation_iris.get(class_iri, [])

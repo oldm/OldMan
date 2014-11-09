@@ -59,7 +59,7 @@ class OMAttributeExtractor(object):
         :param type_iris: Ancestry of the RDFS class.
         :param context_js: the JSON-LD context.
         :param schema_graph: :class:`rdflib.graph.Graph` object.
-        :param manager: :class:`~oldman.management.manager.ResourceManager` object.
+        :param manager: :class:`~oldman.resource.manager.ResourceManager` object.
         :return: `dict` of :class:`~oldman.attribute.OMAttribute` objects.
         """
         # Supported om_properties

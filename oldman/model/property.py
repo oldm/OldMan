@@ -1,7 +1,8 @@
 import logging
+
 from .attribute import OMAttributeMetadata, OMAttribute, ObjectOMAttribute
-from .exception import OMAlreadyDeclaredDatatypeError, OMPropertyDefTypeError
-from .exception import OMAlreadyGeneratedAttributeError, OMInternalError, OMPropertyDefError
+from oldman.exception import OMAlreadyDeclaredDatatypeError, OMPropertyDefTypeError
+from oldman.exception import OMAlreadyGeneratedAttributeError, OMInternalError, OMPropertyDefError
 from oldman.common import DATATYPE_PROPERTY, OBJECT_PROPERTY
 
 
@@ -21,7 +22,7 @@ class OMProperty(object):
     Consequently, two :class:`~oldman.property.OMProperty` objects can refer
     to the same RDF property when one is reversed while the second is not.
 
-    :param manager: :class:`~oldman.management.manager.ResourceManager` object.
+    :param manager: :class:`~oldman.resource.manager.ResourceManager` object.
     :param property_iri: IRI of the RDF property.
     :param supporter_class_iri: IRI of the RDFS class that supports the property.
     :param is_required: If `True` instances of the supporter class must assign a value

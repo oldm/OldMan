@@ -1,8 +1,10 @@
 import logging
 from collections import namedtuple
 from weakref import WeakKeyDictionary
+
 from rdflib import Literal
-from .exception import OMAttributeTypeCheckError, OMRequiredPropertyError, OMReadOnlyAttributeError, OMEditError
+
+from oldman.exception import OMAttributeTypeCheckError, OMRequiredPropertyError, OMReadOnlyAttributeError, OMEditError
 from oldman.parsing.value import AttributeValueExtractor
 from oldman.validation.value_format import ValueFormatError
 from oldman.iri import _skolemize
@@ -35,7 +37,7 @@ class OMAttribute(object):
       - An IRI;
       - A controller (set, list and dict) of these types.
 
-    :param manager: :class:`~oldman.management.manager.ResourceManager` object.
+    :param manager: :class:`~oldman.resource.manager.ResourceManager` object.
     :param metadata: :class:`~oldman.attribute.OMAttributeMetadata` object.
     :param value_format: :class:`~oldman.validation.value_format.ValueFormat` object
                          that validates the format of values and converts RDF values
@@ -95,7 +97,7 @@ class OMAttribute(object):
 
     @property
     def manager(self):
-        """Its :class:`~oldman.management.manager.ResourceManager` object."""
+        """Its :class:`~oldman.resource.manager.ResourceManager` object."""
         return self._manager
 
     @property
@@ -414,7 +416,7 @@ class ObjectOMAttribute(OMAttribute):
 
             Accepts :class:`~oldman.resource.Resource` object(s) or IRI(s).
         """
-        from .resource import Resource
+        from .oldman.management.resource import Resource
         f = lambda x: x.id if isinstance(x, Resource) else x
 
         if isinstance(value, set):

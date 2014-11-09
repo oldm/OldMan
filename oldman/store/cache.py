@@ -3,7 +3,7 @@ import logging
 
 
 class ResourceCache(object):
-    """A :class:`~oldman.management.cache.ResourceCache` object caches
+    """A :class:`~oldman.resource.cache.ResourceCache` object caches
     :class:`~oldman.resource.Resource` objects.
 
     It interfaces a :class:`dogpile.cache.region.CacheRegion` front-end object.
@@ -14,9 +14,9 @@ class ResourceCache(object):
     by `dogpile.cache <https://bitbucket.org/zzzeek/dogpile.cache>`_.
 
     When `cache_region` is None, no effective caching is done.
-    However, methods :func:`~oldman.management.cache.ResourceCache.get_resource`,
-    :func:`~oldman.management.cache.ResourceCache.set_resource`
-    and :func:`~oldman.management.cache.ResourceCache.remove_resource` can still safely be
+    However, methods :func:`~oldman.resource.cache.ResourceCache.get_resource`,
+    :func:`~oldman.resource.cache.ResourceCache.set_resource`
+    and :func:`~oldman.resource.cache.ResourceCache.remove_resource` can still safely be
     called. They just have no effect.
 
     :param cache_region: :class:`dogpile.cache.region.CacheRegion` object.
@@ -82,7 +82,7 @@ class ResourceCache(object):
             self._logger.debug(u"%s removed from the cache." % resource.id)
 
     def remove_resource_from_id(self, id):
-        """:func:`~oldman.management.cache.ResourceCache.remove_resource` is usually preferred.
+        """:func:`~oldman.resource.cache.ResourceCache.remove_resource` is usually preferred.
 
         Indempotent and does nothing if `cache_region` is `None`.
 

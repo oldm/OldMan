@@ -10,7 +10,7 @@ store = "default"
 #                           update_endpoint="http://localhost:3030/test/update")
 
 # Graph containing all the schema RDF triples
-schema_graph = Graph()
+schema_graph = Graph(store)
 
 # Load the schema
 parse_graph_safely(schema_graph, "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_schema.ttl",
@@ -19,16 +19,19 @@ parse_graph_safely(schema_graph, "https://raw.githubusercontent.com/oldm/OldMan/
 context_iri = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_context.jsonld"
 
 data_graph = Graph()
-data_store = SPARQLDataStore(data_graph)
+data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph)
 # Only for SPARQL data stores
 data_store.extract_prefixes(schema_graph)
 
-#Resource manager (will generate the model objects)
-manager = ResourceManager(schema_graph, data_store)
-
 #LocalPerson model
-lp_model = manager.create_model("LocalPerson", context_iri, iri_prefix="http://localhost/persons/",
-                                iri_fragment="me", incremental_iri=True)
+data_store.create_model("LocalPerson", context_iri, iri_prefix="http://localhost/persons/",
+                        iri_fragment="me", incremental_iri=True)
+
+#Client resource manager
+client_manager = ResourceManager(data_store)
+client_manager.use_all_store_models()
+
+lp_model = client_manager.get_model("LocalPerson")
 
 alice = lp_model.create(name="Alice", emails={"alice@example.org"},
                         short_bio_en="I am ...")

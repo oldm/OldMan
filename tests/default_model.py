@@ -1,16 +1,12 @@
 from os import path
 import json
 import logging.config
+
 from dogpile.cache import make_region
-from rdflib import Dataset, Graph, URIRef, Literal, RDF, XSD
-from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
+from rdflib import Dataset, Graph
 from rdflib.namespace import FOAF
 
 from oldman import ResourceManager, parse_graph_safely, SPARQLDataStore
-from oldman.attribute import OMAttributeTypeCheckError, OMRequiredPropertyError
-from oldman.exception import OMClassInstanceError, OMAttributeAccessError, OMUniquenessError
-from oldman.exception import OMWrongResourceError, OMObjectNotFoundError, OMHashIriError, OMEditError
-from oldman.exception import OMDifferentHashlessIRIError, OMForbiddenSkolemizedIRIError, OMUnauthorizedTypeChangeError
 from oldman.rest.crud import HashLessCRUDer
 
 

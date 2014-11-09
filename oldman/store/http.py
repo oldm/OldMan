@@ -17,6 +17,10 @@ class HttpDataStore(DataStore):
         self._session = session if session is not None else requests.session()
         self._logger = getLogger(__name__)
 
+    @property
+    def session(self):
+        return self._session
+
     def _get_by_id(self, id):
         r = self._session.get(id, headers=dict(Accept='text/turtle;q=1.0, '
                                                       'application/rdf+xml;q=1.0, '

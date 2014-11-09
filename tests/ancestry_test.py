@@ -4,8 +4,10 @@
 """
 
 from unittest import TestCase
+
 from rdflib import Graph, RDFS, URIRef, BNode, Literal
-from oldman.management.ancestry import ClassAncestry
+
+from oldman.model.ancestry import ClassAncestry
 from oldman.vocabulary import MODEL_PRIORITY_IRI, MODEL_HAS_PRIORITY_IRI, MODEL_PRIORITY_CLASS_IRI
 
 

@@ -1,9 +1,10 @@
 import logging
+from oldman.model.manager import ModelManager
 
 from oldman.store.cache import ResourceCache
 from oldman.exception import UnsupportedDataStorageFeatureException, OMAttributeAccessError
 from oldman.exception import OMObjectNotFoundError, OMClassInstanceError
-from oldman.resource import Resource
+from oldman.resource.resource import Resource
 
 
 class DataStore(object):
@@ -12,40 +13,38 @@ class DataStore(object):
 
     In the future, non-CRUD operations may also be supported.
 
-    Manages the cache (:class:`~oldman.management.cache.ResourceCache` object) of
+    Manages the cache (:class:`~oldman.resource.cache.ResourceCache` object) of
     :class:`~oldman.resource.Resource` object.
 
-    A :class:`~oldman.management.manager.ResourceManager` object must be assigned
+    A :class:`~oldman.resource.manager.ResourceManager` object must be assigned
     after instantiation of this object.
 
+    :param model_manager: TODO: describe!!!
     :param cache_region: :class:`dogpile.cache.region.CacheRegion` object.
                          This object must already be configured.
                          Defaults to None (no cache).
                          See :class:`~oldman.store.cache.ResourceCache` for further details.
     """
 
-    def __init__(self, cache_region=None):
-        self._manager = None
+    def __init__(self, model_manager, cache_region=None):
+        self._model_manager = model_manager
         self._logger = logging.getLogger(__name__)
         self._resource_cache = ResourceCache(cache_region)
 
     @property
-    def manager(self):
-        """The :class:`~oldman.management.manager.ResourceManager` object.
+    def model_manager(self):
+        """The :class:`~oldman.model.manager.ModelManager` object.
+
+        TODO: update
 
         Necessary for creating new :class:`~oldman.resource.Resource` objects
         and accessing to :class:`~oldman.model.Model` objects.
         """
-        return self._manager
-
-    @manager.setter
-    def manager(self, resource_manager):
-        """ Must be called after instantiation. """
-        self._manager = resource_manager
+        return self._model_manager
 
     @property
     def resource_cache(self):
-        """:class:`~oldman.management.cache.ResourceCache` object."""
+        """:class:`~oldman.resource.cache.ResourceCache` object."""
         return self._resource_cache
 
     def get(self, id=None, types=None, hashless_iri=None, eager_with_reversed_attributes=True, **kwargs):
@@ -199,6 +198,13 @@ class DataStore(object):
         raise UnsupportedDataStorageFeatureException("This datastore %s does not manage instance counters."
                                                      % self.__class__.__name__)
 
+    def create_model(self, class_name_or_iri, context, iri_generator=None, iri_prefix=None,
+                     iri_fragment=None, incremental_iri=False):
+        """TODO: comment. Convenience function """
+        self._model_manager.create_model(class_name_or_iri, context, self, iri_generator=iri_generator,
+                                         iri_prefix=iri_prefix, iri_fragment=iri_fragment,
+                                         incremental_iri=incremental_iri)
+
     def _get_first_resource_found(self):
         raise UnsupportedDataStorageFeatureException("This datastore %s cannot get a resource at random."
                                                      % self.__class__.__name__)
@@ -216,7 +222,7 @@ class DataStore(object):
                                                      % self.__class__.__name__)
 
     def _new_resource_object(self, id, resource_graph):
-        resource = Resource.load_from_graph(self._manager, id, resource_graph, is_new=(len(resource_graph) == 0))
+        resource = Resource.load_from_graph(self._model_manager, id, resource_graph, is_new=(len(resource_graph) == 0))
         self.resource_cache.set_resource(resource)
         return resource
 

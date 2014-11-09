@@ -47,7 +47,7 @@ def append_to_hydra_collection(collection_resource, new_resources=None, graph=No
 
 def _append_to_hydra_coll_from_graph(collection_resource, graph):
     collection_iri = collection_resource.id
-    manager = collection_resource.manager
+    manager = collection_resource.model_manager
 
     # Extracts and classifies subjects
     bnode_subjects, other_subjects = extract_subjects(graph)

@@ -1,5 +1,6 @@
 from rdflib import Namespace, URIRef
-from oldman.property import OMProperty
+
+from oldman.model.property import OMProperty
 
 
 class OMPropertyExtractor(object):
