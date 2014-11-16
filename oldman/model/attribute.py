@@ -387,14 +387,13 @@ class ObjectOMAttribute(OMAttribute):
                  or a generator of :class:`~oldman.resource.Resource` objects.
         """
         iris = OMAttribute.get(self, resource)
-        resource_manager = resource.resource_manager
         if isinstance(iris, (list, set)):
             # Returns a generator
-            return (resource_manager.get(id=iri) for iri in iris)
+            return (resource.get_related_resource(id=iri) for iri in iris)
         elif isinstance(iris, dict):
             raise NotImplementedError(u"Should we implement it?")
         elif iris is not None:
-            return resource_manager.get(id=iris)
+            return resource.get_related_resource(id=iris)
         else:
             return None
 

@@ -69,7 +69,6 @@ alice = lp_model.get(id=alice_iri)
 print alice.name
 
 # Or retrieve her as the unique friend of Bob
-print "Bob friends (todo: remove): %s" % bob.friends
 alice = list(bob.friends)[0]
 print alice.name
 

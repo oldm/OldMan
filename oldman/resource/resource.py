@@ -620,6 +620,15 @@ class Resource(object):
             self.save(is_end_user)
         return self
 
+    def get_related_resource(self, id):
+        """
+        TODO: describe.
+        Not for end-users!
+
+        If cannot get the resource, return its IRI
+        """
+        raise NotImplementedError("To be implemented by a concrete sub-class")
+
     def _check_and_update_types(self, new_types, allow_new_type, allow_type_removal):
         current_types = set(self._types)
         if new_types == current_types:
@@ -687,6 +696,13 @@ class StoreResource(Resource):
         instance.update_from_graph(subgraph, is_end_user=True, save=False, initial=True)
         return instance
 
+    def get_related_resource(self, id):
+        """TODO: describe """
+        resource = self.store.get(id=id)
+        if resource is None:
+            return id
+        return resource
+
     def _filter_objects_to_delete(self, ids):
         return [self.store.get(id=id) for id in ids
                 if id is not None and is_blank_node(id)]
@@ -719,6 +735,13 @@ class ClientResource(Resource):
         instance.update_from_graph(subgraph, is_end_user=True, save=False, initial=True)
         return instance
 
+    def get_related_resource(self, id):
+        """TODO: describe """
+        resource = self._resource_manager.get(id=id)
+        if resource is None:
+            return id
+        return resource
+
     def __getstate__(self):
         """Cannot be pickled."""
         #TODO: find the appropriate exception
@@ -734,9 +757,9 @@ class ClientResource(Resource):
         return [self._resource_manager.get(id=id) for id in ids
                 if id is not None and is_blank_node(id)]
 
-    @property
-    def resource_manager(self):
-        return self._resource_manager
+    # @property
+    # def resource_manager(self):
+    #     return self._resource_manager
 
 
 def is_blank_node(iri):

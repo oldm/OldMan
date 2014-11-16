@@ -125,12 +125,12 @@ class DirectMappingModelConverter(ModelConverter):
         self._transfer_values(client_resource, store_resource, self._client_to_store_mappings)
 
     def from_store_to_client(self, store_resource, client_resource):
-        self._transfer_values(client_resource, store_resource, self._store_to_client_mappings)
+        self._transfer_values(store_resource, client_resource, self._store_to_client_mappings)
 
     @staticmethod
     def _transfer_values(source_resource, target_resource, mappings):
         for source_attr_name, target_attr_name in mappings.items():
-            value = getattr(source_resource, source_attr_name)
+            value = source_resource.get_lightly(source_attr_name)
             setattr(target_resource, target_attr_name, value)
 
 
