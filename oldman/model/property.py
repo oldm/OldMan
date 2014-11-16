@@ -9,6 +9,8 @@ from oldman.common import DATATYPE_PROPERTY, OBJECT_PROPERTY
 class OMProperty(object):
     """An :class:`~oldman.property.OMProperty` object represents the support of a RDF property by a RDFS class.
 
+    TODO: check this documentation after the removal of the resource_manager.
+
     It gathers some :class:`~oldman.attribute.OMAttribute` objects (usually one).
 
     An :class:`~oldman.property.OMProperty` object is in charge of generating its
@@ -22,7 +24,6 @@ class OMProperty(object):
     Consequently, two :class:`~oldman.property.OMProperty` objects can refer
     to the same RDF property when one is reversed while the second is not.
 
-    :param manager: :class:`~oldman.resource.manager.ResourceManager` object.
     :param property_iri: IRI of the RDF property.
     :param supporter_class_iri: IRI of the RDFS class that supports the property.
     :param is_required: If `True` instances of the supporter class must assign a value
@@ -38,11 +39,10 @@ class OMProperty(object):
     :param domains: Set of class IRIs that are declared as the RDFS domain of the property. Defaults to `set()`.
     :param ranges: Set of class IRIs that are declared as the RDFS range of the property. Defaults to `set()`.
     """
-    def __init__(self, manager, property_iri, supporter_class_iri, is_required=False, read_only=False,
+    def __init__(self, property_iri, supporter_class_iri, is_required=False, read_only=False,
                  write_only=False, reversed=False, cardinality=None, property_type=None,
                  domains=None, ranges=None):
         self._logger = logging.getLogger(__name__)
-        self._manager = manager
         self._iri = property_iri
         self._supporter_class_iri = supporter_class_iri
         self._is_required = is_required
@@ -232,7 +232,7 @@ class OMProperty(object):
         for md in self._tmp_attr_mds:
             value_format = attr_format_selector.find_value_format(md)
             attr_cls = ObjectOMAttribute if self._type == OBJECT_PROPERTY else OMAttribute
-            self._om_attributes.add(attr_cls(self._manager, md, value_format))
+            self._om_attributes.add(attr_cls(md, value_format))
 
         # Clears mds
         self._tmp_attr_mds = []

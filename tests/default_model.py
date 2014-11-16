@@ -6,7 +6,7 @@ from dogpile.cache import make_region
 from rdflib import Dataset, Graph
 from rdflib.namespace import FOAF
 
-from oldman import ResourceManager, parse_graph_safely, SPARQLDataStore
+from oldman import ClientResourceManager, parse_graph_safely, SPARQLDataStore
 from oldman.rest.crud import HashLessCRUDer
 
 
@@ -251,7 +251,7 @@ data_store = SPARQLDataStore(data_graph, cache_region=cache_region)
 # Takes the prefixes from the schema graph
 data_store.extract_prefixes(schema_graph)
 
-manager = ResourceManager(schema_graph, data_store)
+manager = ClientResourceManager(schema_graph, data_store)
 # Model classes are generated here!
 #lp_name_or_iri = "LocalPerson"
 lp_name_or_iri = MY_VOC + "LocalPerson"

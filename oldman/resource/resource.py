@@ -13,6 +13,8 @@ class Resource(object):
     """A :class:`~oldman.resource.Resource` object is a subject-centric representation of a Web resource.
     A set of :class:`~oldman.resource.Resource` objects is equivalent to a RDF graph.
 
+    TODO: update (client, store, etc.)
+
     In RDF, a resource is identified by an IRI (globally) or a blank node (locally).
     Because blank node support is complex and limited (:class:`rdflib.plugins.stores.sparqlstore.SPARQLStore`
     stores do not support them), **every** :class:`~oldman.resource.Resource` **object has an IRI**.
@@ -38,7 +40,7 @@ class Resource(object):
 
     Example::
 
-        >>> alice = Resource(manager, types=["http://schema.org/Person"], name=u"Alice")
+        >>> alice = Resource(model_manager, types=["http://schema.org/Person"], name=u"Alice")
         >>> alice.id
         u'http://localhost/persons/1'
         >>> alice.name
@@ -82,16 +84,18 @@ class Resource(object):
     :param kwargs: values indexed by their attribute names.
     """
 
-    _special_attribute_names = ["_models", "_id", "_types", "_is_blank_node", "_manager",
-                                "_former_types", "_logger"]
+    _special_attribute_names = ["_models", "_id", "_types", "_is_blank_node", "_model_manager",
+                                "_store", "_former_types", "_logger", "_resource_manager"]
     _pickle_attribute_names = ["_id", '_types']
 
-    def __init__(self, manager, id=None, types=None, hashless_iri=None, collection_iri=None, is_new=True, **kwargs):
+    def __init__(self, model_manager, data_store, id=None, types=None, hashless_iri=None, collection_iri=None,
+                 is_new=True, **kwargs):
         """Inits but does not save it (in the `data_graph`)."""
-        self._models, self._types = manager.find_models_and_types(types)
+        self._models, self._types = model_manager.find_models_and_types(types)
         self._former_types = set(self._types) if not is_new else set()
         main_model = self._models[0]
-        self._manager = manager
+        self._model_manager = model_manager
+        self._store = data_store
 
         if hashless_iri is not None and collection_iri is not None:
             raise OMUserError(u"Hashless_iri (%s) and collection_iri (%s) cannot be given in the same time."
@@ -100,7 +104,7 @@ class Resource(object):
         if id is not None:
             # Anticipated because used in __hash__
             self._id = id
-            if is_new and self._manager.data_store.exists(id):
+            if is_new and self._store.exists(id):
                 raise OMUniquenessError("Object %s already exist" % self._id)
         else:
             self._id = main_model.generate_iri(hashless_iri=hashless_iri,
@@ -121,6 +125,11 @@ class Resource(object):
     def types(self):
         """IRI list of the RDFS classes the resource is instance of."""
         return list(self._types)
+
+    @property
+    def models(self):
+        """TODO: describe"""
+        return list(self._models)
 
     @property
     def id(self):
@@ -145,9 +154,14 @@ class Resource(object):
         return list(self._models)[0].context
 
     @property
-    def manager(self):
+    def model_manager(self):
         """TODO: describe """
-        return self._manager
+        return self._model_manager
+
+    @property
+    def store(self):
+        """TODO: describe """
+        return self._store
 
     def is_valid(self):
         """Tests if the resource is valid.
@@ -198,22 +212,6 @@ class Resource(object):
             if attribute_name in model.om_attributes:
                 return model.access_attribute(attribute_name).get_lightly(self)
         raise AttributeError("%s has no regular attribute %s" % (self, attribute_name))
-
-    @classmethod
-    def load_from_graph(cls, manager, id, subgraph, is_new=True, collection_iri=None):
-        """Loads a new :class:`~oldman.resource.Resource` object from a sub-graph.
-
-        :param manager: :class:`~oldman.resource.manager.ResourceManager` object.
-        :param id: IRI of the resource.
-        :param subgraph: :class:`rdflib.Graph` object containing triples about the resource.
-        :param is_new: When is `True` and `id` given, checks that the IRI is not already existing in the
-                       `union_graph`. Defaults to `True`.
-        :return: The :class:`~oldman.resource.Resource` object created.
-        """
-        types = list({unicode(t) for t in subgraph.objects(URIRef(id), RDF.type)})
-        instance = cls(manager, id=id, types=types, is_new=is_new, collection_iri=collection_iri)
-        instance.update_from_graph(subgraph, is_end_user=True, save=False, initial=True)
-        return instance
 
     def __getattr__(self, name):
         """Gets:
@@ -269,7 +267,7 @@ class Resource(object):
     def __getstate__(self):
         """Pickles this resource."""
         state = {name: getattr(self, name) for name in self._pickle_attribute_names}
-        state["manager_name"] = self._manager.name
+        state["manager_name"] = self._model_manager.name
 
         # Reversed order so that important models can overwrite values
         reversed_models = self._models
@@ -298,11 +296,11 @@ class Resource(object):
         self._init_non_persistent_attributes(self._id)
 
         # Manager
-        from oldman import ResourceManager
-        self._manager = ResourceManager.get_manager(state["manager_name"])
+        from oldman.model.manager import ModelManager
+        self._model_manager = ModelManager.get_manager(state["manager_name"])
 
         # Models and types
-        self._models, self._types = self._manager.find_models_and_types(state["_types"])
+        self._models, self._types = self._model_manager.find_models_and_types(state["_types"])
         self._former_types = set(self._types)
 
         # Attributes (Python attributes or OMAttributes)
@@ -375,13 +373,12 @@ class Resource(object):
                 resources_to_invalidate.update(former_value)
                 for r in resources_to_invalidate:
                     if r is not None:
-                        self._manager.data_store.resource_cache.remove_resource_from_id(r)
+                        self._store.resource_cache.remove_resource_from_id(r)
 
-                objects_to_delete += [self._manager.get(id=v) for v in former_value
-                                      if v is not None and is_blank_node(v)]
+                objects_to_delete += self._filter_objects_to_delete(former_value)
 
         # Update literal values
-        self._manager.data_store.save(self, attributes, self._former_types)
+        self._store.save(self, attributes, self._former_types)
 
         # Delete the objects
         for obj in objects_to_delete:
@@ -414,13 +411,13 @@ class Resource(object):
                         else:
                             self._logger.debug(u"%s not deleted with %s" % (obj.id, self._id))
                             # Cache invalidation (because of possible reverse properties)
-                            self._manager.data_store.resource_cache.remove_resource(obj)
+                            self._store.resource_cache.remove_resource(obj)
 
             setattr(self, attr.name, None)
 
         #Types
         self._change_types(set())
-        self._manager.data_store.delete(self, attributes, self._former_types)
+        self._store.delete(self, attributes, self._former_types)
 
         # Clears former values
         for attr in attributes:
@@ -536,8 +533,7 @@ class Resource(object):
         # Literal
         return value
 
-    def update(self, full_dict, is_end_user=True, allow_new_type=False, allow_type_removal=False,
-                    save=True):
+    def update(self, full_dict, is_end_user=True, allow_new_type=False, allow_type_removal=False, save=True):
         """Updates the resource from a flat `dict`.
 
         By flat, we mean that sub-resources are only represented by their IRIs:
@@ -594,7 +590,7 @@ class Resource(object):
         return self
 
     def update_from_graph(self, subgraph, initial=False, is_end_user=True, allow_new_type=False,
-                               allow_type_removal=False, save=True):
+                          allow_type_removal=False, save=True):
         """Similar to :func:`~oldman.resource.Resource.full_update` but with
         a RDF graph instead of a Python `dict`.
 
@@ -650,7 +646,7 @@ class Resource(object):
                                                         % (removed_types, self._id))
                 change = True
         if change:
-            self._models, types = self._manager.find_models_and_types(new_types)
+            self._models, types = self._model_manager.find_models_and_types(new_types)
             self._change_types(types)
 
     def _change_types(self, new_types):
@@ -665,6 +661,82 @@ class Resource(object):
         self._logger.debug(u"Models: %s, types: %s" % ([m.name for m in self._models], self._types))
         #self._logger.debug(u"%s" % self._manager._registry.model_names)
         raise AttributeError(u"%s has not attribute %s" % (self, name))
+
+    def _filter_objects_to_delete(self, ids):
+        raise NotImplementedError("Implemented by a sub-class")
+
+
+class StoreResource(Resource):
+    """TODO: describe"""
+
+    @classmethod
+    def load_from_graph(cls, model_manager, data_store, id, subgraph, is_new=True, collection_iri=None):
+        """Loads a new :class:`~oldman.resource.StoreResource` object from a sub-graph.
+
+        TODO: update the comments.
+
+        :param manager: :class:`~oldman.resource.manager.ResourceManager` object.
+        :param id: IRI of the resource.
+        :param subgraph: :class:`rdflib.Graph` object containing triples about the resource.
+        :param is_new: When is `True` and `id` given, checks that the IRI is not already existing in the
+                       `union_graph`. Defaults to `True`.
+        :return: The :class:`~oldman.resource.Resource` object created.
+        """
+        types = list({unicode(t) for t in subgraph.objects(URIRef(id), RDF.type)})
+        instance = cls(model_manager, data_store, id=id, types=types, is_new=is_new, collection_iri=collection_iri)
+        instance.update_from_graph(subgraph, is_end_user=True, save=False, initial=True)
+        return instance
+
+    def _filter_objects_to_delete(self, ids):
+        return [self.store.get(id=id) for id in ids
+                if id is not None and is_blank_node(id)]
+
+
+class ClientResource(Resource):
+    """TODO: describe"""
+
+    def __init__(self, resource_manager, model_manager, store, **kwargs):
+        Resource.__init__(self, model_manager, store, **kwargs)
+        self._resource_manager = resource_manager
+
+    @classmethod
+    def load_from_graph(cls, resource_manager, model_manager, data_store, id, subgraph, is_new=True,
+                        collection_iri=None):
+        """Loads a new :class:`~oldman.resource.ClientResource` object from a sub-graph.
+
+        TODO: update the comments.
+
+        :param manager: :class:`~oldman.resource.manager.ResourceManager` object.
+        :param id: IRI of the resource.
+        :param subgraph: :class:`rdflib.Graph` object containing triples about the resource.
+        :param is_new: When is `True` and `id` given, checks that the IRI is not already existing in the
+                       `union_graph`. Defaults to `True`.
+        :return: The :class:`~oldman.resource.Resource` object created.
+        """
+        types = list({unicode(t) for t in subgraph.objects(URIRef(id), RDF.type)})
+        instance = cls(resource_manager, model_manager, data_store, id=id, types=types, is_new=is_new,
+                       collection_iri=collection_iri)
+        instance.update_from_graph(subgraph, is_end_user=True, save=False, initial=True)
+        return instance
+
+    def __getstate__(self):
+        """Cannot be pickled."""
+        #TODO: find the appropriate exception
+        raise Exception("A ClientResource is not serializable.")
+
+    def __setstate__(self, state):
+        """Cannot be pickled."""
+        #TODO: find the appropriate exception
+        raise Exception("A ClientResource is not serializable.")
+
+    def _filter_objects_to_delete(self, ids):
+        """TODO: consider other cases than blank nodes """
+        return [self._resource_manager.get(id=id) for id in ids
+                if id is not None and is_blank_node(id)]
+
+    @property
+    def resource_manager(self):
+        return self._resource_manager
 
 
 def is_blank_node(iri):

@@ -5,7 +5,7 @@
 
 from unittest import TestCase
 from rdflib import ConjunctiveGraph, URIRef
-from oldman import ResourceManager, parse_graph_safely, SPARQLDataStore
+from oldman import ClientResourceManager, parse_graph_safely, SPARQLDataStore
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
@@ -86,7 +86,7 @@ def disclaim2(self):
 
 
 data_store = SPARQLDataStore(data_graph)
-manager = ResourceManager(schema_graph, data_store, manager_name="it")
+manager = ClientResourceManager(schema_graph, data_store, manager_name="it")
 # Methods
 manager.declare_method(square_value, "square_value", EXAMPLE + "GrandParentClass")
 manager.declare_method(print_new_value, "print_new_value", EXAMPLE + "ChildClass")

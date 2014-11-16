@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from rdflib import Graph
-from oldman import ResourceManager, parse_graph_safely, SPARQLDataStore
+from oldman import ClientResourceManager, parse_graph_safely, SPARQLDataStore
 
 # In-memory store
 store = "default"
@@ -28,14 +28,15 @@ data_store.create_model("LocalPerson", context_iri, iri_prefix="http://localhost
                         iri_fragment="me", incremental_iri=True)
 
 #Client resource manager
-client_manager = ResourceManager(data_store)
+client_manager = ClientResourceManager(data_store)
 client_manager.use_all_store_models()
 
 lp_model = client_manager.get_model("LocalPerson")
 
 alice = lp_model.create(name="Alice", emails={"alice@example.org"},
                         short_bio_en="I am ...")
-bob = lp_model.new(name="Bob", blog="http://blog.example.com/",
+bob = lp_model.new(name="Bob",
+                   #blog="http://blog.example.com/",
                    short_bio_fr=u"J'ai grandi en ... .")
 
 print bob.is_valid()
@@ -65,8 +66,10 @@ alice_iri = alice.id
 # First person found named Bob
 bob = lp_model.get(name="Bob")
 alice = lp_model.get(id=alice_iri)
+print alice.name
 
 # Or retrieve her as the unique friend of Bob
+print "Bob friends (todo: remove): %s" % bob.friends
 alice = list(bob.friends)[0]
 print alice.name
 

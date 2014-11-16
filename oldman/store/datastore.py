@@ -4,7 +4,7 @@ from oldman.model.manager import ModelManager
 from oldman.store.cache import ResourceCache
 from oldman.exception import UnsupportedDataStorageFeatureException, OMAttributeAccessError
 from oldman.exception import OMObjectNotFoundError, OMClassInstanceError
-from oldman.resource.resource import Resource
+from oldman.resource.resource import Resource, StoreResource
 
 
 class DataStore(object):
@@ -222,7 +222,8 @@ class DataStore(object):
                                                      % self.__class__.__name__)
 
     def _new_resource_object(self, id, resource_graph):
-        resource = Resource.load_from_graph(self._model_manager, id, resource_graph, is_new=(len(resource_graph) == 0))
+        resource = StoreResource.load_from_graph(self._model_manager, self, id, resource_graph,
+                                                 is_new=(len(resource_graph) == 0))
         self.resource_cache.set_resource(resource)
         return resource
 

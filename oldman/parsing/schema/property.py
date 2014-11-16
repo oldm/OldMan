@@ -10,7 +10,7 @@ class OMPropertyExtractor(object):
     This class is generic and must derived for supporting various RDF vocabularies.
     """
 
-    def update(self, om_properties, class_iri, type_iris, schema_graph, manager):
+    def update(self, om_properties, class_iri, type_iris, schema_graph):
         """Generates new :class:`~oldman.property.OMProperty` objects or updates them
         from the schema graph.
 
@@ -55,7 +55,7 @@ class HydraPropertyExtractor(OMPropertyExtractor):
     """
     _ns = {u'hydra': Namespace(u"http://www.w3.org/ns/hydra/core#")}
 
-    def update(self, om_properties, class_iri, type_iris, schema_graph, manager):
+    def update(self, om_properties, class_iri, type_iris, schema_graph):
         """See :func:`oldman.parsing.schema.property.OMPropertyExtractor.update`."""
         prop_params = {}
 
@@ -76,7 +76,7 @@ class HydraPropertyExtractor(OMPropertyExtractor):
 
         for (property_iri, reversed), (is_required, read_only, write_only) in prop_params.iteritems():
             if not (property_iri, reversed) in om_properties:
-                om_property = OMProperty(manager, property_iri, class_iri, is_required=is_required,
+                om_property = OMProperty(property_iri, class_iri, is_required=is_required,
                                          read_only=read_only, write_only=write_only, reversed=reversed)
                 om_properties[(property_iri, reversed)] = om_property
         return om_properties

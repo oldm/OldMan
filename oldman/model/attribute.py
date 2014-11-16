@@ -17,6 +17,9 @@ OMAttributeMetadata = namedtuple("OMAttributeMetadata", ["name", "property", "la
 class OMAttribute(object):
     """An :class:`~oldman.attribute.OMAttribute` object corresponds to a JSON-LD term that refers to a RDF property.
 
+    TODO: update the documentation.  No direct access to the resource_manager anymore
+    (indirect through the resource).
+
     Technically, the name of the :class:`~oldman.attribute.OMAttribute` object is a JSON-LD term,
     namely *"a short-hand string that expands to an IRI or a blank node identifier"*
     (cf. `the JSON-LD standard <http://www.w3.org/TR/json-ld/#dfn-term>`_) which corresponds here to a RDF property
@@ -37,7 +40,6 @@ class OMAttribute(object):
       - An IRI;
       - A controller (set, list and dict) of these types.
 
-    :param manager: :class:`~oldman.resource.manager.ResourceManager` object.
     :param metadata: :class:`~oldman.attribute.OMAttributeMetadata` object.
     :param value_format: :class:`~oldman.validation.value_format.ValueFormat` object
                          that validates the format of values and converts RDF values
@@ -50,8 +52,7 @@ class OMAttribute(object):
                                #'@index': dict,
                                None: object}
 
-    def __init__(self, manager, metadata, value_format):
-        self._manager = manager
+    def __init__(self, metadata, value_format):
         self._metadata = metadata
         self._value_format = value_format
         self._data = WeakKeyDictionary()
@@ -94,11 +95,6 @@ class OMAttribute(object):
     def language(self):
         """Its language if localized."""
         return self._metadata.language
-
-    @property
-    def manager(self):
-        """Its :class:`~oldman.resource.manager.ResourceManager` object."""
-        return self._manager
 
     @property
     def jsonld_type(self):
@@ -381,8 +377,8 @@ class ObjectOMAttribute(OMAttribute):
 
     """
 
-    def __init__(self, manager, metadata, value_format):
-        OMAttribute.__init__(self, manager, metadata, value_format)
+    def __init__(self, metadata, value_format):
+        OMAttribute.__init__(self, metadata, value_format)
 
     def get(self, resource):
         """See :func:`~oldman.attribute.OMAttribute.get`.
@@ -391,13 +387,14 @@ class ObjectOMAttribute(OMAttribute):
                  or a generator of :class:`~oldman.resource.Resource` objects.
         """
         iris = OMAttribute.get(self, resource)
+        resource_manager = resource.resource_manager
         if isinstance(iris, (list, set)):
             # Returns a generator
-            return (self.manager.get(id=iri) for iri in iris)
+            return (resource_manager.get(id=iri) for iri in iris)
         elif isinstance(iris, dict):
             raise NotImplementedError(u"Should we implement it?")
         elif iris is not None:
-            return self.manager.get(id=iris)
+            return resource_manager.get(id=iris)
         else:
             return None
 
@@ -416,7 +413,7 @@ class ObjectOMAttribute(OMAttribute):
 
             Accepts :class:`~oldman.resource.Resource` object(s) or IRI(s).
         """
-        from .oldman.management.resource import Resource
+        from oldman.resource.resource import Resource
         f = lambda x: x.id if isinstance(x, Resource) else x
 
         if isinstance(value, set):

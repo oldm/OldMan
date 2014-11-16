@@ -1,5 +1,5 @@
 from rdflib import Graph
-from oldman import SPARQLDataStore, ResourceManager, parse_graph_safely
+from oldman import SPARQLDataStore, ClientResourceManager, parse_graph_safely
 from oldman.rest.controller import HTTPController
 from os import path
 import unittest
@@ -13,7 +13,7 @@ context_file = path.join(path.dirname(__file__), "controller-context.jsonld")
 data_graph = Graph()
 data_store = SPARQLDataStore(data_graph)
 
-manager = ResourceManager(schema_graph, data_store, manager_name="controller_test")
+manager = ClientResourceManager(schema_graph, data_store, manager_name="controller_test")
 
 collection_model = manager.create_model("Collection", context_file, iri_prefix="http://localhost/collections/",
                                         incremental_iri=True)

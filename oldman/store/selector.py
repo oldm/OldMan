@@ -20,3 +20,7 @@ class DataStoreSelector:
     def select_stores(self, id=None, **kwargs):
         #TODO: implement seriously
         return self._data_stores
+
+    def select_store(self, **kwargs):
+        """TODO: what is the correct behavior when multiple stores are returned? """
+        return self.select_stores(**kwargs)[0]

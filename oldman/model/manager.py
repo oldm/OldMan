@@ -4,8 +4,9 @@ from urlparse import urlparse
 from uuid import uuid4
 
 from rdflib import Graph
+from oldman.model.converter import ModelConversionManager, EquivalentModelConverter
 
-from oldman.model.model import Model
+from oldman.model.model import Model, ClientModel
 from oldman.exception import OMUndeclaredClassNameError, OMExpiredMethodDeclarationTimeSlotError
 from oldman.iri import PrefixedUUIDIriGenerator, IncrementalIriGenerator, BlankNodeIriGenerator
 from oldman.parsing.schema.attribute import OMAttributeExtractor
@@ -181,7 +182,7 @@ class ModelManager(object):
             class_iri = _extract_class_iri(class_name_or_iri, context)
             ancestry = ClassAncestry(class_iri, self._schema_graph)
             om_attributes = self._attr_extractor.extract(class_iri, ancestry.bottom_up, context,
-                                                         self._schema_graph, self)
+                                                         self._schema_graph)
         if iri_generator is not None:
             id_generator = iri_generator
         elif iri_prefix is not None:
@@ -200,7 +201,7 @@ class ModelManager(object):
         operations = self._operation_extractor.extract(ancestry, self._schema_graph,
                                                        self._operation_functions)
 
-        model = Model(self, class_name_or_iri, class_iri, ancestry.bottom_up, context, om_attributes,
+        model = Model(class_name_or_iri, class_iri, ancestry.bottom_up, context, om_attributes,
                       id_generator, methods=methods, operations=operations)
         self._add_model(model, is_default=is_default)
 
@@ -210,12 +211,38 @@ class ModelManager(object):
 
         return model
 
+    def get_model(self, class_name_or_iri):
+        return self._registry.get_model(class_name_or_iri)
+
     def _add_model(self, model, is_default=False):
-        """TODO: describe """
         self._registry.register(model, is_default=is_default)
 
-    def _get_model(self, class_name_or_iri):
-        return self._registry.get_model(class_name_or_iri)
+
+class ClientModelManager(ModelManager):
+    """TODO: complete """
+
+    def __init__(self, resource_manager, **kwargs):
+        ModelManager.__init__(self, **kwargs)
+        self._resource_manager = resource_manager
+        self._conversion_manager = ModelConversionManager()
+
+    # @property
+    # def resource_manager(self):
+    #     return self._resource_manager
+
+    def import_model(self, store_model, data_store, is_default=False):
+        """TODO: describe """
+        client_model = ClientModel.copy_store_model(self._resource_manager, store_model)
+        # Hierarchy registration
+        self._registry.register(client_model, is_default=is_default)
+        # Converter
+        converter = EquivalentModelConverter(client_model, store_model)
+        self._conversion_manager.register_model_converter(client_model, store_model, data_store,
+                                                          converter)
+
+    def convert_store_resources(self, store_resources):
+        """TODO: describe """
+        return self._conversion_manager.convert_store_to_client_resources(store_resources, self._resource_manager)
 
 
 def _extract_class_iri(class_name, context):

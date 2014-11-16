@@ -6,7 +6,7 @@ See http://oldman.readthedocs.org/en/latest/examples/dbpedia.html .
 
 from rdflib import Graph
 from rdflib.plugins.stores.sparqlstore import SPARQLStore
-from oldman import ResourceManager, SPARQLDataStore
+from oldman import ClientResourceManager, SPARQLDataStore
 from dogpile.cache import make_region
 import logging
 from os import path
@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
     # Resource Manager and Models
     data_store = SPARQLDataStore(data_graph, cache_region=cache_region)
-    manager = ResourceManager(schema_graph, data_store)
+    manager = ClientResourceManager(schema_graph, data_store)
     film_model = manager.create_model("http://dbpedia.org/ontology/Film", context_url)
     # JSON-LD terms can be used instead of IRIs
     actor_model = manager.create_model("Person", context_url)

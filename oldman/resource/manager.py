@@ -1,20 +1,23 @@
-from oldman.resource.resource import Resource
+from oldman.resource.resource import ClientResource
 from oldman.store.selector import DataStoreSelector
-from oldman.model.manager import ModelManager
+from oldman.model.manager import ClientModelManager
 
 
-class ResourceManager:
+class ClientResourceManager:
     """
     TODO: describe
     """
 
     def __init__(self, data_stores, schema_graph=None, attr_extractor=None, oper_extractor=None,
                  declare_default_operation_functions=True):
-        self._model_manager = ModelManager(schema_graph=schema_graph,
-                                           attr_extractor=attr_extractor,
-                                           oper_extractor=oper_extractor,
-                                           declare_default_operation_functions=declare_default_operation_functions)
+        self._model_manager = ClientModelManager(self, schema_graph=schema_graph, attr_extractor=attr_extractor,
+                                                 oper_extractor=oper_extractor,
+                                                 declare_default_operation_functions=declare_default_operation_functions)
         self._store_selector = DataStoreSelector(data_stores)
+
+    @property
+    def model_manager(self):
+        return self._model_manager
 
     def new(self, id=None, types=None, hashless_iri=None, collection_iri=None, **kwargs):
         """Creates a new :class:`~oldman.resource.Resource` object **without saving it** in the `data_store`.
@@ -38,10 +41,12 @@ class ResourceManager:
             name = id if id is not None else ""
             self._logger.info(u"""New resource %s has no type nor attribute.
             As such, nothing is stored in the data graph.""" % name)
-            #TODO: select a store for the resource
-            #TODO: ref to the model manager or model registry
-        return Resource(self, id=id, types=types, hashless_iri=hashless_iri,
-                        collection_iri=collection_iri, **kwargs)
+
+        # Store of the resource
+        store = self._store_selector.select_store(id=id, types=types, hashless_iri=hashless_iri,
+                                                  collection_iri=collection_iri, **kwargs)
+        return ClientResource(self, self._model_manager, store, id=id, types=types, hashless_iri=hashless_iri,
+                              collection_iri=collection_iri, **kwargs)
 
     def create(self, id=None, types=None, hashless_iri=None, collection_iri=None, **kwargs):
         """Creates a new resource and save it in the `data_store`.
@@ -54,13 +59,15 @@ class ResourceManager:
     def get(self, id=None, types=None, hashless_iri=None, eager_with_reversed_attributes=True, **kwargs):
         """See :func:`oldman.store.datastore.DataStore.get`."""
         #TODO: consider parallelism
-        resources = [store.get(id=id, types=types, hashless_iri=hashless_iri,
-                               eager_with_reversed_attributes=eager_with_reversed_attributes, **kwargs)
-                     for store in self._store_selector.select_stores(id=id, types=types, hashless_iri=hashless_iri, **kwargs)]
-        returned_resources = filter(lambda x: x, resources)
-        resource_count = len(returned_resources)
+        store_resources = [store.get(id=id, types=types, hashless_iri=hashless_iri,
+                                     eager_with_reversed_attributes=eager_with_reversed_attributes, **kwargs)
+                           for store in self._store_selector.select_stores(id=id, types=types,
+                                                                           hashless_iri=hashless_iri, **kwargs)]
+        returned_store_resources = filter(lambda x: x, store_resources)
+        resources = self._model_manager.convert_store_resources(returned_store_resources)
+        resource_count = len(resources)
         if resource_count == 1:
-            return returned_resources
+            return resources[0]
         elif resource_count == 0:
             return None
         #TODO: find a better exception and explain better
@@ -75,14 +82,14 @@ class ResourceManager:
                                                                        **kwargs)
                      for r in store.filter(types=types, hashless_iri=hashless_iri, limit=limit, eager=eager,
                                            pre_cache_properties=pre_cache_properties, **kwargs)]
-        return resources
+        return self._model_manager.convert_store_resources(resources)
 
     def sparql_filter(self, query):
         """See :func:`oldman.store.datastore.DataStore.sparql_filter`."""
         #TODO: support again generator. Find a way to aggregate them.
         resources = [r for store in self._store_selector.select_sparql_stores(query)
                      for r in store.sparql_filter(query)]
-        return resources
+        return self._model_manager.convert_store_resources(resources)
 
     def use_store_model(self, class_iri, data_store=None):
         raise NotImplementedError("TODO: implement me here")
@@ -90,8 +97,8 @@ class ResourceManager:
     def use_all_store_models(self):
         """TODO: check possible conflicts with local models."""
         for store in self._store_selector.data_stores:
-            for model in store.model_manager.non_default_models:
-                self._model_manager.import_model(model)
+            for store_model in store.model_manager.non_default_models:
+                self._model_manager.import_model(store_model, store)
 
     def get_model(self, class_name_or_iri):
-        return self._get_model(class_name_or_iri)
+        return self._model_manager.get_model(class_name_or_iri)
