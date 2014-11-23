@@ -370,6 +370,9 @@ class SPARQLDataStore(DataStore):
             except ParseException as e:
                 raise OMSPARQLParseError(u"%s\n %s" % (query, e))
 
+        # Same IRI (no change)
+        return id
+
 
 def _find_attribute(models, name):
     for m in models:

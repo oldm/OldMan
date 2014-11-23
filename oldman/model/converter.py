@@ -166,9 +166,9 @@ class DirectMappingModelConverter(ModelConverter):
             # New value
             new_value = source_attr.get_lightly(source_resource)
             target_attr.set(target_resource, new_value)
-            if not has_former_value:
-                # Mark the new value as a "saved" value
-                target_attr.delete_former_value(target_resource)
+            #if not has_former_value:
+            #    # Mark the new value as a "saved" value
+            #    target_attr.delete_former_value(target_resource)
 
 
 

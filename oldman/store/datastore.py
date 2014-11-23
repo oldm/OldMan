@@ -172,7 +172,8 @@ class DataStore(object):
         :param attributes: Ordered list of :class:`~oldman.attribute.OMAttribute` objects.
         :param former_types: List of RDFS class IRIs previously saved.
         """
-        self._save_resource_attributes(resource, attributes, former_types)
+        id = self._save_resource_attributes(resource, attributes, former_types)
+        resource.receive_id(id)
         # Cache
         self._resource_cache.set_resource(resource)
 
@@ -255,12 +256,17 @@ class DataStore(object):
                                                      % self.__class__.__name__)
 
     def _save_resource_attributes(self, resource, attributes):
+        """
+        TODO: describe
+        :param resource:
+        :param attributes:
+        :return: the ID of resource (useful when the IRI was a temporary one (e.g. a skolemized IRI).
+        """
         raise UnsupportedDataStorageFeatureException("This datastore %s cannot update resources (read-only)."
                                                      % self.__class__.__name__)
 
     def _new_resource_object(self, id, resource_graph):
-        resource = StoreResource.load_from_graph(self._model_manager, self, id, resource_graph,
-                                                 is_new=(len(resource_graph) == 0))
+        resource = StoreResource.load_from_graph(self._model_manager, self, id, resource_graph, is_new=False)
         self.resource_cache.set_resource(resource)
         return resource
 

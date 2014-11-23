@@ -323,6 +323,15 @@ class Resource(object):
             for attr in model.om_attributes.values():
                 attr.check_validity(self)
 
+    def receive_id(self, id):
+        """TODO: describe.
+
+        Assigned by store.
+        """
+        # TODO: make sure the previous id was a temporary one
+        self._id = id
+        self._is_new = False
+
     def save(self, is_end_user=True):
         """Saves it into the `data_graph` and the `resource_cache`.
 
@@ -715,7 +724,7 @@ class StoreResource(Resource):
             obj.delete()
 
         # Clears former values
-        self._former_types = None
+        self._former_types = self._types
         for attr in attributes:
             attr.delete_former_value(self)
 
@@ -803,6 +812,8 @@ class ClientResource(Resource):
         for attr in attributes:
             attr.delete_former_value(self)
         self._is_new = False
+        # The ID may be updated (if was a temporary IRI before)
+        self._id = store_resource.id
 
         return self
 
