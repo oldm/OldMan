@@ -130,8 +130,25 @@ class DirectMappingModelConverter(ModelConverter):
     @staticmethod
     def _transfer_values(source_resource, target_resource, mappings):
         for source_attr_name, target_attr_name in mappings.items():
-            value = source_resource.get_lightly(source_attr_name)
-            setattr(target_resource, target_attr_name, value)
+            # Attributes
+            source_attr = source_resource.get_attribute(source_attr_name)
+            target_attr = target_resource.get_attribute(target_attr_name)
+
+            # Former value
+            former_value = source_attr.get_former_value(source_resource)
+            has_former_value = former_value is not None
+            if has_former_value:
+                target_attr.set(target_resource, former_value)
+                # Mark the former value as a "saved" value
+                target_attr.delete_former_value(target_resource)
+
+            # New value
+            new_value = source_attr.get_lightly(source_resource)
+            target_attr.set(target_resource, new_value)
+            if not has_former_value:
+                # Mark the new value as a "saved" value
+                target_attr.delete_former_value(target_resource)
+
 
 
 class EquivalentModelConverter(DirectMappingModelConverter):
