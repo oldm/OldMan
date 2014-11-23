@@ -241,7 +241,7 @@ class Resource(object):
             operation = model.get_operation_by_name(name)
             if operation is not None:
                 return partial(operation, self)
-        raise AttributeError("%s has not attribute %s" % (self, name))
+            raise AttributeError("%s has no attribute %s" % (self, name))
 
     def __setattr__(self, name, value):
         """Sets the value of one or multiple :class:`~oldman.attribute.OMAttribute` objects.
@@ -378,7 +378,7 @@ class Resource(object):
                 objects_to_delete += self._filter_objects_to_delete(former_value)
 
         # Update literal values
-        self._store.save(self, attributes, self._former_types)
+        self._save(self, attributes, self._former_types)
 
         # Delete the objects
         for obj in objects_to_delete:
@@ -394,34 +394,12 @@ class Resource(object):
     def delete(self):
         """Removes the resource from the `data_graph` and the `resource_cache`.
 
+        TODO: update this description.
+
         Cascade deletion is done for related resources satisfying the test
         :func:`~oldman.resource.should_delete_resource`.
         """
-        attributes = self._extract_attribute_list()
-        for attr in attributes:
-            # Delete blank nodes recursively
-            if attr.om_property.type == OBJECT_PROPERTY:
-                value = getattr(self, attr.name)
-                if value is not None:
-                    objs = value if isinstance(value, (list, set, GeneratorType)) else [value]
-                    for obj in objs:
-                        if should_delete_resource(obj):
-                            self._logger.debug(u"%s deleted with %s" % (obj.id, self._id))
-                            obj.delete()
-                        else:
-                            self._logger.debug(u"%s not deleted with %s" % (obj.id, self._id))
-                            # Cache invalidation (because of possible reverse properties)
-                            self._store.resource_cache.remove_resource(obj)
-
-            setattr(self, attr.name, None)
-
-        #Types
-        self._change_types(set())
-        self._store.delete(self, attributes, self._former_types)
-
-        # Clears former values
-        for attr in attributes:
-            attr.delete_former_value(self)
+        raise NotImplementedError("Have to be implemented by sub-classes")
 
     def _extract_attribute_list(self):
         """:return: An ordered list of list of :class:`~oldman.attribute.OMAttribute` objects."""
@@ -703,6 +681,77 @@ class StoreResource(Resource):
             return id
         return resource
 
+    def save(self, is_end_user=True):
+        # Checks
+        attributes = self._extract_attribute_list()
+        for attr in attributes:
+            attr.check_validity(self, is_end_user)
+
+        # Find objects to delete
+        objects_to_delete = []
+        for attr in attributes:
+            if not attr.has_new_value(self):
+                continue
+
+            # Some former objects may be deleted
+            if attr.om_property.type == OBJECT_PROPERTY:
+                former_value = attr.get_former_value(self)
+
+                if isinstance(former_value, dict):
+                    raise NotImplementedError("Object dicts are not yet supported.")
+                former_value = former_value if isinstance(former_value, (set, list)) else [former_value]
+
+                # Cache invalidation (because of possible reverse properties)
+                value = attr.get(self)
+                resources_to_invalidate = set(value) if isinstance(value, (set, list)) else {value}
+                resources_to_invalidate.update(former_value)
+                for r in resources_to_invalidate:
+                    if r is not None:
+                        self._store.resource_cache.remove_resource_from_id(r)
+
+                objects_to_delete += self._filter_objects_to_delete(former_value)
+
+        # Update literal values
+        self.store.save(self, attributes, self._former_types)
+
+        # Delete the objects
+        for obj in objects_to_delete:
+            obj.delete()
+
+        # Clears former values
+        self._former_types = None
+        for attr in attributes:
+            attr.delete_former_value(self)
+
+        return self
+
+    def delete(self):
+        attributes = self._extract_attribute_list()
+        for attr in attributes:
+            # Delete blank nodes recursively
+            if attr.om_property.type == OBJECT_PROPERTY:
+                value = getattr(self, attr.name)
+                if value is not None:
+                    objs = value if isinstance(value, (list, set, GeneratorType)) else [value]
+                    for obj in objs:
+                        if should_delete_resource(obj):
+                            self._logger.debug(u"%s deleted with %s" % (obj.id, self._id))
+                            obj.delete()
+                        else:
+                            self._logger.debug(u"%s not deleted with %s" % (obj.id, self._id))
+                            # Cache invalidation (because of possible reverse properties)
+                            self._store.resource_cache.remove_resource(obj)
+
+            setattr(self, attr.name, None)
+
+        #Types
+        self._change_types(set())
+        self._store.delete(self, attributes, self._former_types)
+
+        # Clears former values
+        for attr in attributes:
+            attr.delete_former_value(self)
+
     def _filter_objects_to_delete(self, ids):
         return [self.store.get(id=id) for id in ids
                 if id is not None and is_blank_node(id)]
@@ -741,6 +790,31 @@ class ClientResource(Resource):
         if resource is None:
             return id
         return resource
+
+    def save(self, is_end_user=True):
+        """TODO: describe."""
+        attributes = self._extract_attribute_list()
+        for attr in attributes:
+            attr.check_validity(self, is_end_user)
+
+        store_resource = self.model_manager.convert_client_resource(self)
+        store_resource.save(is_end_user)
+
+        # Clears former values
+        for attr in attributes:
+            attr.delete_former_value(self)
+
+        return self
+
+    def delete(self):
+        """TODO: describe."""
+        store_resource = self.model_manager.convert_client_resource()
+        store_resource.delete()
+
+        # Clears values
+        for attr in self._extract_attribute_list():
+            setattr(self, attr.name, None)
+            attr.delete_former_value(self)
 
     def __getstate__(self):
         """Cannot be pickled."""

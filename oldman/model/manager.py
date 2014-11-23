@@ -219,7 +219,7 @@ class ModelManager(object):
 
 
 class ClientModelManager(ModelManager):
-    """TODO: complete """
+    """TODO: complete the doc """
 
     def __init__(self, resource_manager, **kwargs):
         ModelManager.__init__(self, **kwargs)
@@ -243,6 +243,10 @@ class ClientModelManager(ModelManager):
     def convert_store_resources(self, store_resources):
         """TODO: describe """
         return self._conversion_manager.convert_store_to_client_resources(store_resources, self._resource_manager)
+
+    def convert_client_resource(self, client_resource):
+        """TODO: describe """
+        return self._conversion_manager.convert_client_to_store_resource(client_resource)
 
 
 def _extract_class_iri(class_name, context):

@@ -57,7 +57,7 @@ class ModelConversionManager(object):
     def convert_client_to_store_resource(self, client_resource):
         # Same store between the client_resource and the store_resource
         store = client_resource.store
-        store_types = self._extract_types_from_store_resource(client_resource)
+        store_types = self._extract_types_from_client_resource(client_resource)
 
         #TODO: should we consider late IRI attributions?
         store_resource = StoreResource(store.model_manager, store, id=client_resource.id,
