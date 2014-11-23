@@ -28,13 +28,14 @@ class ModelConversionManager(object):
                 for r in store_resources]
 
     def convert_store_to_client_resource(self, store_resource, client_resource_manager):
-        client_types = self._extract_types_from_store_resource(store_resource)
+        client_former_types, client_new_types = self._extract_types_from_store_resource(store_resource)
 
         client_model_manager = client_resource_manager.model_manager
 
         # Mutable
         client_resource = ClientResource(client_resource_manager, client_model_manager, store_resource.store,
-                                         id=store_resource.id, types=client_types, is_new=False)
+                                         id=store_resource.id, types=client_new_types, is_new=store_resource.is_new,
+                                         former_types=client_former_types)
         store = store_resource.store
 
         # Client models from the most general to the more specific
@@ -57,11 +58,12 @@ class ModelConversionManager(object):
     def convert_client_to_store_resource(self, client_resource):
         # Same store between the client_resource and the store_resource
         store = client_resource.store
-        store_types = self._extract_types_from_client_resource(client_resource)
+        store_former_types, store_new_types = self._extract_types_from_client_resource(client_resource)
 
         #TODO: should we consider late IRI attributions?
         store_resource = StoreResource(store.model_manager, store, id=client_resource.id,
-                                       types=store_types, is_new=False)
+                                       types=store_new_types, is_new=client_resource.is_new,
+                                       former_types=store_former_types)
 
         # From the most general to the more specific
         store_models = list(store_resource.models)
@@ -81,23 +83,42 @@ class ModelConversionManager(object):
         return store_resource
 
     def _extract_types_from_store_resource(self, store_resource):
-        client_models = [self._store_to_client_models.get(store_model)
-                         for store_model in store_resource.models]
-        if None in client_models:
-            #TODO: See if relevant and find a better name
-            raise Exception("No client model corresponding to %s" % store_model.name)
+        # Non model types
+        new_types = set(store_resource.non_model_types)
+        former_types = set(store_resource.former_non_model_types)
 
-        return {m.class_iri for m in client_models}.union(store_resource.types)
+        for store_model in store_resource.models:
+            client_model = self._store_to_client_models.get(store_model)
+            if client_model is None:
+                #TODO: See if relevant and find a better name
+                raise Exception("No client model corresponding to %s" % store_model.name)
+
+            client_model_type = client_model.class_iri
+            if store_model.class_iri in store_resource.former_types:
+                former_types.add(client_model_type)
+            new_types.add(client_model_type)
+
+        return former_types, new_types
 
     def _extract_types_from_client_resource(self, client_resource):
-        store = client_resource.store
-        store_models = [self._client_to_store_models.get((client_model, store))
-                        for client_model in client_resource.models]
-        if None in store_models:
-            #TODO: See if relevant and find a better name
-            raise Exception("No store model corresponding to %s" % client_model.name)
+        # Non model types
+        new_types = set(client_resource.non_model_types)
+        former_types = set(client_resource.former_non_model_types)
 
-        return {m.class_iri for m in store_models}.union(client_resource.types)
+        # Types corresponding to models
+        store = client_resource.store
+        for client_model in client_resource.models:
+            store_model = self._client_to_store_models.get((client_model, store))
+            if store_model is None:
+                #TODO: See if relevant and find a better name
+                raise Exception("No store model corresponding to %s" % client_model.name)
+
+            store_model_type = store_model.class_iri
+            if client_model.class_iri in client_resource.former_types:
+                former_types.add(store_model_type)
+            new_types.add(store_model_type)
+
+        return former_types, new_types
 
 
 class ModelConverter(object):

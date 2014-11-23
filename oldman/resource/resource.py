@@ -85,17 +85,21 @@ class Resource(object):
     """
 
     _special_attribute_names = ["_models", "_id", "_types", "_is_blank_node", "_model_manager",
-                                "_store", "_former_types", "_logger", "_resource_manager"]
-    _pickle_attribute_names = ["_id", '_types']
+                                "_store", "_former_types", "_logger", "_resource_manager", "_is_new"]
+    _pickle_attribute_names = ["_id", '_types', '_is_new']
 
     def __init__(self, model_manager, data_store, id=None, types=None, hashless_iri=None, collection_iri=None,
-                 is_new=True, **kwargs):
+                 is_new=True, former_types=None, **kwargs):
         """Inits but does not save it (in the `data_graph`)."""
         self._models, self._types = model_manager.find_models_and_types(types)
-        self._former_types = set(self._types) if not is_new else set()
+        if former_types is not None:
+            self._former_types = set(former_types)
+        else:
+            self._former_types = set(self._types) if not is_new else set()
         main_model = self._models[0]
         self._model_manager = model_manager
         self._store = data_store
+        self._is_new = is_new
 
         if hashless_iri is not None and collection_iri is not None:
             raise OMUserError(u"Hashless_iri (%s) and collection_iri (%s) cannot be given in the same time."
@@ -109,6 +113,7 @@ class Resource(object):
         else:
             self._id = main_model.generate_iri(hashless_iri=hashless_iri,
                                                collection_iri=collection_iri)
+
         self._init_non_persistent_attributes(self._id)
 
         for k, v in kwargs.iteritems():
@@ -162,6 +167,33 @@ class Resource(object):
     def store(self):
         """TODO: describe """
         return self._store
+
+    @property
+    def is_new(self):
+        """True if the resource has never been saved."""
+        return self._is_new
+
+    @property
+    def former_types(self):
+        """Not for end-users"""
+        return list(self._former_types)
+
+    @property
+    def non_model_types(self):
+        """TODO: describe """
+        return set(self._types).difference({m.class_iri for m in self._models})
+
+    @property
+    def former_non_model_types(self):
+        """TODO: describe """
+        if len(self._former_types) == 0:
+            return {}
+        possible_non_model_types = set(self._former_types).difference({m.class_iri
+                                                                       for m in self._models})
+        if len(possible_non_model_types) == 0:
+            return {}
+        corresponding_models, _ = self._model_manager.find_models_and_types(possible_non_model_types)
+        return possible_non_model_types.difference({m.class_iri for m in corresponding_models})
 
     def is_valid(self):
         """Tests if the resource is valid.
@@ -245,6 +277,7 @@ class Resource(object):
             operation = model.get_operation_by_name(name)
             if operation is not None:
                 return partial(operation, self)
+
             raise AttributeError("%s has no attribute %s" % (self, name))
 
     def __setattr__(self, name, value):
@@ -300,48 +333,7 @@ class Resource(object):
                              See :func:`~oldman.attribute.OMAttribute.check_validity` for further details.
         :return: The :class:`~oldman.resource.Resource` object itself.
         """
-        # Checks
-        attributes = self._extract_attribute_list()
-        for attr in attributes:
-            attr.check_validity(self, is_end_user)
-
-        # Find objects to delete
-        objects_to_delete = []
-        for attr in attributes:
-            if not attr.has_new_value(self):
-                continue
-
-            # Some former objects may be deleted
-            if attr.om_property.type == OBJECT_PROPERTY:
-                former_value = attr.get_former_value(self)
-
-                if isinstance(former_value, dict):
-                    raise NotImplementedError("Object dicts are not yet supported.")
-                former_value = former_value if isinstance(former_value, (set, list)) else [former_value]
-
-                # Cache invalidation (because of possible reverse properties)
-                value = attr.get(self)
-                resources_to_invalidate = set(value) if isinstance(value, (set, list)) else {value}
-                resources_to_invalidate.update(former_value)
-                for r in resources_to_invalidate:
-                    if r is not None:
-                        self._store.resource_cache.remove_resource_from_id(r)
-
-                objects_to_delete += self._filter_objects_to_delete(former_value)
-
-        # Update literal values
-        self._save(self, attributes, self._former_types)
-
-        # Delete the objects
-        for obj in objects_to_delete:
-            obj.delete()
-
-        # Clears former values
-        self._former_types = None
-        for attr in attributes:
-            attr.delete_former_value(self)
-
-        return self
+        raise NotImplementedError("Have to be implemented by sub-classes")
 
     def delete(self):
         """Removes the resource from the `data_graph` and the `resource_cache`.
@@ -589,8 +581,6 @@ class Resource(object):
             self._change_types(types)
 
     def _change_types(self, new_types):
-        if self._former_types is None:
-            self._former_types = set(self._types)
         self._types = new_types
 
     def _get_om_attribute(self, name):
@@ -655,6 +645,7 @@ class StoreResource(Resource):
                 raise OMInternalError(u"Required field %s is missing in the cached state" % name)
 
         self._id = state["_id"]
+        self._is_new = state["_is_new"]
         self._init_non_persistent_attributes(self._id)
 
         # Store
@@ -668,7 +659,7 @@ class StoreResource(Resource):
 
         # Attributes (Python attributes or OMAttributes)
         for name, value in state.iteritems():
-            if name in ["store_name", "_id", "_types"]:
+            if name in ["store_name", "_id", "_types", "_is_new"]:
                 continue
             elif name in self._special_attribute_names:
                 setattr(self, name, value)
@@ -756,6 +747,7 @@ class StoreResource(Resource):
         # Clears former values
         for attr in attributes:
             attr.delete_former_value(self)
+        self._is_new = False
 
     def _filter_objects_to_delete(self, ids):
         return [self.store.get(id=id) for id in ids
@@ -806,8 +798,11 @@ class ClientResource(Resource):
         store_resource.save(is_end_user)
 
         # Clears former values
+        self._former_types = self._types
+        # Clears former values
         for attr in attributes:
             attr.delete_former_value(self)
+        self._is_new = False
 
         return self
 
@@ -816,10 +811,13 @@ class ClientResource(Resource):
         store_resource = self.model_manager.convert_client_resource(self)
         store_resource.delete()
 
+        # Clears former values
+        self._former_types = self._types
         # Clears values
         for attr in self._extract_attribute_list():
             setattr(self, attr.name, None)
             attr.delete_former_value(self)
+        self._is_new = False
 
     def __getstate__(self):
         """Cannot be pickled."""

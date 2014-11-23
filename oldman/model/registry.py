@@ -150,7 +150,10 @@ class ModelRegistry(object):
                 leaf_models.append(model)
 
         if len(leaf_models) == 0:
-            return [self._models_by_names[self._default_model_name]]
+                default_model = self._models_by_names.get(self._default_model_name)
+                if default_model:
+                    return [default_model]
+                return []
 
         return self._sort_leaf_models(leaf_models)
 
