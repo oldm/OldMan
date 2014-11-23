@@ -4,6 +4,7 @@ import requests
 from rdflib import Graph
 
 from .datastore import DataStore
+from oldman.model.manager import ModelManager
 from oldman.rest.crud import JSON_TYPES
 
 
@@ -12,8 +13,8 @@ class HttpDataStore(DataStore):
         Read only. No search feature.
     """
 
-    def __init__(self, cache_region=None, session=None):
-        DataStore.__init__(self, cache_region)
+    def __init__(self, schema_graph=None, cache_region=None, session=None):
+        DataStore.__init__(self, ModelManager(schema_graph=schema_graph), cache_region)
         self._session = session if session is not None else requests.session()
         self._logger = getLogger(__name__)
 

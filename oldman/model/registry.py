@@ -27,6 +27,10 @@ class ModelRegistry(object):
         return self._models_by_names.keys()
 
     @property
+    def models(self):
+        return self._models_by_names.values()
+
+    @property
     def non_default_models(self):
         """  Non-default models."""
         return [m for m in self._models_by_names.values() if m.name != self._default_model_name]
@@ -34,6 +38,10 @@ class ModelRegistry(object):
     def has_specific_models(self):
         """:return: `True` if contains other models than the default one."""
         return len(self._models_by_names) > int(self._default_model_name is not None)
+
+    @property
+    def default_model(self):
+        return self._models_by_names.get(self._default_model_name)
 
     def register(self, model, is_default=False):
         """Registers a :class:`~oldman.model.Model` object.
@@ -87,7 +95,6 @@ class ModelRegistry(object):
         if model is None:
             model = self._models_by_names.get(class_name_or_iri)
         return model
-
 
     def find_models_and_types(self, type_set):
         """Finds the leaf models from a set of class IRIs and orders them.

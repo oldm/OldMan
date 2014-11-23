@@ -87,9 +87,12 @@ context = {
     }
 }
 
-data_store = SPARQLDataStore(data_graph)
-manager = ClientResourceManager(schema_graph, data_store, manager_name="pt")
-lc_model = manager.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
+data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph)
+data_store.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
+
+client_manager = ClientResourceManager(data_store)
+client_manager.use_all_store_models()
+lc_model = client_manager.get_model("LocalClass")
 
 
 class PropertyTest(TestCase):
@@ -100,7 +103,7 @@ class PropertyTest(TestCase):
 
     def test_read_and_write_only(self):
         with self.assertRaises(OMPropertyDefError):
-            manager.create_model("BadClass", context, data_graph)
+            data_store.create_model("BadClass", context, data_graph)
 
     def test_write_only(self):
         obj = lc_model.new()

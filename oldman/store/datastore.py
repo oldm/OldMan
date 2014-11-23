@@ -8,6 +8,9 @@ from oldman.exception import OMObjectNotFoundError, OMClassInstanceError
 from oldman.resource.resource import Resource, StoreResource
 
 
+DEFAULT_MODEL_PREFIX = "Default_"
+
+
 class DataStore(object):
     """A :class:`~oldman.store.datastore.DataStore` object manages CRUD operations on
     :class:`~oldman.resource.Resource` objects.
@@ -23,17 +26,25 @@ class DataStore(object):
     :param model_manager: TODO: describe!!!
     :param cache_region: :class:`dogpile.cache.region.CacheRegion` object.
                          This object must already be configured.
-                         Defaults to None (no cache).
+                         Defaults to `None` (no cache).
                          See :class:`~oldman.store.cache.ResourceCache` for further details.
+    :param accept_iri_generation_configuration: If False, the IRI generator cannot be configured
+                         by the user: it is imposed by the data store. Default to `False`.
     """
     _stores = {}
 
-    def __init__(self, model_manager, cache_region=None):
+    def __init__(self, model_manager, cache_region=None, accept_iri_generation_configuration=True):
         self._model_manager = model_manager
         self._logger = logging.getLogger(__name__)
         self._resource_cache = ResourceCache(cache_region)
-        self._name = uuid4()
+        self._name = str(uuid4())
         self._stores[self._name] = self
+        self._accept_iri_generation_configuration = accept_iri_generation_configuration
+
+        if not self._model_manager.has_default_model():
+            self._model_manager.create_model(DEFAULT_MODEL_PREFIX + self._name, {u"@context": {}}, self, untyped=True,
+                                             iri_prefix=u"http://localhost/.well-known/genid/%s/" % self._name,
+                                             is_default=True)
 
     @property
     def model_manager(self):
@@ -219,6 +230,14 @@ class DataStore(object):
     def create_model(self, class_name_or_iri, context, iri_generator=None, iri_prefix=None,
                      iri_fragment=None, incremental_iri=False):
         """TODO: comment. Convenience function """
+        if not self._accept_iri_generation_configuration:
+            if iri_generator or iri_prefix or iri_fragment or incremental_iri:
+                #TODO: find a better exception
+                raise Exception("The generator is imposed by the datastore, it cannot"
+                                "be configured by the user.")
+            else:
+                iri_generator = self._create_iri_generator(class_name_or_iri)
+
         self._model_manager.create_model(class_name_or_iri, context, self, iri_generator=iri_generator,
                                          iri_prefix=iri_prefix, iri_fragment=iri_fragment,
                                          incremental_iri=incremental_iri)
@@ -256,3 +275,7 @@ class DataStore(object):
             self._logger.warn(u"Multiple resources have the same base_uri: %s\n. "
                               u"The first one is selected." % resources)
         return resources[0]
+
+    def _create_iri_generator(self, class_name_or_iri):
+        raise UnsupportedDataStorageFeatureException("This datastore %s does create IRI generators."
+                                                     % self.__class__.__name__)

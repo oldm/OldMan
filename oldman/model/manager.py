@@ -16,9 +16,6 @@ from oldman.model.registry import ModelRegistry
 from oldman.model.ancestry import ClassAncestry
 
 
-DEFAULT_MODEL_NAME = "Thing"
-
-
 class ModelManager(object):
     """
     TODO: update this documentation
@@ -56,11 +53,6 @@ class ModelManager(object):
 
         self._include_reversed_attributes = False
 
-        # Registered with the "None" key
-        #TODO: in which store??
-        #self.create_model(DEFAULT_MODEL_NAME, {u"@context": {}}, untyped=True,
-        #                  iri_prefix=u"http://localhost/.well-known/genid/default/", is_default=True)
-
         #TODO: examine their relevance
         if declare_default_operation_functions:
             self.declare_operation_function(append_to_hydra_collection, HYDRA_COLLECTION_IRI, HTTP_POST)
@@ -80,9 +72,17 @@ class ModelManager(object):
         return self._include_reversed_attributes
 
     @property
+    def models(self):
+        """TODO: describe."""
+        return self._registry.models
+
+    @property
     def non_default_models(self):
         """TODO: describe."""
         return self._registry.non_default_models
+
+    def has_default_model(self):
+        return self._registry.default_model is not None
 
     def declare_method(self, method, name, class_iri):
         """Attaches a method to the :class:`~oldman.resource.Resource` objects that are instances of a given RDFS class.
@@ -134,6 +134,8 @@ class ModelManager(object):
     def create_model(self, class_name_or_iri, context, data_store, iri_prefix=None, iri_fragment=None,
                      iri_generator=None, untyped=False, incremental_iri=False, is_default=False):
         """Creates a :class:`~oldman.model.Model` object.
+
+        TODO: remove data_store from the constructor!
 
         To create it, they are three elements to consider:
 

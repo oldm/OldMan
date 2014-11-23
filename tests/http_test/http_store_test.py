@@ -9,10 +9,13 @@ schema_graph.namespace_manager.bind("hydra", "http://www.w3.org/ns/hydra/core#")
 
 context_uri = path.join(directory, 'api_documentation.json')
 
-data_store = HttpDataStore()
-manager = ClientResourceManager(schema_graph, data_store)
+data_store = HttpDataStore(schema_graph=schema_graph)
+data_store.create_model('ApiDocumentation', context_uri)
 
-doc_model = manager.create_model('ApiDocumentation', context_uri)
+manager = ClientResourceManager(data_store)
+manager.use_all_store_models()
+
+doc_model = manager.get_model('ApiDocumentation')
 
 
 class HttpStoreTest(TestCase):

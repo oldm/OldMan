@@ -208,9 +208,13 @@ class Resource(object):
 
     def get_lightly(self, attribute_name):
         """TODO: describe """
+        return self.get_attribute(attribute_name).get_lightly(self)
+
+    def get_attribute(self, attribute_name):
+        """Not for the end-user!"""
         for model in self._models:
             if attribute_name in model.om_attributes:
-                return model.access_attribute(attribute_name).get_lightly(self)
+                return model.access_attribute(attribute_name)
         raise AttributeError("%s has no regular attribute %s" % (self, attribute_name))
 
     def __getattr__(self, name):

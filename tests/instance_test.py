@@ -85,8 +85,8 @@ def disclaim2(self):
     return new_disclaim
 
 
-data_store = SPARQLDataStore(data_graph)
-manager = ClientResourceManager(schema_graph, data_store, manager_name="it")
+data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph)
+manager = ClientResourceManager(data_store)
 # Methods
 manager.declare_method(square_value, "square_value", EXAMPLE + "GrandParentClass")
 manager.declare_method(print_new_value, "print_new_value", EXAMPLE + "ChildClass")

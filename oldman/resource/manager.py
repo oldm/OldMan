@@ -97,7 +97,7 @@ class ClientResourceManager:
     def use_all_store_models(self):
         """TODO: check possible conflicts with local models."""
         for store in self._store_selector.data_stores:
-            for store_model in store.model_manager.non_default_models:
+            for store_model in store.model_manager.models:
                 self._model_manager.import_model(store_model, store)
 
     def get_model(self, class_name_or_iri):
