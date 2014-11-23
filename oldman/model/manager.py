@@ -1,7 +1,6 @@
 import json
 import logging
 from urlparse import urlparse
-from uuid import uuid4
 
 from rdflib import Graph
 from oldman.model.converter import ModelConversionManager, EquivalentModelConverter
@@ -44,7 +43,6 @@ class ModelManager(object):
     :param oper_extractor: TODO: describe.
     :param declare_default_operation_functions: TODO: describe.
     """
-    _managers = {}
 
     def __init__(self, schema_graph=None, attr_extractor=None, oper_extractor=None,
                  declare_default_operation_functions=True):
@@ -55,8 +53,6 @@ class ModelManager(object):
         self._operation_functions = {}
         self._registry = ModelRegistry()
         self._logger = logging.getLogger(__name__)
-        self._name = uuid4()
-        self._managers[self._name] = self
 
         self._include_reversed_attributes = False
 
@@ -87,15 +83,6 @@ class ModelManager(object):
     def non_default_models(self):
         """TODO: describe."""
         return self._registry.non_default_models
-
-    @classmethod
-    def get_manager(cls, name):
-        """Gets a :class:`~oldman.resource.manager.ModelManager` object by its name.
-
-        :param name: manager name.
-        :return: A :class:`~oldman.resource.manager.ModelManager` object.
-        """
-        return cls._managers.get(name)
 
     def declare_method(self, method, name, class_iri):
         """Attaches a method to the :class:`~oldman.resource.Resource` objects that are instances of a given RDFS class.

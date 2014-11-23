@@ -1,4 +1,5 @@
 import logging
+from uuid import uuid4
 from oldman.model.manager import ModelManager
 
 from oldman.store.cache import ResourceCache
@@ -25,11 +26,14 @@ class DataStore(object):
                          Defaults to None (no cache).
                          See :class:`~oldman.store.cache.ResourceCache` for further details.
     """
+    _stores = {}
 
     def __init__(self, model_manager, cache_region=None):
         self._model_manager = model_manager
         self._logger = logging.getLogger(__name__)
         self._resource_cache = ResourceCache(cache_region)
+        self._name = uuid4()
+        self._stores[self._name] = self
 
     @property
     def model_manager(self):
@@ -46,6 +50,20 @@ class DataStore(object):
     def resource_cache(self):
         """:class:`~oldman.resource.cache.ResourceCache` object."""
         return self._resource_cache
+
+    @classmethod
+    def get_store(cls, name):
+        """Gets a :class:`~oldman.store.datastore.DataStore` object by its name.
+
+        :param name: store name.
+        :return: A :class:`~oldman.resource.manager.ModelManager` object.
+        """
+        return cls._stores.get(name)
+
+    @property
+    def name(self):
+        """Randomly generated name. Useful for serializing resources."""
+        return self._name
 
     def get(self, id=None, types=None, hashless_iri=None, eager_with_reversed_attributes=True, **kwargs):
         """Gets the first :class:`~oldman.resource.Resource` object matching the given criteria.

@@ -264,58 +264,6 @@ class Resource(object):
         if not found:
             raise AttributeError("%s has not attribute %s" % (self, name))
 
-    def __getstate__(self):
-        """Pickles this resource."""
-        state = {name: getattr(self, name) for name in self._pickle_attribute_names}
-        state["manager_name"] = self._model_manager.name
-
-        # Reversed order so that important models can overwrite values
-        reversed_models = self._models
-        reversed_models.reverse()
-        for model in reversed_models:
-            for name, attr in model.om_attributes.iteritems():
-                value = attr.get_lightly(self)
-                if isinstance(value, GeneratorType):
-                    if attr.container == "@list":
-                        value = list(value)
-                    else:
-                        value = set(value)
-                if value is not None:
-                    state[name] = value
-        return state
-
-    def __setstate__(self, state):
-        """Unpickles this resource from its serialized `state`."""
-        required_fields = self._pickle_attribute_names + ["manager_name"]
-        for name in required_fields:
-            if name not in state:
-                #TODO: find a better exception (due to the cache)
-                raise OMInternalError(u"Required field %s is missing in the cached state" % name)
-
-        self._id = state["_id"]
-        self._init_non_persistent_attributes(self._id)
-
-        # Manager
-        from oldman.model.manager import ModelManager
-        self._model_manager = ModelManager.get_manager(state["manager_name"])
-
-        # Models and types
-        self._models, self._types = self._model_manager.find_models_and_types(state["_types"])
-        self._former_types = set(self._types)
-
-        # Attributes (Python attributes or OMAttributes)
-        for name, value in state.iteritems():
-            if name in ["manager_name", "_id", "_types"]:
-                continue
-            elif name in self._special_attribute_names:
-                setattr(self, name, value)
-            # OMAttributes
-            else:
-                attribute = self._get_om_attribute(name)
-                attribute.set(self, value)
-                # Clears former values (allows modification)
-                attribute.delete_former_value(self)
-
     def add_type(self, additional_type):
         """Declares that the resource is instance of another RDFS class.
 
@@ -674,6 +622,59 @@ class StoreResource(Resource):
         instance.update_from_graph(subgraph, is_end_user=True, save=False, initial=True)
         return instance
 
+    def __getstate__(self):
+        """Pickles this resource."""
+        state = {name: getattr(self, name) for name in self._pickle_attribute_names}
+        state["store_name"] = self._store.name
+
+        # Reversed order so that important models can overwrite values
+        reversed_models = self._models
+        reversed_models.reverse()
+        for model in reversed_models:
+            for name, attr in model.om_attributes.iteritems():
+                value = attr.get_lightly(self)
+                if isinstance(value, GeneratorType):
+                    if attr.container == "@list":
+                        value = list(value)
+                    else:
+                        value = set(value)
+                if value is not None:
+                    state[name] = value
+        return state
+
+    def __setstate__(self, state):
+        """Unpickles this resource from its serialized `state`."""
+        required_fields = self._pickle_attribute_names + ["store_name"]
+        for name in required_fields:
+            if name not in state:
+                #TODO: find a better exception (due to the cache)
+                raise OMInternalError(u"Required field %s is missing in the cached state" % name)
+
+        self._id = state["_id"]
+        self._init_non_persistent_attributes(self._id)
+
+        # Store
+        from oldman.store.datastore import DataStore
+        self._store = DataStore.get_store(state["store_name"])
+        self._model_manager = self._store.model_manager
+
+        # Models and types
+        self._models, self._types = self._model_manager.find_models_and_types(state["_types"])
+        self._former_types = set(self._types)
+
+        # Attributes (Python attributes or OMAttributes)
+        for name, value in state.iteritems():
+            if name in ["store_name", "_id", "_types"]:
+                continue
+            elif name in self._special_attribute_names:
+                setattr(self, name, value)
+            # OMAttributes
+            else:
+                attribute = self._get_om_attribute(name)
+                attribute.set(self, value)
+                # Clears former values (allows modification)
+                attribute.delete_former_value(self)
+
     def get_related_resource(self, id):
         """TODO: describe """
         resource = self.store.get(id=id)
@@ -808,7 +809,7 @@ class ClientResource(Resource):
 
     def delete(self):
         """TODO: describe."""
-        store_resource = self.model_manager.convert_client_resource()
+        store_resource = self.model_manager.convert_client_resource(self)
         store_resource.delete()
 
         # Clears values
