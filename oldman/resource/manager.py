@@ -3,6 +3,9 @@ from oldman.store.selector import DataStoreSelector
 from oldman.model.manager import ClientModelManager
 
 
+DEFAULT_MODEL_NAME = "Default_Client"
+
+
 class ClientResourceManager:
     """
     TODO: describe
@@ -14,6 +17,11 @@ class ClientResourceManager:
                                                  oper_extractor=oper_extractor,
                                                  declare_default_operation_functions=declare_default_operation_functions)
         self._store_selector = DataStoreSelector(data_stores)
+
+        # Default model
+        self._model_manager.create_model(DEFAULT_MODEL_NAME, {u"@context": {}}, self, untyped=True,
+                                         iri_prefix=u"http://localhost/.well-known/genid/client/",
+                                         is_default=True)
 
     @property
     def model_manager(self):
@@ -98,7 +106,9 @@ class ClientResourceManager:
         """TODO: check possible conflicts with local models."""
         for store in self._store_selector.data_stores:
             for store_model in store.model_manager.models:
-                self._model_manager.import_model(store_model, store)
+                is_default = (store_model.class_iri is None)
+                self._model_manager.import_model(store_model, store,
+                                                 is_default=is_default)
 
     def get_model(self, class_name_or_iri):
         return self._model_manager.get_model(class_name_or_iri)

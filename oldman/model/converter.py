@@ -96,7 +96,8 @@ class ModelConversionManager(object):
             client_model_type = client_model.class_iri
             if store_model.class_iri in store_resource.former_types:
                 former_types.add(client_model_type)
-            new_types.add(client_model_type)
+            if client_model_type is not None:
+                new_types.add(client_model_type)
 
         return former_types, new_types
 

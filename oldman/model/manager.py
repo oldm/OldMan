@@ -215,19 +215,22 @@ class ClientModelManager(ModelManager):
         self._resource_manager = resource_manager
         self._conversion_manager = ModelConversionManager()
 
-    # @property
-    # def resource_manager(self):
-    #     return self._resource_manager
+    @property
+    def resource_manager(self):
+        return self._resource_manager
 
     def import_model(self, store_model, data_store, is_default=False):
         """TODO: describe """
-        client_model = ClientModel.copy_store_model(self._resource_manager, store_model)
-        # Hierarchy registration
-        self._registry.register(client_model, is_default=is_default)
+        if is_default:
+            # Default model
+            client_model = self.get_model(None)
+        else:
+            client_model = ClientModel.copy_store_model(self._resource_manager, store_model)
+            # Hierarchy registration
+            self._registry.register(client_model, is_default=False)
         # Converter
         converter = EquivalentModelConverter(client_model, store_model)
-        self._conversion_manager.register_model_converter(client_model, store_model, data_store,
-                                                          converter)
+        self._conversion_manager.register_model_converter(client_model, store_model, data_store, converter)
 
     def convert_store_resources(self, store_resources):
         """TODO: describe """
