@@ -51,7 +51,7 @@ class SPARQLDataStore(DataStore):
 
     def __init__(self, data_graph, schema_graph=None, model_manager=None, union_graph=None, cache_region=None):
         manager = model_manager if model_manager is not None else ModelManager(schema_graph)
-        DataStore.__init__(self, manager, cache_region)
+        DataStore.__init__(self, manager, cache_region, support_sparql=True)
         self._logger = logging.getLogger(__name__)
         self._data_graph = data_graph
         self._union_graph = union_graph if union_graph is not None else data_graph

@@ -33,13 +33,15 @@ class DataStore(object):
     """
     _stores = {}
 
-    def __init__(self, model_manager, cache_region=None, accept_iri_generation_configuration=True):
+    def __init__(self, model_manager, cache_region=None, accept_iri_generation_configuration=True,
+                 support_sparql=False):
         self._model_manager = model_manager
         self._logger = logging.getLogger(__name__)
         self._resource_cache = ResourceCache(cache_region)
         self._name = str(uuid4())
         self._stores[self._name] = self
         self._accept_iri_generation_configuration = accept_iri_generation_configuration
+        self._support_sparql=support_sparql
 
         if not self._model_manager.has_default_model():
             self._model_manager.create_model(DEFAULT_MODEL_PREFIX + self._name, {u"@context": {}}, self, untyped=True,
@@ -75,6 +77,14 @@ class DataStore(object):
     def name(self):
         """Randomly generated name. Useful for serializing resources."""
         return self._name
+
+    def support_sparql_filtering(self):
+        """Returns `True` if the datastore supports SPARQL queries (no update).
+
+        Note that in such a case, the :func:`~oldman.store.datastore.DataStore.sparql_filter` method is expected
+        to be implemented.
+        """
+        return self._support_sparql
 
     def get(self, id=None, types=None, hashless_iri=None, eager_with_reversed_attributes=True, **kwargs):
         """Gets the first :class:`~oldman.resource.Resource` object matching the given criteria.
@@ -163,7 +173,7 @@ class DataStore(object):
         :return: A generator of :class:`~oldman.resource.Resource` objects.
 """
         raise UnsupportedDataStorageFeatureException("This datastore %s does not support the SPARQL protocol."
-                                            % self.__class__.__name__)
+                                                     % self.__class__.__name__)
 
     def save(self, resource, attributes, former_types):
         """End-users should not call it directly. Call :func:`oldman.Resource.save()` instead.

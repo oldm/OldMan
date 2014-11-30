@@ -24,3 +24,7 @@ class DataStoreSelector:
     def select_store(self, **kwargs):
         """TODO: what is the correct behavior when multiple stores are returned? """
         return self.select_stores(**kwargs)[0]
+
+    def select_sparql_stores(self, query):
+        #TODO: look at the query for filtering
+        return filter(lambda s: s.support_sparql_filtering(), self._data_stores)
