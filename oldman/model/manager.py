@@ -46,7 +46,6 @@ class ModelManager(object):
         self._attr_extractor = attr_extractor if attr_extractor is not None else OMAttributeExtractor()
         self._operation_extractor = oper_extractor if oper_extractor is not None else HydraOperationExtractor()
         self._schema_graph = schema_graph
-        self._methods = {}
         self._operation_functions = {}
         self._registry = ModelRegistry()
         self._logger = logging.getLogger(__name__)
@@ -84,34 +83,6 @@ class ModelManager(object):
     def has_default_model(self):
         return self._registry.default_model is not None
 
-    def declare_method(self, method, name, class_iri):
-        """Attaches a method to the :class:`~oldman.resource.Resource` objects that are instances of a given RDFS class.
-
-        Like in Object-Oriented Programming, this method can be overwritten by attaching a homonymous
-        method to a class that has a higher inheritance priority (such as a sub-class).
-
-        To benefit from this method (or an overwritten one), :class:`~oldman.resource.Resource` objects
-        must be associated to a :class:`~oldman.model.Model` that corresponds to the RDFS class or to one of its
-        subclasses.
-
-        This method can only be used before the creation of any model (except the default one).
-
-        :param method: Python function that takes as first argument a :class:`~oldman.resource.Resource` object.
-        :param name: Name assigned to this method.
-        :param class_iri: Targeted RDFS class. If not overwritten, all the instances
-                          (:class:`~oldman.resource.Resource` objects) should inherit this method.
-
-        """
-        if self._registry.has_specific_models():
-            raise OMExpiredMethodDeclarationTimeSlotError(u"Method declaration cannot occur after model creation.")
-
-        if class_iri in self._methods:
-            if name in self._methods[class_iri]:
-                self._logger.warn(u"Method %s of %s is overloaded." % (name, class_iri))
-            self._methods[class_iri][name] = method
-        else:
-            self._methods[class_iri] = {name: method}
-
     def declare_operation_function(self, func, class_iri, http_method):
         """
         TODO: comment
@@ -130,6 +101,10 @@ class ModelManager(object):
     def find_models_and_types(self, type_set):
         """See :func:`oldman.resource.registry.ModelRegistry.find_models_and_types`."""
         return self._registry.find_models_and_types(type_set)
+
+    def find_descendant_models(self, top_ancestor_name_or_iri):
+        """TODO: explain. Includes the top ancestor. """
+        return self._registry.find_descendant_models(top_ancestor_name_or_iri)
 
     def create_model(self, class_name_or_iri, context, data_store, iri_prefix=None, iri_fragment=None,
                      iri_generator=None, untyped=False, incremental_iri=False, is_default=False):
@@ -183,15 +158,11 @@ class ModelManager(object):
         else:
             id_generator = BlankNodeIriGenerator()
 
-        methods = {}
-        for m_dict in [self._methods.get(t, {}) for t in ancestry.top_down]:
-            methods.update(m_dict)
-
         operations = self._operation_extractor.extract(ancestry, self._schema_graph,
                                                        self._operation_functions)
 
         model = Model(class_name_or_iri, class_iri, ancestry.bottom_up, context, om_attributes,
-                      id_generator, methods=methods, operations=operations)
+                      id_generator, operations=operations)
         self._add_model(model, is_default=is_default)
 
         # Reversed attributes awareness

@@ -27,6 +27,29 @@ class ClientResourceManager:
     def model_manager(self):
         return self._model_manager
 
+    def declare_method(self, method, name, class_iri):
+        """Attaches a method to the :class:`~oldman.resource.Resource` objects that are instances of a given RDFS class.
+
+        Like in Object-Oriented Programming, this method can be overwritten by attaching a homonymous
+        method to a class that has a higher inheritance priority (such as a sub-class).
+
+        To benefit from this method (or an overwritten one), :class:`~oldman.resource.Resource` objects
+        must be associated to a :class:`~oldman.model.Model` that corresponds to the RDFS class or to one of its
+        subclasses.
+
+        :param method: Python function that takes as first argument a :class:`~oldman.resource.Resource` object.
+        :param name: Name assigned to this method.
+        :param class_iri: Targeted RDFS class. If not overwritten, all the instances
+                          (:class:`~oldman.resource.Resource` objects) should inherit this method.
+
+        """
+
+        models = self._model_manager.find_descendant_models(class_iri)
+        for model in models:
+            if model.class_iri is None:
+                continue
+            model.declare_method(method, name, class_iri)
+
     def new(self, id=None, types=None, hashless_iri=None, collection_iri=None, **kwargs):
         """Creates a new :class:`~oldman.resource.Resource` object **without saving it** in the `data_store`.
 

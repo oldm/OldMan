@@ -96,6 +96,14 @@ class ModelRegistry(object):
             model = self._models_by_names.get(class_name_or_iri)
         return model
 
+    def find_descendant_models(self, top_ancestor_name_or_iri):
+        """TODO: explain. Includes the top ancestor. """
+        descendant_iris = set(self._model_descendants.get(top_ancestor_name_or_iri, []))
+        descendant_iris.add(top_ancestor_name_or_iri)
+
+        models = [self.get_model(class_iri) for class_iri in descendant_iris]
+        return filter(lambda x: x is not None, models)
+
     def find_models_and_types(self, type_set):
         """Finds the leaf models from a set of class IRIs and orders them.
         Also returns an ordered list of the RDFS class IRIs that

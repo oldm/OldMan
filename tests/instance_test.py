@@ -86,23 +86,27 @@ def disclaim2(self):
 
 
 data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph)
-manager = ClientResourceManager(data_store)
-# Methods
-manager.declare_method(square_value, "square_value", EXAMPLE + "GrandParentClass")
-manager.declare_method(print_new_value, "print_new_value", EXAMPLE + "ChildClass")
-# Method overloading
-manager.declare_method(disclaim1, "disclaim", EXAMPLE + "GrandParentClass")
-manager.declare_method(disclaim2, "disclaim", EXAMPLE + "ParentClass")
-
 # ChildClass is generated before its ancestors!!
 child_prefix = "http://localhost/children/"
 uri_fragment = "this"
+data_store.create_model("ChildClass", context, iri_prefix=child_prefix, iri_fragment=uri_fragment, incremental_iri=True)
+data_store.create_model("GrandParentClass", context, iri_prefix="http://localhost/ancestors/",
+                        iri_fragment=uri_fragment)
+data_store.create_model("ParentClass", context, iri_prefix="http://localhost/parents/")
 
-child_model = manager.create_model("ChildClass", context, iri_prefix=child_prefix, iri_fragment=uri_fragment,
-                                   incremental_iri=True)
-grand_parent_model = manager.create_model("GrandParentClass", context, iri_prefix="http://localhost/ancestors/",
-                                          iri_fragment=uri_fragment)
-parent_model = manager.create_model("ParentClass", context, iri_prefix="http://localhost/parents/")
+
+client_manager = ClientResourceManager(data_store)
+client_manager.use_all_store_models()
+# Methods
+client_manager.declare_method(square_value, "square_value", EXAMPLE + "GrandParentClass")
+client_manager.declare_method(print_new_value, "print_new_value", EXAMPLE + "ChildClass")
+# Method overloading
+client_manager.declare_method(disclaim1, "disclaim", EXAMPLE + "GrandParentClass")
+client_manager.declare_method(disclaim2, "disclaim", EXAMPLE + "ParentClass")
+
+child_model = client_manager.get_model("ChildClass")
+grand_parent_model = client_manager.get_model("GrandParentClass")
+parent_model = client_manager.get_model("ParentClass")
 
 
 class InstanceTest(TestCase):
@@ -241,17 +245,17 @@ class InstanceTest(TestCase):
         tom.new_value = tom_new_value
         tom.save()
 
-        tom = manager.get(id=tom_uri)
+        tom = client_manager.get(id=tom_uri)
         self.assertEquals(tom.new_value, tom_new_value)
         self.assertEquals(tom.disclaim(), new_disclaim)
         self.assertTrue(tom.is_instance_of(child_model))
 
-        jack = manager.get(id=jack_uri)
+        jack = client_manager.get(id=jack_uri)
         self.assertEquals(jack.mid_values, jack_mid_values)
         self.assertTrue(jack.is_instance_of(parent_model))
         self.assertFalse(jack.is_instance_of(child_model))
 
-        john = manager.get(id=john_uri)
+        john = client_manager.get(id=john_uri)
         self.assertTrue(john.is_instance_of(grand_parent_model))
         self.assertFalse(john.is_instance_of(parent_model))
         self.assertFalse(john.is_instance_of(child_model))

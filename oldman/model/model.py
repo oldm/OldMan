@@ -1,3 +1,4 @@
+import logging
 from oldman.exception import OMReservedAttributeNameError, OMAttributeAccessError
 
 
@@ -40,7 +41,7 @@ class Model(object):
     """
 
     def __init__(self, name, class_iri, ancestry_iris, context, om_attributes,
-                 id_generator, methods=None, operations=None):
+                 id_generator, operations=None):
         reserved_names = ["id", "hashless_iri", "_types", "types"]
         for field in reserved_names:
             if field in om_attributes:
@@ -51,12 +52,12 @@ class Model(object):
         self._om_attributes = om_attributes
         self._id_generator = id_generator
         self._class_types = ancestry_iris
-        self._methods = methods if methods is not None else {}
         self._operations = operations if operations is not None else {}
         self._operation_by_name = {op.name: op for op in operations.values()
                                    if op.name is not None}
 
         self._has_reversed_attributes = True in [a.reversed for a in self._om_attributes.values()]
+        self._logger = logging.getLogger(__name__)
 
     @property
     def name(self):
@@ -74,16 +75,14 @@ class Model(object):
         return list(self._class_types)
 
     @property
+    def methods(self):
+        """Models does not support methods by default."""
+        return {}
+
+    @property
     def om_attributes(self):
         """ `dict` of :class:`~oldman.attribute.OMAttribute` objects. Keys are their names."""
         return dict(self._om_attributes)
-
-    @property
-    def methods(self):
-        """`dict` of Python functions that takes as first argument a
-        :class:`~oldman.resource.Resource` object. Keys are the method names.
-        """
-        return dict(self._methods)
 
     @property
     def context(self):
@@ -163,14 +162,42 @@ class ClientModel(Model):
         """TODO: describe """
         return ClientModel(resource_manager, store_model.name, store_model.class_iri,
                            store_model.ancestry_iris, store_model.context, store_model.om_attributes,
-                           store_model._id_generator, methods=store_model.methods,
-                           operations=store_model._operations)
+                           store_model._id_generator, operations=store_model._operations)
 
     def __init__(self, resource_manager, name, class_iri, ancestry_iris, context, om_attributes,
-                 id_generator, methods=None, operations=None):
+                 id_generator, operations=None):
         Model.__init__(self, name, class_iri, ancestry_iris, context, om_attributes,
-                       id_generator, methods=methods, operations=operations)
+                       id_generator, operations=operations)
         self._resource_manager = resource_manager
+        # {method_name: ancestor_class_iri}
+        self._method_inheritance = {}
+        # {method_name: method}
+        self._methods = {}
+
+    @property
+    def methods(self):
+        """`dict` of Python functions that takes as first argument a
+        :class:`~oldman.resource.Resource` object. Keys are the method names.
+        """
+        return dict(self._methods)
+
+    def declare_method(self, method, name, ancestor_class_iri):
+        """TODO: describe """
+        if name in self._methods:
+            # Before overriding, compare the positions
+            previous_ancestor_iri = self._method_inheritance[name]
+            previous_ancestor_pos = self._class_types.index(previous_ancestor_iri)
+            new_ancestor_pos = self._class_types.index(ancestor_class_iri)
+
+            if new_ancestor_pos > previous_ancestor_pos:
+                # Too distant, cannot override
+                self._logger.warn(u"Method %s of %s is ignored by %s." % (name, ancestor_class_iri, self._class_iri))
+                return
+
+            self._logger.warn(u"Method %s of %s is overloaded for %s." % (name, ancestor_class_iri, self._class_iri))
+
+        self._method_inheritance[name] = ancestor_class_iri
+        self._methods[name] = method
 
     def new(self, id=None, hashless_iri=None, collection_iri=None, **kwargs):
         """Creates a new :class:`~oldman.resource.Resource` object without saving it.

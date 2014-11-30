@@ -278,7 +278,7 @@ class Resource(object):
             if operation is not None:
                 return partial(operation, self)
 
-            raise AttributeError("%s has no attribute %s" % (self, name))
+        raise AttributeError("%s has no attribute %s" % (self, name))
 
     def __setattr__(self, name, value):
         """Sets the value of one or multiple :class:`~oldman.attribute.OMAttribute` objects.
