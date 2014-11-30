@@ -1,4 +1,5 @@
 import unittest
+from rdflib import URIRef
 from default_model import *
 
 

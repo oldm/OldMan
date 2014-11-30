@@ -341,10 +341,10 @@ class SPARQLDataStore(DataStore):
         former_lines = u""
         new_lines = u""
         for attr in attributes:
-            if not attr.has_new_value(resource):
+            if not attr.has_changed(resource):
                 continue
 
-            former_value = attr.get_former_value(resource)
+            former_value, _ = attr.diff(resource)
             former_lines += attr.value_to_nt(former_value)
             new_lines += attr.to_nt(resource)
 

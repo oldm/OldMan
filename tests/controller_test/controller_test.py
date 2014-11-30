@@ -11,18 +11,21 @@ schema_graph = parse_graph_safely(schema_graph, schema_file, format="turtle")
 context_file = path.join(path.dirname(__file__), "controller-context.jsonld")
 
 data_graph = Graph()
-data_store = SPARQLDataStore(data_graph)
+data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph)
 
-manager = ClientResourceManager(schema_graph, data_store, manager_name="controller_test")
+data_store.create_model("Collection", context_file, iri_prefix="http://localhost/collections/",
+                        incremental_iri=True)
+data_store.create_model("Item", context_file, iri_prefix="http://localhost/items/", incremental_iri=True)
 
-collection_model = manager.create_model("Collection", context_file, iri_prefix="http://localhost/collections/",
-                                        incremental_iri=True)
-item_model = manager.create_model("Item", context_file, iri_prefix="http://localhost/items/",
-                                  incremental_iri=True)
+client_manager = ClientResourceManager(data_store)
+client_manager.use_all_store_models()
+
+collection_model = client_manager.get_model("Collection")
+item_model = client_manager.get_model("Item")
 
 collection1 = collection_model.create()
 
-controller = HTTPController(manager)
+controller = HTTPController(client_manager)
 
 
 class ControllerTest(unittest.TestCase):
@@ -41,7 +44,7 @@ class ControllerTest(unittest.TestCase):
 
         print data_graph.serialize(format="turtle")
 
-        item = manager.get(id=item_iri)
+        item = client_manager.get(id=item_iri)
         self.assertTrue(item is not None)
         self.assertEquals(item.title, title)
 

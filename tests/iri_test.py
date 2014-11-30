@@ -1,5 +1,6 @@
 import unittest
 from default_model import *
+from oldman.exception import OMUniquenessError
 
 
 class IriTest(unittest.TestCase):

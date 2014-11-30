@@ -677,7 +677,7 @@ class StoreResource(Resource):
                 attribute = self._get_om_attribute(name)
                 attribute.set(self, value)
                 # Clears former values (allows modification)
-                attribute.delete_former_value(self)
+                attribute.receive_storage_ack(self)
 
     def get_related_resource(self, id):
         """TODO: describe """
@@ -695,19 +695,18 @@ class StoreResource(Resource):
         # Find objects to delete
         objects_to_delete = []
         for attr in attributes:
-            if not attr.has_new_value(self):
+            if not attr.has_changed(self):
                 continue
 
             # Some former objects may be deleted
             if attr.om_property.type == OBJECT_PROPERTY:
-                former_value = attr.get_former_value(self)
+                former_value, value = attr.diff(self)
 
                 if isinstance(former_value, dict):
                     raise NotImplementedError("Object dicts are not yet supported.")
                 former_value = former_value if isinstance(former_value, (set, list)) else [former_value]
 
                 # Cache invalidation (because of possible reverse properties)
-                value = attr.get(self)
                 resources_to_invalidate = set(value) if isinstance(value, (set, list)) else {value}
                 resources_to_invalidate.update(former_value)
                 for r in resources_to_invalidate:
@@ -726,7 +725,7 @@ class StoreResource(Resource):
         # Clears former values
         self._former_types = self._types
         for attr in attributes:
-            attr.delete_former_value(self)
+            attr.receive_storage_ack(self)
 
         return self
 
@@ -755,7 +754,7 @@ class StoreResource(Resource):
 
         # Clears former values
         for attr in attributes:
-            attr.delete_former_value(self)
+            attr.receive_storage_ack(self)
         self._is_new = False
 
     def _filter_objects_to_delete(self, ids):
@@ -810,7 +809,7 @@ class ClientResource(Resource):
         self._former_types = self._types
         # Clears former values
         for attr in attributes:
-            attr.delete_former_value(self)
+            attr.receive_storage_ack(self)
         self._is_new = False
         # The ID may be updated (if was a temporary IRI before)
         self._id = store_resource.id
@@ -827,7 +826,7 @@ class ClientResource(Resource):
         # Clears values
         for attr in self._extract_attribute_list():
             setattr(self, attr.name, None)
-            attr.delete_former_value(self)
+            attr.receive_storage_ack(self)
         self._is_new = False
 
     def __getstate__(self):
