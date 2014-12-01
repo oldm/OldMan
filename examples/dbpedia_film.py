@@ -51,12 +51,18 @@ if __name__ == "__main__":
 
     cache_region = make_region().configure('dogpile.cache.memory_pickle')
 
-    # Resource Manager and Models
-    data_store = SPARQLDataStore(data_graph, cache_region=cache_region)
-    manager = ClientResourceManager(schema_graph, data_store)
-    film_model = manager.create_model("http://dbpedia.org/ontology/Film", context_url)
+    # Datastore: SPARQL-aware triple store, with two models
+    data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph, cache_region=cache_region)
+    data_store.create_model("http://dbpedia.org/ontology/Film", context_url)
     # JSON-LD terms can be used instead of IRIs
-    actor_model = manager.create_model("Person", context_url)
+    data_store.create_model("Person", context_url)
+
+    # Client resource manager
+    client_manager = ClientResourceManager(data_store)
+    # Re-uses the models of the data store
+    client_manager.use_all_store_models()
+    film_model = client_manager.get_model("http://dbpedia.org/ontology/Film")
+    actor_model = client_manager.get_model("Person")
 
     print "10 first French films found on DBPedia (with OldMan)"
     print "----------------------------------------------------"

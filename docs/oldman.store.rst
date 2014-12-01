@@ -20,6 +20,22 @@ oldman.store.datastore module
     :undoc-members:
     :show-inheritance:
 
+oldman.store.http module
+------------------------
+
+.. automodule:: oldman.store.http
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+oldman.store.selector module
+----------------------------
+
+.. automodule:: oldman.store.selector
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 oldman.store.sparql module
 --------------------------
 
