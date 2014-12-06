@@ -2,7 +2,7 @@
     oldman.vocabulary
     ~~~~~~~~~~~~~~~~~
 
-    RDF vocabulary specific to OldMan.
+    RDF vocabulary used by OldMan. Some of it is specific to OldMan.
 
     TODO: replace these URNs by URLs.
 
@@ -28,5 +28,19 @@ MODEL_HAS_PRIORITY_IRI = "urn:oldman:model:ordering:hasPriority"
 MODEL_PRIORITY_CLASS_IRI = "urn:oldman:model:ordering:class"
 MODEL_PRIORITY_IRI = "urn:oldman:model:ordering:priority"
 
+OLDM_SHORTNAME = "urn:oldman:shortname"
+
 #: Used to increment IRIs.
 NEXT_NUMBER_IRI = "urn:oldman:nextNumber"
+
+HYDRA_COLLECTION_IRI = "http://www.w3.org/ns/hydra/core#Collection"
+HYDRA_PAGED_COLLECTION_IRI = "http://www.w3.org/ns/hydra/core#PagedCollection"
+HYDRA_MEMBER_IRI = "http://www.w3.org/ns/hydra/core#member"
+
+HYDRA_SUPPORTED_OPERATION = "http://www.w3.org/ns/hydra/core#supportedOperation"
+HYDRA_METHOD = "http://www.w3.org/ns/hydra/core#method"
+HYDRA_EXCEPTS = "http://www.w3.org/ns/hydra/core#expects"
+HYDRA_RETURNS = "http://www.w3.org/ns/hydra/core#returns"
+
+
+HTTP_POST = "POST"

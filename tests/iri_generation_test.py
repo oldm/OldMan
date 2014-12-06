@@ -5,7 +5,7 @@ from rdflib import ConjunctiveGraph, URIRef, RDF, BNode, Graph
 from oldman import ResourceManager, SPARQLDataStore
 from oldman.iri import UUIDFragmentIriGenerator
 from oldman.exception import OMRequiredHashlessIRIError
-from oldman.rest.crud import CRUDController
+from oldman.rest.crud import HashLessCRUDer
 
 
 EXAMPLE = "http://localhost/vocab#"
@@ -29,7 +29,7 @@ context = {
 
 data_store = SPARQLDataStore(data_graph)
 manager = ResourceManager(schema_graph, data_store, manager_name="igt")
-crud_controller = CRUDController(manager)
+crud_controller = HashLessCRUDer(manager)
 model = manager.create_model("MyClass", context, iri_generator=UUIDFragmentIriGenerator())
 
 

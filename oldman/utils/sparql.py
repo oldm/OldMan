@@ -15,7 +15,7 @@ def parse_graph_safely(graph, *args, **kwargs):
         g = Graph().parse(*args, **kwargs).skolemize()
         graph.parse(data=g.serialize(format="nt"), format="nt")
     else:
-        graph.parse(*args, **kwargs)
+        graph = graph.parse(*args, **kwargs).skolemize()
     return graph
 
 

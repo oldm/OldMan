@@ -337,7 +337,6 @@ class BasicEditingTest(unittest.TestCase):
         self.assertFalse(data_graph.query(bob_employer_john_query))
         self.assertTrue(data_graph.query(john_employer_bob_query))
 
-
     def test_inversed_property_retrieval_single_value(self):
         alice = create_alice()
         bob = create_bob()

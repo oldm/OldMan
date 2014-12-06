@@ -138,12 +138,12 @@ class PropertyTest(TestCase):
         obj_dict = obj.to_dict()
         obj_dict["secret"] = "My secret again"
         # No problem with ro_property because it is not changed
-        obj.full_update(obj_dict)
+        obj.update(obj_dict)
 
         obj_dict["ro_property"] = "Writing a read-only property"
         with self.assertRaises(OMReadOnlyAttributeError):
-            obj.full_update(obj_dict)
-        obj.full_update(obj_dict, is_end_user=False)
+            obj.update(obj_dict)
+        obj.update(obj_dict, is_end_user=False)
 
     def test_read_only_graph_update(self):
         obj = lc_model.new()
@@ -154,7 +154,7 @@ class PropertyTest(TestCase):
 
         graph = Graph()
         graph.parse(data=obj.to_rdf("nt"), format="nt")
-        obj.full_update_from_graph(graph)
+        obj.update_from_graph(graph)
         self.assertEquals(obj.ro_property, admin_str)
 
         ro_prop = URIRef(EXAMPLE + "roProperty")
@@ -163,10 +163,10 @@ class PropertyTest(TestCase):
         graph.add((obj_iri, ro_prop, Literal(str2, datatype=XSD.string)))
         #print graph.serialize(format="turtle")
         with self.assertRaises(OMReadOnlyAttributeError):
-            obj.full_update_from_graph(graph)
-        obj.full_update_from_graph(graph, is_end_user=False)
+            obj.update_from_graph(graph)
+        obj.update_from_graph(graph, is_end_user=False)
 
         graph.remove((obj_iri, ro_prop, Literal(str2, datatype=XSD.string)))
-        obj.full_update_from_graph(graph, is_end_user=False)
+        obj.update_from_graph(graph, is_end_user=False)
         self.assertEquals(obj.ro_property, None)
 

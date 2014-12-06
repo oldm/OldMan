@@ -131,11 +131,11 @@ class UpdateDeleteTest(TestCase):
         bob_dict = bob.to_dict()
         boby_name = "Boby"
         bob_dict["name"] = boby_name
-        bob.full_update(bob_dict)
+        bob.update(bob_dict)
         self.assertEquals(bob.name, boby_name)
 
         bob_dict.pop("short_bio_en")
-        bob.full_update(bob_dict)
+        bob.update(bob_dict)
         self.assertEquals(bob.short_bio_en, None)
 
     def test_bob_gpg_update(self):
@@ -148,33 +148,33 @@ class UpdateDeleteTest(TestCase):
 
         # GPG key blank-node is included as a dict
         with self.assertRaises(OMAttributeTypeCheckError):
-            bob.full_update(bob_dict)
+            bob.update(bob_dict)
 
         # Replace the dict by an IRI
         bob_dict["gpg_key"] = bob.gpg_key.id
-        bob.full_update(bob_dict)
+        bob.update(bob_dict)
         bob.gpg_key.fingerprint = gpg_fingerprint
 
         bob_dict["gpg_key"] = None
-        bob.full_update(bob_dict)
+        bob.update(bob_dict)
         self.assertFalse(bool(data_graph.query(ask_fingerprint)))
 
     def test_wrong_update(self):
         bob = create_bob()
         alice = create_alice()
         with self.assertRaises(OMWrongResourceError):
-            bob.full_update(alice.to_dict())
+            bob.update(alice.to_dict())
 
         bob_dict = bob.to_dict()
         #Missing IRI
         bob_dict.pop("id")
         with self.assertRaises(OMWrongResourceError):
-            bob.full_update(bob_dict)
+            bob.update(bob_dict)
 
         bob_dict = bob.to_dict()
         bob_dict["unknown_attribute"] = "Will cause a problem"
         with self.assertRaises(OMAttributeAccessError):
-            bob.full_update(bob_dict)
+            bob.update(bob_dict)
 
     def test_basic_bob_graph_update(self):
         bob = create_bob()
@@ -192,11 +192,11 @@ class UpdateDeleteTest(TestCase):
         graph.remove((bob_iri, foaf_name, Literal(bob_name, datatype=XSD.string)))
         boby_name = "Boby"
         graph.add((bob_iri, foaf_name, Literal(boby_name, datatype=XSD.string)))
-        bob.full_update_from_graph(graph)
+        bob.update_from_graph(graph)
         self.assertEquals(bob.name, boby_name)
 
         graph.remove((bob_iri, olb, Literal(bob_bio_en, "en")))
-        bob.full_update_from_graph(graph)
+        bob.update_from_graph(graph)
         self.assertEquals(bob.short_bio_en, None)
 
     def test_alice_json_update_types(self):
@@ -207,18 +207,18 @@ class UpdateDeleteTest(TestCase):
         additional_types = [prof_type, researcher_type]
         dct["types"] += additional_types
         with self.assertRaises(OMUnauthorizedTypeChangeError):
-            alice.full_update(dct)
-        alice.full_update(dct, allow_new_type=True)
+            alice.update(dct)
+        alice.update(dct, allow_new_type=True)
         self.assertEquals(set(alice.types), set(lp_model.ancestry_iris + additional_types))
-        alice.full_update(dct)
+        alice.update(dct)
         self.assertEquals(len(alice.types), len(set(alice.types)))
 
         # Removal of these additional types
         dct = alice.to_dict()
         dct["types"] = lp_model.ancestry_iris
         with self.assertRaises(OMUnauthorizedTypeChangeError):
-            alice.full_update(dct)
-        alice.full_update(dct, allow_type_removal=True)
+            alice.update(dct)
+        alice.update(dct, allow_type_removal=True)
         self.assertEquals(set(alice.types), set(lp_model.ancestry_iris))
 
     def test_alice_rdf_update_types(self):
@@ -235,8 +235,8 @@ class UpdateDeleteTest(TestCase):
             g2.add((alice_ref, RDF.type, URIRef(t)))
 
         with self.assertRaises(OMUnauthorizedTypeChangeError):
-            alice.full_update_from_graph(g2)
-        alice.full_update_from_graph(g2, allow_new_type=True)
+            alice.update_from_graph(g2)
+        alice.update_from_graph(g2, allow_new_type=True)
 
         # If any cache
         data_store.resource_cache.remove_resource(alice)
@@ -245,8 +245,8 @@ class UpdateDeleteTest(TestCase):
 
         # Remove these new types
         with self.assertRaises(OMUnauthorizedTypeChangeError):
-            alice.full_update_from_graph(g1)
-        alice.full_update_from_graph(g1, allow_type_removal=True)
+            alice.update_from_graph(g1)
+        alice.update_from_graph(g1, allow_type_removal=True)
         # If any cache
         data_store.resource_cache.remove_resource(alice)
         alice = lp_model.get(id=alice_iri)
@@ -265,7 +265,7 @@ class UpdateDeleteTest(TestCase):
         alice.children = None
         self.assertEquals(alice.children, None)
 
-        alice.full_update(alice_dict)
+        alice.update(alice_dict)
         self.assertEquals([c.id for c in alice.children], children_iris)
 
     def test_add_list_by_graph_update(self):
@@ -282,5 +282,5 @@ class UpdateDeleteTest(TestCase):
         alice.children = None
         self.assertEquals(alice.children, None)
 
-        alice.full_update_from_graph(alice_graph)
+        alice.update_from_graph(alice_graph)
         self.assertEquals([c.id for c in alice.children], children_iris)

@@ -34,10 +34,11 @@ class Model(object):
     :param methods: `dict` of Python functions that takes as first argument a
                     :class:`~oldman.resource.Resource` object. Keys are the method names.
                     Defaults to `{}`.
+    :param operations: TODO: describe.
     """
 
     def __init__(self, manager, name, class_iri, ancestry_iris, context, om_attributes,
-                 id_generator, methods=None):
+                 id_generator, methods=None, operations=None):
         reserved_names = ["id", "hashless_iri", "_types", "types"]
         for field in reserved_names:
             if field in om_attributes:
@@ -49,7 +50,10 @@ class Model(object):
         self._id_generator = id_generator
         self._class_types = ancestry_iris
         self._manager = manager
-        self._methods = methods if methods else {}
+        self._methods = methods if methods is not None else {}
+        self._operations = operations if operations is not None else {}
+        self._operation_by_name = {op.name: op for op in operations.values()
+                                   if op.name is not None}
 
         self._has_reversed_attributes = True in [a.reversed for a in self._om_attributes.values()]
 
@@ -91,6 +95,14 @@ class Model(object):
     def has_reversed_attributes(self):
         """Is `True` if one of its attributes is reversed."""
         return self._has_reversed_attributes
+
+    def get_operation(self, http_method):
+        """TODO: describe"""
+        return self._operations.get(http_method)
+
+    def get_operation_by_name(self, name):
+        """TODO: describe"""
+        return self._operation_by_name.get(name)
 
     def is_subclass_of(self, model):
         """Returns `True` if its RDFS class is a sub-class *(rdfs:subClassOf)*
@@ -137,7 +149,7 @@ class Model(object):
         if hasattr(self._id_generator, "reset_counter"):
             self._id_generator.reset_counter()
 
-    def new(self, id=None, hashless_iri=None, **kwargs):
+    def new(self, id=None, hashless_iri=None, collection_iri=None, **kwargs):
         """Creates a new :class:`~oldman.resource.Resource` object without saving it.
 
         The `class_iri` attribute is added to the `types`.
@@ -145,14 +157,15 @@ class Model(object):
         See :func:`~oldman.management.manager.ResourceManager.new` for more details.
         """
         types, kwargs = self._update_kwargs_and_types(kwargs, include_ancestry=True)
-        return self._manager.new(id=id, hashless_iri=hashless_iri, types=types, **kwargs)
+        return self._manager.new(id=id, hashless_iri=hashless_iri, collection_iri=collection_iri,
+                                 types=types, **kwargs)
 
-    def create(self, id=None, hashless_iri=None, **kwargs):
+    def create(self, id=None, hashless_iri=None, collection_iri=None, **kwargs):
         """ Creates a new resource and saves it.
 
         See :func:`~oldman.model.Model.new` for more details.
         """
-        return self.new(id=id, hashless_iri=hashless_iri, **kwargs).save()
+        return self.new(id=id, hashless_iri=hashless_iri, collection_iri=collection_iri, **kwargs).save()
 
     def filter(self, hashless_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
         """Finds the :class:`~oldman.resource.Resource` objects matching the given criteria.
@@ -170,7 +183,7 @@ class Model(object):
         The `class_iri` attribute is added to the `types`.
         Also looks if reversed attributes should be considered eagerly.
 
-        See :func:`oldman.management.finder.Finder.get` for further details."""
+        See :func:`oldman.store.datastore.DataStore.get` for further details."""
         types, kwargs = self._update_kwargs_and_types(kwargs)
 
         eager_with_reversed_attributes = kwargs.get("eager_with_reversed_attributes")

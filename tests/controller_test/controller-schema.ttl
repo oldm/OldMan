@@ -1,0 +1,33 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix hydra: <http://www.w3.org/ns/hydra/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix : <urn:test:oldman:collection:> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+
+hydra:Collection hydra:supportedProperty [
+        hydra:property hydra:member
+    ] .
+
+:Collection a hydra:Class ;
+    rdfs:subClassOf hydra:Collection ;
+
+    hydra:supportedOperation [
+        hydra:description "Append"^^xsd:string ;
+        hydra:method "POST"^^xsd:string ;
+        hydra:excepts :Item ;
+        hydra:return :Item ],
+
+      [ hydra:description "Delete"^^xsd:string ;
+        hydra:method "DELETE"^^xsd:string ],
+
+      [ hydra:description "Update"^^xsd:string ;
+        hydra:method "PUT"^^xsd:string ;
+        hydra:excepts :Collection ;
+        hydra:return :Collection ] .
+
+:Item a hydra:Class ;
+   hydra:supportedProperty [
+        hydra:property dcterms:title ;
+        hydra:required true ] .
+
