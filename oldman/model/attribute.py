@@ -38,7 +38,7 @@ class OMAttribute(object):
       - `None`;
       - The Python equivalent for a RDF literal (double, string, date, etc.);
       - An IRI;
-      - A controller (set, list and dict) of these types.
+      - A collection (set, list and dict) of these types.
 
     :param metadata: :class:`~oldman.attribute.OMAttributeMetadata` object.
     :param value_format: :class:`~oldman.validation.value_format.ValueFormat` object
@@ -336,7 +336,7 @@ class OMAttribute(object):
         Raises an :class:`oldman.exception.OMAttributeTypeCheckError` exception
         if the value is invalid.
 
-        :param value: controller or atomic value.
+        :param value: collection or atomic value.
         """
         # None value are always allowed
         # (at assignment time)
@@ -379,7 +379,7 @@ class OMAttribute(object):
         May raise a :class:`oldman.exception.OMAttributeTypeCheckError` or
         a :class:`oldman.exception.ValueFormatError` exception.
 
-        :param value: controller of atomic items.
+        :param value: collection of atomic items.
         """
         if not self.container:
             logger = logging.getLogger(__name__)

@@ -4,15 +4,6 @@ oldman package
 Subpackages
 -----------
 
-.. toctree::
-
-    oldman.model
-    oldman.parsing
-    oldman.resource
-    oldman.rest
-    oldman.store
-    oldman.utils
-    oldman.validation
 
 Submodules
 ----------
@@ -49,11 +40,15 @@ oldman.vocabulary module
     :undoc-members:
     :show-inheritance:
 
+Sub-packages
+------------
 
-Module contents
----------------
+.. toctree::
 
-.. automodule:: oldman
-    :members:
-    :undoc-members:
-    :show-inheritance:
+    oldman.model
+    oldman.parsing
+    oldman.resource
+    oldman.rest
+    oldman.store
+    oldman.utils
+    oldman.validation
