@@ -258,7 +258,7 @@ data_store.create_model("LocalRSAPublicKey", context)
 data_store.create_model("LocalGPGPublicKey", context)
 
 client_manager = ClientResourceManager(data_store)
-client_manager.use_all_store_models()
+client_manager.import_store_models()
 
 lp_model = client_manager.get_model(lp_name_or_iri)
 rsa_model = client_manager.get_model("LocalRSAPublicKey")

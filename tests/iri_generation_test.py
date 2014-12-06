@@ -31,7 +31,7 @@ data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph)
 data_store.create_model("MyClass", context, iri_generator=UUIDFragmentIriGenerator())
 
 client_manager = ClientResourceManager(data_store)
-client_manager.use_all_store_models()
+client_manager.import_store_models()
 crud_controller = HashLessCRUDer(client_manager)
 model = client_manager.get_model("MyClass")
 

@@ -91,7 +91,7 @@ data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph)
 data_store.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
 
 client_manager = ClientResourceManager(data_store)
-client_manager.use_all_store_models()
+client_manager.import_store_models()
 lc_model = client_manager.get_model("LocalClass")
 
 

@@ -125,7 +125,7 @@ class ClientResourceManager:
     def use_store_model(self, class_iri, data_store=None):
         raise NotImplementedError("TODO: implement me here")
 
-    def use_all_store_models(self):
+    def import_store_models(self):
         """TODO: check possible conflicts with local models."""
         for store in self._store_selector.data_stores:
             for store_model in store.model_manager.models:

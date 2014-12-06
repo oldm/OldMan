@@ -29,7 +29,7 @@ data_store.create_model("LocalPerson", context_iri, iri_prefix="http://localhost
 
 #Client resource manager
 client_manager = ClientResourceManager(data_store)
-client_manager.use_all_store_models()
+client_manager.import_store_models()
 
 lp_model = client_manager.get_model("LocalPerson")
 

@@ -60,7 +60,7 @@ if __name__ == "__main__":
     # Client resource manager
     client_manager = ClientResourceManager(data_store)
     # Re-uses the models of the data store
-    client_manager.use_all_store_models()
+    client_manager.import_store_models()
     film_model = client_manager.get_model("http://dbpedia.org/ontology/Film")
     actor_model = client_manager.get_model("Person")
 

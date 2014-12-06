@@ -96,7 +96,7 @@ data_store.create_model("ParentClass", context, iri_prefix="http://localhost/par
 
 
 client_manager = ClientResourceManager(data_store)
-client_manager.use_all_store_models()
+client_manager.import_store_models()
 # Methods
 client_manager.declare_method(square_value, "square_value", EXAMPLE + "GrandParentClass")
 client_manager.declare_method(print_new_value, "print_new_value", EXAMPLE + "ChildClass")

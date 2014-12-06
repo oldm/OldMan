@@ -13,7 +13,7 @@ data_store = HttpDataStore(schema_graph=schema_graph)
 data_store.create_model('ApiDocumentation', context_uri)
 
 manager = ClientResourceManager(data_store)
-manager.use_all_store_models()
+manager.import_store_models()
 
 doc_model = manager.get_model('ApiDocumentation')
 

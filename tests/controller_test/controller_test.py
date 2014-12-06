@@ -18,7 +18,7 @@ data_store.create_model("Collection", context_file, iri_prefix="http://localhost
 data_store.create_model("Item", context_file, iri_prefix="http://localhost/items/", incremental_iri=True)
 
 client_manager = ClientResourceManager(data_store)
-client_manager.use_all_store_models()
+client_manager.import_store_models()
 
 collection_model = client_manager.get_model("Collection")
 item_model = client_manager.get_model("Item")
