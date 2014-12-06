@@ -1,0 +1,27 @@
+{
+"@context": {
+		"hydra": "http://www.w3.org/ns/hydra/core#",
+		"xsd": "http://www.w3.org/2001/XMLSchema#",
+		"ApiDocumentation": "hydra:ApiDocumentation",
+		"_id": "@id",
+		"_type": "@type",
+		"supported_classes": {
+			"@id": "hydra:supportedClass",
+			"@type": "@id",
+			"@container": "@set"
+		},
+		"title": {
+			"@id": "hydra:title",
+			"@type": "xsd:string"
+		},
+		"description": {
+			"@id": "hydra:description",
+			"@type": "xsd:string"
+		},
+		"status_codes": {
+			"@id": "hydra:statusCodes",
+			"@type": "@id",
+			"@container": "@set"
+		}
+	}
+}

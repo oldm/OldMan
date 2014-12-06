@@ -19,7 +19,9 @@ setup(name="OldMan",
       install_requires=['rdflib',
                         'SPARQLWrapper',
                         'validate_email',
-                        'dogpile.cache'
+                        'dogpile.cache',
+                        'requests',
+                        'negotiator'
       ],
       license="BSD",
       classifiers=[

@@ -192,6 +192,13 @@ class Resource(object):
                 return operation
         return None
 
+    def get_lightly(self, attribute_name):
+        """TODO: describe """
+        for model in self._models:
+            if attribute_name in model.om_attributes:
+                return model.access_attribute(attribute_name).get_lightly(self)
+        raise AttributeError("%s has no regular attribute %s" % (self, attribute_name))
+
     @classmethod
     def load_from_graph(cls, manager, id, subgraph, is_new=True, collection_iri=None):
         """Loads a new :class:`~oldman.resource.Resource` object from a sub-graph.

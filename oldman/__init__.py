@@ -6,8 +6,10 @@
 """
 
 from rdflib.plugin import register, Parser, Serializer
+from rdflib import Graph
 from .management.manager import ResourceManager
 from .store.sparql import SPARQLDataStore
+from .store.http import HttpDataStore
 from .utils.sparql import parse_graph_safely
 from .rest.controller import HTTPController
 

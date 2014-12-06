@@ -1,0 +1,17 @@
+@prefix hydra: <http://www.w3.org/ns/hydra/core#> .
+
+hydra:ApiDocumentation a hydra:Class ;
+    hydra:supportedProperty [
+        hydra:property hydra:supportedClass
+    ],
+    [
+        hydra:property hydra:title
+    ]
+ #    ,
+ #   [
+ #       hydra:property hydra:description
+ #   ],
+ #   [
+ #       hydra:property hydra:statusCodes
+ #   ]
+ .
