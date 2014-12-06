@@ -1,8 +1,11 @@
-from .exception import OMReservedAttributeNameError, OMAttributeAccessError
+import logging
+from oldman.exception import OMReservedAttributeNameError, OMAttributeAccessError
 
 
 class Model(object):
     """A :class:`~oldman.model.Model` object represents a RDFS class on the Python side.
+
+    TODO: update this documentation
 
     It gathers :class:`~oldman.attribute.OMAttribute` objects and Python methods
     which are made available to :class:`~oldman.resource.Resource` objects that are
@@ -15,12 +18,12 @@ class Model(object):
     .. admonition:: Model creation
 
         :class:`~oldman.model.Model` objects are normally created by a
-        :class:`~oldman.management.manager.ResourceManager` object. Please use the
-        :func:`oldman.management.manager.ResourceManager.create_model` method for creating new
+        :class:`~oldman.resource.manager.ResourceManager` object. Please use the
+        :func:`oldman.resource.manager.ResourceManager.create_model` method for creating new
         :class:`~oldman.model.Model` objects.
 
 
-    :param manager: :class:`~oldman.management.manager.ResourceManager` object
+    :param manager: :class:`~oldman.resource.manager.ResourceManager` object
                     that has created this model.
     :param name: Model name. Usually corresponds to a JSON-LD term or to a class IRI.
     :param class_iri: IRI of the RDFS class represented by this :class:`~oldman.model.Model` object.
@@ -37,8 +40,8 @@ class Model(object):
     :param operations: TODO: describe.
     """
 
-    def __init__(self, manager, name, class_iri, ancestry_iris, context, om_attributes,
-                 id_generator, methods=None, operations=None):
+    def __init__(self, name, class_iri, ancestry_iris, context, om_attributes,
+                 id_generator, operations=None):
         reserved_names = ["id", "hashless_iri", "_types", "types"]
         for field in reserved_names:
             if field in om_attributes:
@@ -49,13 +52,12 @@ class Model(object):
         self._om_attributes = om_attributes
         self._id_generator = id_generator
         self._class_types = ancestry_iris
-        self._manager = manager
-        self._methods = methods if methods is not None else {}
         self._operations = operations if operations is not None else {}
         self._operation_by_name = {op.name: op for op in operations.values()
                                    if op.name is not None}
 
         self._has_reversed_attributes = True in [a.reversed for a in self._om_attributes.values()]
+        self._logger = logging.getLogger(__name__)
 
     @property
     def name(self):
@@ -73,16 +75,14 @@ class Model(object):
         return list(self._class_types)
 
     @property
+    def methods(self):
+        """Models does not support methods by default."""
+        return {}
+
+    @property
     def om_attributes(self):
         """ `dict` of :class:`~oldman.attribute.OMAttribute` objects. Keys are their names."""
         return dict(self._om_attributes)
-
-    @property
-    def methods(self):
-        """`dict` of Python functions that takes as first argument a
-        :class:`~oldman.resource.Resource` object. Keys are the method names.
-        """
-        return dict(self._methods)
 
     @property
     def context(self):
@@ -149,16 +149,66 @@ class Model(object):
         if hasattr(self._id_generator, "reset_counter"):
             self._id_generator.reset_counter()
 
+
+class ClientModel(Model):
+    """TODO: describe.
+
+    TODO: further study this specific case
+
+     """
+
+    @classmethod
+    def copy_store_model(cls, resource_manager, store_model):
+        """TODO: describe """
+        return ClientModel(resource_manager, store_model.name, store_model.class_iri,
+                           store_model.ancestry_iris, store_model.context, store_model.om_attributes,
+                           store_model._id_generator, operations=store_model._operations)
+
+    def __init__(self, resource_manager, name, class_iri, ancestry_iris, context, om_attributes,
+                 id_generator, operations=None):
+        Model.__init__(self, name, class_iri, ancestry_iris, context, om_attributes,
+                       id_generator, operations=operations)
+        self._resource_manager = resource_manager
+        # {method_name: ancestor_class_iri}
+        self._method_inheritance = {}
+        # {method_name: method}
+        self._methods = {}
+
+    @property
+    def methods(self):
+        """`dict` of Python functions that takes as first argument a
+        :class:`~oldman.resource.Resource` object. Keys are the method names.
+        """
+        return dict(self._methods)
+
+    def declare_method(self, method, name, ancestor_class_iri):
+        """TODO: describe """
+        if name in self._methods:
+            # Before overriding, compare the positions
+            previous_ancestor_iri = self._method_inheritance[name]
+            previous_ancestor_pos = self._class_types.index(previous_ancestor_iri)
+            new_ancestor_pos = self._class_types.index(ancestor_class_iri)
+
+            if new_ancestor_pos > previous_ancestor_pos:
+                # Too distant, cannot override
+                self._logger.warn(u"Method %s of %s is ignored by %s." % (name, ancestor_class_iri, self._class_iri))
+                return
+
+            self._logger.warn(u"Method %s of %s is overloaded for %s." % (name, ancestor_class_iri, self._class_iri))
+
+        self._method_inheritance[name] = ancestor_class_iri
+        self._methods[name] = method
+
     def new(self, id=None, hashless_iri=None, collection_iri=None, **kwargs):
         """Creates a new :class:`~oldman.resource.Resource` object without saving it.
 
         The `class_iri` attribute is added to the `types`.
 
-        See :func:`~oldman.management.manager.ResourceManager.new` for more details.
+        See :func:`~oldman.resource.manager.ResourceManager.new` for more details.
         """
         types, kwargs = self._update_kwargs_and_types(kwargs, include_ancestry=True)
-        return self._manager.new(id=id, hashless_iri=hashless_iri, collection_iri=collection_iri,
-                                 types=types, **kwargs)
+        return self._resource_manager.new(id=id, hashless_iri=hashless_iri, collection_iri=collection_iri,
+                                          types=types, **kwargs)
 
     def create(self, id=None, hashless_iri=None, collection_iri=None, **kwargs):
         """ Creates a new resource and saves it.
@@ -172,10 +222,10 @@ class Model(object):
 
         The `class_iri` attribute is added to the `types`.
 
-        See :func:`oldman.management.finder.ResourceFinder.filter` for further details."""
+        See :func:`oldman.resource.finder.ResourceFinder.filter` for further details."""
         types, kwargs = self._update_kwargs_and_types(kwargs)
-        return self._manager.filter(types=types, hashless_iri=hashless_iri, limit=limit, eager=eager,
-                                    pre_cache_properties=pre_cache_properties, **kwargs)
+        return self._resource_manager.filter(types=types, hashless_iri=hashless_iri, limit=limit, eager=eager,
+                                             pre_cache_properties=pre_cache_properties, **kwargs)
 
     def get(self, id=None, hashless_iri=None, **kwargs):
         """Gets the first :class:`~oldman.resource.Resource` object matching the given criteria.
@@ -190,8 +240,8 @@ class Model(object):
         if eager_with_reversed_attributes is None:
             eager_with_reversed_attributes = self._has_reversed_attributes
 
-        return self._manager.get(id=id, types=types, hashless_iri=hashless_iri,
-                                 eager_with_reversed_attributes=eager_with_reversed_attributes, **kwargs)
+        return self._resource_manager.get(id=id, types=types, hashless_iri=hashless_iri,
+                                          eager_with_reversed_attributes=eager_with_reversed_attributes, **kwargs)
 
     def all(self, limit=None, eager=False):
         """Finds every :class:`~oldman.resource.Resource` object that is instance

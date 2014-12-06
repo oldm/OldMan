@@ -1,12 +1,17 @@
-.. _oldman:
-
 oldman package
 ==============
 
-oldman.attribute module
------------------------
+Subpackages
+-----------
 
-.. automodule:: oldman.attribute
+
+Submodules
+----------
+
+oldman.common module
+--------------------
+
+.. automodule:: oldman.common
     :members:
     :undoc-members:
     :show-inheritance:
@@ -27,30 +32,6 @@ oldman.iri module
     :undoc-members:
     :show-inheritance:
 
-oldman.model module
--------------------
-
-.. automodule:: oldman.model
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-oldman.property module
-----------------------
-
-.. automodule:: oldman.property
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-oldman.resource module
-----------------------
-
-.. automodule:: oldman.resource
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 oldman.vocabulary module
 ------------------------
 
@@ -64,8 +45,9 @@ Sub-packages
 
 .. toctree::
 
-    oldman.management
+    oldman.model
     oldman.parsing
+    oldman.resource
     oldman.rest
     oldman.store
     oldman.utils

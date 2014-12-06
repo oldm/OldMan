@@ -4,12 +4,12 @@ from oldman.exception import AlreadyAllocatedModelError, OMInternalError
 
 
 class ModelRegistry(object):
-    """ A :class:`~oldman.management.registry.ModelRegistry` object registers
+    """ A :class:`~oldman.resource.registry.ModelRegistry` object registers
     the :class:`~oldman.model.Model` objects.
 
     Its main function is to find and order models from a set of class IRIs
     (this ordering is crucial when creating new :class:`~oldman.resource.Resource` objects).
-    See :func:`~oldman.management.registry.ModelRegistry.find_models_and_types` for more details.
+    See :func:`~oldman.resource.registry.ModelRegistry.find_models_and_types` for more details.
     """
 
     def __init__(self):
@@ -26,9 +26,22 @@ class ModelRegistry(object):
         """Names of the registered models."""
         return self._models_by_names.keys()
 
+    @property
+    def models(self):
+        return self._models_by_names.values()
+
+    @property
+    def non_default_models(self):
+        """  Non-default models."""
+        return [m for m in self._models_by_names.values() if m.name != self._default_model_name]
+
     def has_specific_models(self):
         """:return: `True` if contains other models than the default one."""
         return len(self._models_by_names) > int(self._default_model_name is not None)
+
+    @property
+    def default_model(self):
+        return self._models_by_names.get(self._default_model_name)
 
     def register(self, model, is_default=False):
         """Registers a :class:`~oldman.model.Model` object.
@@ -72,13 +85,24 @@ class ModelRegistry(object):
         # Clears the cache
         self._type_set_cache = {}
 
-    def get_model(self, class_iri):
+    def get_model(self, class_name_or_iri):
         """Gets a :class:`~oldman.model.Model` object.
 
-        :param class_iri: IRI of a RDFS class
+        :param class_name_or_iri: Name or IRI of a RDFS class
         :return: A :class:`~oldman.model.Model` object or `None` if not found
         """
-        return self._models_by_classes.get(class_iri)
+        model = self._models_by_classes.get(class_name_or_iri)
+        if model is None:
+            model = self._models_by_names.get(class_name_or_iri)
+        return model
+
+    def find_descendant_models(self, top_ancestor_name_or_iri):
+        """TODO: explain. Includes the top ancestor. """
+        descendant_iris = set(self._model_descendants.get(top_ancestor_name_or_iri, []))
+        descendant_iris.add(top_ancestor_name_or_iri)
+
+        models = [self.get_model(class_iri) for class_iri in descendant_iris]
+        return filter(lambda x: x is not None, models)
 
     def find_models_and_types(self, type_set):
         """Finds the leaf models from a set of class IRIs and orders them.
@@ -134,7 +158,10 @@ class ModelRegistry(object):
                 leaf_models.append(model)
 
         if len(leaf_models) == 0:
-            return [self._models_by_names[self._default_model_name]]
+                default_model = self._models_by_names.get(self._default_model_name)
+                if default_model:
+                    return [default_model]
+                return []
 
         return self._sort_leaf_models(leaf_models)
 

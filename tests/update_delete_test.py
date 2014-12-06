@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 
 from unittest import TestCase
+from rdflib import URIRef, Literal, RDF, XSD
 from default_model import *
+from oldman.exception import OMClassInstanceError, OMAttributeTypeCheckError, OMWrongResourceError, \
+    OMAttributeAccessError, OMUnauthorizedTypeChangeError
 
 
 class UpdateDeleteTest(TestCase):

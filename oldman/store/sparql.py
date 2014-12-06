@@ -1,8 +1,11 @@
 import logging
 from threading import Lock
+
 from rdflib import URIRef, Graph, RDF
 from rdflib.plugins.sparql.parser import ParseException
+
 from oldman.utils.sparql import build_query_part, build_update_query_part
+from oldman.model.manager import ModelManager
 from oldman.exception import OMSPARQLParseError, OMAttributeAccessError, OMSPARQLError
 from oldman.exception import OMHashIriError
 from oldman.exception import OMDataStoreError
@@ -23,6 +26,8 @@ class SPARQLDataStore(DataStore):
                          This object must already be configured.
                          Defaults to None (no cache).
                          See :class:`~oldman.store.cache.ResourceCache` for further details.
+
+    TODO: explain the choice between schema_graph and resource_manager
     """
     _iri_mutex = Lock()
     _counter_query_req = u"""
@@ -44,8 +49,9 @@ class SPARQLDataStore(DataStore):
                 BIND (?current+1 AS ?next)
             }"""
 
-    def __init__(self, data_graph, union_graph=None, cache_region=None):
-        DataStore.__init__(self, cache_region)
+    def __init__(self, data_graph, schema_graph=None, model_manager=None, union_graph=None, cache_region=None):
+        manager = model_manager if model_manager is not None else ModelManager(schema_graph)
+        DataStore.__init__(self, manager, cache_region, support_sparql=True)
         self._logger = logging.getLogger(__name__)
         self._data_graph = data_graph
         self._union_graph = union_graph if union_graph is not None else data_graph
@@ -152,7 +158,7 @@ class SPARQLDataStore(DataStore):
         resource_graph = Graph()
         iri = URIRef(id)
 
-        eager = eager_with_reversed_attributes and self.manager.include_reversed_attributes
+        eager = eager_with_reversed_attributes and self.model_manager.include_reversed_attributes
         if eager:
             #TODO: look at specific properties and see if it improves the performance
             triple_query = u"""SELECT ?s ?p ?o
@@ -173,10 +179,10 @@ class SPARQLDataStore(DataStore):
         else:
             resource_graph += self._union_graph.triples((iri, None, None))
 
-            if self.manager.include_reversed_attributes:
+            if self.model_manager.include_reversed_attributes:
                 #Extracts the types
                 types = {unicode(o) for o in resource_graph.objects(iri, RDF.type)}
-                models, _ = self.manager.find_models_and_types(types)
+                models, _ = self.model_manager.find_models_and_types(types)
 
                 #TODO: improve by looking at specific properties
                 if True in [m.include_reversed_attributes for m in models]:
@@ -207,7 +213,7 @@ class SPARQLDataStore(DataStore):
             lines = u"?s ?p ?o . \n"
         else:
             type_set = set(type_iris)
-            models, _ = self.manager.find_models_and_types(type_set)
+            models, _ = self.model_manager.find_models_and_types(type_set)
 
             lines = u""
             for type_iri in type_iris:
@@ -335,10 +341,10 @@ class SPARQLDataStore(DataStore):
         former_lines = u""
         new_lines = u""
         for attr in attributes:
-            if not attr.has_new_value(resource):
+            if not attr.has_changed(resource):
                 continue
 
-            former_value = attr.get_former_value(resource)
+            former_value, _ = attr.diff(resource)
             former_lines += attr.value_to_nt(former_value)
             new_lines += attr.to_nt(resource)
 
@@ -363,6 +369,9 @@ class SPARQLDataStore(DataStore):
                 self._data_graph.update(query)
             except ParseException as e:
                 raise OMSPARQLParseError(u"%s\n %s" % (query, e))
+
+        # Same IRI (no change)
+        return id
 
 
 def _find_attribute(models, name):

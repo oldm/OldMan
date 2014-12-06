@@ -79,7 +79,7 @@ Current core features
 Status
 ======
 
-OldMan is a young project **under active development** started in April 2014.
+OldMan is a young project **under development** started in April 2014.
 Feel free to `join us on Github <https://github.com/oldm/OldMan>`_ and to subscribe
 to our mailing list `oldman AT librelist.com`.
 

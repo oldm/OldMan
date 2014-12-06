@@ -9,15 +9,12 @@ Model creation
 
 First, let's import some functions and classes::
 
-   from rdflib import Graph
-   from oldman import ResourceManager, parse_graph_safely, SPARQLDataStore
+    from rdflib import Graph
+    from oldman import ClientResourceManager, parse_graph_safely, SPARQLDataStore
 
 and create the RDF graph `schema_graph` that will contain our schema::
 
     schema_graph = Graph()
-
-The data graph is where we store the data that we generate.
-By default, it stores data in memory.
 
 The role of the schema graph is to contain most of the domain logic necessary to build our models.
 In this example, we load it
@@ -35,24 +32,21 @@ Here, we just need its IRI::
 We now have almost enough domain knowledge to create our models.
 
 
+TODO: update the comments. Introduce the data store.
+It creates :class:`~oldman.model.Model` objects.
+
 But first of all, we have to decide where to store our data.
 Here we create an in-memory RDF graph and use it as a SPARQL endpoint (:class:`~oldman.store.sparql.SPARQLDataStore`)::
 
     data_graph = Graph()
-    data_store = SPARQLDataStore(data_graph)
+    data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph)
 
 We extract the prefix information from the schema graph::
 
     data_store.extract_prefixes(schema_graph)
 
-Then we instantiate the central object of this framework,
-the :class:`~oldman.management.manager.ResourceManager` object.
-Basically, it creates :class:`~oldman.model.Model` objects and
-offers convenient method to retrieve and create :class:`~oldman.resource.Resource` objects::
-
-    manager = ResourceManager(schema_graph, data_store)
-
-Finally, we create our `LocalPerson` :class:`~oldman.model.Model` object.
+TODO: update
+We create our `LocalPerson` :class:`~oldman.model.Model` object.
 For that, we need:
  * The IRI or a JSON-LD term of the RDFS class of the model. Here `"LocalPerson"` is an alias
    for `<http://example.org/myvoc#LocalPerson>`_ defined in the context file ;
@@ -62,9 +56,17 @@ For that, we need:
  * To declare that we want to generate incremental IRIs with short numbers
    for new :class:`~oldman.resource.Resource` objects. ::
 
-    lp_model = manager.create_model("LocalPerson", context_iri,
-                                    iri_prefix="http://localhost/persons/",
-                                    iri_fragment="me", incremental_iri=True)
+    data_store.create_model("LocalPerson", context_iri, iri_prefix="http://localhost/persons/",
+                            iri_fragment="me", incremental_iri=True)
+
+
+TODO: update this part.
+Then we instantiate the :class:`~oldman.resource.manager.ClientResourceManager` object.
+Basically, it offers convenient method to retrieve and create :class:`~oldman.resource.Resource` objects::
+
+    client_manager = ResourceManager(schema_graph, data_store)
+    client_manager.use_all_store_models()
+    lp_model = client_manager.get_model("LocalPerson")
 
 
 Resource editing

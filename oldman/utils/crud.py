@@ -1,6 +1,7 @@
 from rdflib import RDF, URIRef, BNode
+
 from oldman.exception import OMDifferentHashlessIRIError, OMForbiddenSkolemizedIRIError, OMClassInstanceError, OMInternalError
-from oldman.resource import Resource, is_blank_node
+from oldman.resource.resource import Resource, is_blank_node
 
 
 def extract_subjects(graph):

@@ -21,7 +21,7 @@ class HashLessCRUDer(object):
     This class is generic and does not support the Collection pattern
     (there is no append method).
 
-    :param manager: :class:`~oldman.management.manager.ResourceManager` object.
+    :param manager: :class:`~oldman.resource.manager.ResourceManager` object.
 
     Possible improvements:
 

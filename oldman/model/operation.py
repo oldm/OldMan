@@ -47,17 +47,17 @@ def append_to_hydra_collection(collection_resource, new_resources=None, graph=No
 
 def _append_to_hydra_coll_from_graph(collection_resource, graph):
     collection_iri = collection_resource.id
-    manager = collection_resource.manager
+    resource_manager = collection_resource.model_manager.resource_manager
 
     # Extracts and classifies subjects
     bnode_subjects, other_subjects = extract_subjects(graph)
 
     #Blank nodes (may obtain a regular IRI)
-    new_resources = create_blank_nodes(manager, graph, bnode_subjects, collection_iri=collection_iri)
+    new_resources = create_blank_nodes(resource_manager, graph, bnode_subjects, collection_iri=collection_iri)
 
     #Objects with an existing IRI
     #TODO: ask if it should be accepted
-    reg_resources, _ = create_regular_resources(manager, graph, other_subjects, collection_iri=collection_iri)
+    reg_resources, _ = create_regular_resources(resource_manager, graph, other_subjects, collection_iri=collection_iri)
     new_resources += reg_resources
 
     return _append_resources_to_hydra_collection(collection_resource, new_resources)

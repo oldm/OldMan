@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from rdflib import ConjunctiveGraph, URIRef, RDF, BNode, Graph
 
-from oldman import ResourceManager, SPARQLDataStore
+from oldman import ClientResourceManager, SPARQLDataStore
 from oldman.iri import UUIDFragmentIriGenerator
 from oldman.exception import OMRequiredHashlessIRIError
 from oldman.rest.crud import HashLessCRUDer
@@ -27,10 +27,13 @@ context = {
     }
 }
 
-data_store = SPARQLDataStore(data_graph)
-manager = ResourceManager(schema_graph, data_store, manager_name="igt")
-crud_controller = HashLessCRUDer(manager)
-model = manager.create_model("MyClass", context, iri_generator=UUIDFragmentIriGenerator())
+data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph)
+data_store.create_model("MyClass", context, iri_generator=UUIDFragmentIriGenerator())
+
+client_manager = ClientResourceManager(data_store)
+client_manager.import_store_models()
+crud_controller = HashLessCRUDer(client_manager)
+model = client_manager.get_model("MyClass")
 
 
 class DatatypeTest(TestCase):
@@ -61,7 +64,7 @@ class DatatypeTest(TestCase):
         g.add((BNode(), RDF.type, URIRef(EXAMPLE + "MyClass")))
         crud_controller.update(hashless_iri, g.serialize(format="turtle"), "turtle")
 
-        resource = manager.get(hashless_iri=hashless_iri)
+        resource = client_manager.get(hashless_iri=hashless_iri)
         self.assertTrue(resource is not None)
         self.assertTrue(hashless_iri in resource.id)
         self.assertTrue('#' in resource.id)
@@ -77,5 +80,5 @@ class DatatypeTest(TestCase):
         """
         hashless_iri = "http://example.org/doc3"
         crud_controller.update(hashless_iri, ttl, "turtle", allow_new_type=True)
-        resource = manager.get(hashless_iri=hashless_iri)
+        resource = client_manager.get(hashless_iri=hashless_iri)
         self.assertEquals(resource.id, hashless_iri + "#this")

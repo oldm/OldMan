@@ -1,8 +1,10 @@
 import logging
 from collections import namedtuple
 from weakref import WeakKeyDictionary
+
 from rdflib import Literal
-from .exception import OMAttributeTypeCheckError, OMRequiredPropertyError, OMReadOnlyAttributeError, OMEditError
+
+from oldman.exception import OMAttributeTypeCheckError, OMRequiredPropertyError, OMReadOnlyAttributeError, OMEditError
 from oldman.parsing.value import AttributeValueExtractor
 from oldman.validation.value_format import ValueFormatError
 from oldman.iri import _skolemize
@@ -14,6 +16,9 @@ OMAttributeMetadata = namedtuple("OMAttributeMetadata", ["name", "property", "la
 
 class OMAttribute(object):
     """An :class:`~oldman.attribute.OMAttribute` object corresponds to a JSON-LD term that refers to a RDF property.
+
+    TODO: update the documentation.  No direct access to the resource_manager anymore
+    (indirect through the resource).
 
     Technically, the name of the :class:`~oldman.attribute.OMAttribute` object is a JSON-LD term,
     namely *"a short-hand string that expands to an IRI or a blank node identifier"*
@@ -35,7 +40,6 @@ class OMAttribute(object):
       - An IRI;
       - A collection (set, list and dict) of these types.
 
-    :param manager: :class:`~oldman.management.manager.ResourceManager` object.
     :param metadata: :class:`~oldman.attribute.OMAttributeMetadata` object.
     :param value_format: :class:`~oldman.validation.value_format.ValueFormat` object
                          that validates the format of values and converts RDF values
@@ -45,23 +49,19 @@ class OMAttribute(object):
     _CONTAINER_REQUIREMENTS = {'@set': set,
                                '@list': list,
                                '@language': dict,
-                               #'@index': dict,
+                               # '@index': dict,
                                None: object}
 
-    def __init__(self, manager, metadata, value_format):
-        self._manager = manager
+    def __init__(self, metadata, value_format):
         self._metadata = metadata
         self._value_format = value_format
-        self._data = WeakKeyDictionary()
-        # Non-saved former values
-        self._former_values = WeakKeyDictionary()
+        self._entries = WeakKeyDictionary()
 
         self._value_extractor = AttributeValueExtractor(self)
 
         # TODO: support "@index"
-        if not self.container in [None, "@set", "@list", "@language"]:
+        if self.container not in [None, "@set", "@list", "@language"]:
             raise NotImplementedError(u"Container %s is not yet supported" % self.container)
-
 
     @property
     def is_required(self):
@@ -92,11 +92,6 @@ class OMAttribute(object):
     def language(self):
         """Its language if localized."""
         return self._metadata.language
-
-    @property
-    def manager(self):
-        """Its :class:`~oldman.management.manager.ResourceManager` object."""
-        return self._manager
 
     @property
     def jsonld_type(self):
@@ -152,8 +147,8 @@ class OMAttribute(object):
         self._check_requirement(resource)
 
     def _check_local_constraints(self, resource, is_end_user):
-        #Read-only constraint
-        if is_end_user and self.is_read_only and self.has_new_value(resource):
+        # Read-only constraint
+        if is_end_user and self.is_read_only and self.has_changed(resource):
             raise OMReadOnlyAttributeError(u"Attribute %s is not editable by end-users" % self.name)
 
     def _check_requirement(self, resource):
@@ -171,29 +166,40 @@ class OMAttribute(object):
         :param resource: :class:`~oldman.resource.Resource` object.
         :return: `False` if the value is `None`.
         """
-        return self._data.get(resource) is not None
+        entry = self._entries.get(resource)
+        return (entry is not None) and (entry.current_value is not None)
 
-    def has_new_value(self, resource):
+    def has_changed(self, resource):
         """
         :param resource: :class:`~oldman.resource.Resource` object.
         """
-        return resource in self._former_values
+        entry = self._entries.get(resource)
+        return (entry is not None) and entry.has_changed()
 
-    def get_former_value(self, resource):
+    def diff(self, resource):
         """Gets out the former value that has been replaced.
 
-        :param resource: :class:`~oldman.resource.Resource` object.
-        :return: its former attribute value or `None`.
-        """
-        return self._former_values.get(resource)
+        TODO: update this comment
 
-    def delete_former_value(self, resource):
+        :param resource: :class:`~oldman.resource.Resource` object.
+        :return: The former and new attribute values.
+        """
+        entry = self._entries.get(resource)
+        if entry is None:
+            #TODO: throw a more precise exception
+            raise Exception("No diff available for attribute %s of %s" % (self.name, resource.id))
+        return entry.diff()
+
+    def receive_storage_ack(self, resource):
         """Clears the former value that has been replaced.
 
+        TODO: update this description.
+
         :param resource: :class:`~oldman.resource.Resource` object.
         """
-        if resource in self._former_values:
-            self._former_values.pop(resource)
+        entry = self._entries.get(resource)
+        if entry is not None:
+            entry.receive_storage_ack()
 
     def to_nt(self, resource):
         """Converts its current attribute value to N-Triples (NT) triples.
@@ -203,7 +209,8 @@ class OMAttribute(object):
         :param resource: :class:`~oldman.resource.Resource` object.
         :return: N-Triples serialization of its attribute value.
         """
-        value = self._data.get(resource, None)
+        entry = self._entries.get(resource, None)
+        value = entry.current_value if entry is not None else None
         return self.value_to_nt(value)
 
     def value_to_nt(self, value):
@@ -225,7 +232,7 @@ class OMAttribute(object):
         lines = ""
 
         if self.container == "@list":
-            #list_value = u"( " + u" ".join(converted_values) + u" )"
+            # list_value = u"( " + u" ".join(converted_values) + u" )"
             # List with skolemized nodes
             first_node = "<%s>" % _skolemize()
             node = first_node
@@ -261,7 +268,7 @@ class OMAttribute(object):
         setattr(resource, self.name, values)
         if initial:
             # Clears "None" former value
-            self.delete_former_value(resource)
+            self.receive_storage_ack(resource)
 
     def _encode_value(self, value, language=None):
         """Encodes an atomic value into a N-Triples line.
@@ -289,8 +296,11 @@ class OMAttribute(object):
         :param resource: :class:`~oldman.resource.Resource` object.
         :return: Atomic value or a generator.
         """
-        value = self._data.get(resource, None)
-        return value
+        entry = self._entries.get(resource)
+        #TODO: should we throw an exception?
+        if entry is None:
+            return None
+        return entry.current_value
 
     def get_lightly(self, resource):
         """Gets the attribute value of a resource in a lightweight manner.
@@ -298,7 +308,7 @@ class OMAttribute(object):
         By default, behaves exactly like :func:`~oldman.attribute.OMAttribute.get`.
         See the latter function for further details.
         """
-        return self.get(resource)
+        return OMAttribute.get(self, resource)
 
     def set(self, resource, value):
         """Sets the attribute value of a resource.
@@ -313,15 +323,12 @@ class OMAttribute(object):
         if isinstance(value, (list, set, dict)) and len(value) == 0:
             value = None
 
-        # Former value (if not already in cache)
-        # (robust to multiple changes before saving)
-        if not resource in self._former_values:
-            # May be None (trick!)
-            former_value = self._data.get(resource)
-            if former_value != value:
-                self._former_values[resource] = former_value
+        entry = self._entries.get(resource)
+        if entry is None:
+            entry = Entry()
+            self._entries[resource] = entry
 
-        self._data[resource] = value
+        entry.current_value = value
 
     def check_value(self, value):
         """Checks a new **when assigned**.
@@ -347,6 +354,23 @@ class OMAttribute(object):
                 self._value_format.check_value(value)
         except ValueFormatError as e:
             raise OMAttributeTypeCheckError(unicode(e))
+
+    def get_entry(self, resource):
+        """TODO: describe. Clearly not for end-users!!! """
+        return self._entries.get(resource)
+
+    def set_entry(self, resource, entry):
+        """TODO: describe. Clearly not for end-users!!! """
+        # Validation
+        if entry.has_changed():
+            former_value, new_value = entry.diff()
+            self.check_value(former_value)
+            self.check_value(new_value)
+        else:
+            self.check_value(entry.current_value)
+
+        self._entries[resource] = entry
+
 
     def _check_container(self, value):
         """Checks that container used is authorized
@@ -379,8 +403,8 @@ class ObjectOMAttribute(OMAttribute):
 
     """
 
-    def __init__(self, manager, metadata, value_format):
-        OMAttribute.__init__(self, manager, metadata, value_format)
+    def __init__(self, metadata, value_format):
+        OMAttribute.__init__(self, metadata, value_format)
 
     def get(self, resource):
         """See :func:`~oldman.attribute.OMAttribute.get`.
@@ -391,11 +415,11 @@ class ObjectOMAttribute(OMAttribute):
         iris = OMAttribute.get(self, resource)
         if isinstance(iris, (list, set)):
             # Returns a generator
-            return (self.manager.get(id=iri) for iri in iris)
+            return (resource.get_related_resource(id=iri) for iri in iris)
         elif isinstance(iris, dict):
             raise NotImplementedError(u"Should we implement it?")
         elif iris is not None:
-            return self.manager.get(id=iris)
+            return resource.get_related_resource(id=iris)
         else:
             return None
 
@@ -414,7 +438,7 @@ class ObjectOMAttribute(OMAttribute):
 
             Accepts :class:`~oldman.resource.Resource` object(s) or IRI(s).
         """
-        from .resource import Resource
+        from oldman.resource.resource import Resource
         f = lambda x: x.id if isinstance(x, Resource) else x
 
         if isinstance(value, set):
@@ -430,3 +454,59 @@ class ObjectOMAttribute(OMAttribute):
         else:
             values = f(value)
         OMAttribute.set(self, resource, values)
+
+
+class Entry(object):
+    """ Mutable.
+
+    TODO: describe
+    """
+
+    def __init__(self, saved_value=None):
+        self._former_value = saved_value
+        self._current_value = saved_value
+
+    def clone(self):
+        new_entry = Entry(self._clone_value(self._former_value))
+        new_entry.current_value = self._current_value
+        return new_entry
+
+    @property
+    def current_value(self):
+        return self._clone_value(self._current_value)
+
+    @current_value.setter
+    def current_value(self, new_value):
+        self._current_value = self._clone_value(new_value)
+
+    def has_changed(self):
+        """ True if the value differs from the stored one """
+        if self._former_value is None and self._current_value is not None:
+            return True
+        return self._former_value != self._current_value
+
+    def diff(self):
+        """TODO: explain """
+        #TODO: find a better exception
+        if not self.has_changed():
+            raise Exception("No diff")
+        return self._clone_value(self._former_value), self._clone_value(self._current_value)
+
+    def receive_storage_ack(self):
+        """TODO: explain """
+        self._former_value = self._current_value
+
+    @staticmethod
+    def _clone_value(value):
+        if isinstance(value, set):
+            return set(value)
+        if isinstance(value, list):
+            return list(value)
+        if isinstance(value, dict):
+            return dict(value)
+        return value
+
+
+
+
+

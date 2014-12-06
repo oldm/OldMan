@@ -1,9 +1,14 @@
 import logging
+from uuid import uuid4
+from oldman.model.manager import ModelManager
 
 from oldman.store.cache import ResourceCache
 from oldman.exception import UnsupportedDataStorageFeatureException, OMAttributeAccessError
 from oldman.exception import OMObjectNotFoundError, OMClassInstanceError
-from oldman.resource import Resource
+from oldman.resource.resource import Resource, StoreResource
+
+
+DEFAULT_MODEL_PREFIX = "Default_"
 
 
 class DataStore(object):
@@ -12,41 +17,74 @@ class DataStore(object):
 
     In the future, non-CRUD operations may also be supported.
 
-    Manages the cache (:class:`~oldman.management.cache.ResourceCache` object) of
+    Manages the cache (:class:`~oldman.resource.cache.ResourceCache` object) of
     :class:`~oldman.resource.Resource` object.
 
-    A :class:`~oldman.management.manager.ResourceManager` object must be assigned
+    A :class:`~oldman.resource.manager.ResourceManager` object must be assigned
     after instantiation of this object.
 
+    :param model_manager: TODO: describe!!!
     :param cache_region: :class:`dogpile.cache.region.CacheRegion` object.
                          This object must already be configured.
-                         Defaults to None (no cache).
+                         Defaults to `None` (no cache).
                          See :class:`~oldman.store.cache.ResourceCache` for further details.
+    :param accept_iri_generation_configuration: If False, the IRI generator cannot be configured
+                         by the user: it is imposed by the data store. Default to `False`.
     """
+    _stores = {}
 
-    def __init__(self, cache_region=None):
-        self._manager = None
+    def __init__(self, model_manager, cache_region=None, accept_iri_generation_configuration=True,
+                 support_sparql=False):
+        self._model_manager = model_manager
         self._logger = logging.getLogger(__name__)
         self._resource_cache = ResourceCache(cache_region)
+        self._name = str(uuid4())
+        self._stores[self._name] = self
+        self._accept_iri_generation_configuration = accept_iri_generation_configuration
+        self._support_sparql=support_sparql
+
+        if not self._model_manager.has_default_model():
+            self._model_manager.create_model(DEFAULT_MODEL_PREFIX + self._name, {u"@context": {}}, self, untyped=True,
+                                             iri_prefix=u"http://localhost/.well-known/genid/%s/" % self._name,
+                                             is_default=True)
 
     @property
-    def manager(self):
-        """The :class:`~oldman.management.manager.ResourceManager` object.
+    def model_manager(self):
+        """The :class:`~oldman.model.manager.ModelManager` object.
+
+        TODO: update
 
         Necessary for creating new :class:`~oldman.resource.Resource` objects
         and accessing to :class:`~oldman.model.Model` objects.
         """
-        return self._manager
-
-    @manager.setter
-    def manager(self, resource_manager):
-        """ Must be called after instantiation. """
-        self._manager = resource_manager
+        return self._model_manager
 
     @property
     def resource_cache(self):
-        """:class:`~oldman.management.cache.ResourceCache` object."""
+        """:class:`~oldman.resource.cache.ResourceCache` object."""
         return self._resource_cache
+
+    @classmethod
+    def get_store(cls, name):
+        """Gets a :class:`~oldman.store.datastore.DataStore` object by its name.
+
+        :param name: store name.
+        :return: A :class:`~oldman.resource.manager.ModelManager` object.
+        """
+        return cls._stores.get(name)
+
+    @property
+    def name(self):
+        """Randomly generated name. Useful for serializing resources."""
+        return self._name
+
+    def support_sparql_filtering(self):
+        """Returns `True` if the datastore supports SPARQL queries (no update).
+
+        Note that in such a case, the :func:`~oldman.store.datastore.DataStore.sparql_filter` method is expected
+        to be implemented.
+        """
+        return self._support_sparql
 
     def get(self, id=None, types=None, hashless_iri=None, eager_with_reversed_attributes=True, **kwargs):
         """Gets the first :class:`~oldman.resource.Resource` object matching the given criteria.
@@ -135,7 +173,7 @@ class DataStore(object):
         :return: A generator of :class:`~oldman.resource.Resource` objects.
 """
         raise UnsupportedDataStorageFeatureException("This datastore %s does not support the SPARQL protocol."
-                                            % self.__class__.__name__)
+                                                     % self.__class__.__name__)
 
     def save(self, resource, attributes, former_types):
         """End-users should not call it directly. Call :func:`oldman.Resource.save()` instead.
@@ -144,7 +182,8 @@ class DataStore(object):
         :param attributes: Ordered list of :class:`~oldman.attribute.OMAttribute` objects.
         :param former_types: List of RDFS class IRIs previously saved.
         """
-        self._save_resource_attributes(resource, attributes, former_types)
+        id = self._save_resource_attributes(resource, attributes, former_types)
+        resource.receive_id(id)
         # Cache
         self._resource_cache.set_resource(resource)
 
@@ -199,6 +238,21 @@ class DataStore(object):
         raise UnsupportedDataStorageFeatureException("This datastore %s does not manage instance counters."
                                                      % self.__class__.__name__)
 
+    def create_model(self, class_name_or_iri, context, iri_generator=None, iri_prefix=None,
+                     iri_fragment=None, incremental_iri=False):
+        """TODO: comment. Convenience function """
+        if not self._accept_iri_generation_configuration:
+            if iri_generator or iri_prefix or iri_fragment or incremental_iri:
+                #TODO: find a better exception
+                raise Exception("The generator is imposed by the datastore, it cannot"
+                                "be configured by the user.")
+            else:
+                iri_generator = self._create_iri_generator(class_name_or_iri)
+
+        self._model_manager.create_model(class_name_or_iri, context, self, iri_generator=iri_generator,
+                                         iri_prefix=iri_prefix, iri_fragment=iri_fragment,
+                                         incremental_iri=incremental_iri)
+
     def _get_first_resource_found(self):
         raise UnsupportedDataStorageFeatureException("This datastore %s cannot get a resource at random."
                                                      % self.__class__.__name__)
@@ -212,11 +266,17 @@ class DataStore(object):
                                                      % self.__class__.__name__)
 
     def _save_resource_attributes(self, resource, attributes):
+        """
+        TODO: describe
+        :param resource:
+        :param attributes:
+        :return: the ID of resource (useful when the IRI was a temporary one (e.g. a skolemized IRI).
+        """
         raise UnsupportedDataStorageFeatureException("This datastore %s cannot update resources (read-only)."
                                                      % self.__class__.__name__)
 
     def _new_resource_object(self, id, resource_graph):
-        resource = Resource.load_from_graph(self._manager, id, resource_graph, is_new=(len(resource_graph) == 0))
+        resource = StoreResource.load_from_graph(self._model_manager, self, id, resource_graph, is_new=False)
         self.resource_cache.set_resource(resource)
         return resource
 
@@ -231,3 +291,7 @@ class DataStore(object):
             self._logger.warn(u"Multiple resources have the same base_uri: %s\n. "
                               u"The first one is selected." % resources)
         return resources[0]
+
+    def _create_iri_generator(self, class_name_or_iri):
+        raise UnsupportedDataStorageFeatureException("This datastore %s does create IRI generators."
+                                                     % self.__class__.__name__)

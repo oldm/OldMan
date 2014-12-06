@@ -1,16 +1,12 @@
 from os import path
 import json
 import logging.config
+
 from dogpile.cache import make_region
-from rdflib import Dataset, Graph, URIRef, Literal, RDF, XSD
-from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
+from rdflib import Dataset, Graph
 from rdflib.namespace import FOAF
 
-from oldman import ResourceManager, parse_graph_safely, SPARQLDataStore
-from oldman.attribute import OMAttributeTypeCheckError, OMRequiredPropertyError
-from oldman.exception import OMClassInstanceError, OMAttributeAccessError, OMUniquenessError
-from oldman.exception import OMWrongResourceError, OMObjectNotFoundError, OMHashIriError, OMEditError
-from oldman.exception import OMDifferentHashlessIRIError, OMForbiddenSkolemizedIRIError, OMUnauthorizedTypeChangeError
+from oldman import ClientResourceManager, parse_graph_safely, SPARQLDataStore
 from oldman.rest.crud import HashLessCRUDer
 
 
@@ -251,20 +247,25 @@ context = {
 #cache_region = None
 cache_region = make_region().configure('dogpile.cache.memory_pickle')
 
-data_store = SPARQLDataStore(data_graph, cache_region=cache_region)
+data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph, cache_region=cache_region)
 # Takes the prefixes from the schema graph
 data_store.extract_prefixes(schema_graph)
 
-manager = ResourceManager(schema_graph, data_store)
-# Model classes are generated here!
 #lp_name_or_iri = "LocalPerson"
 lp_name_or_iri = MY_VOC + "LocalPerson"
-lp_model = manager.create_model(lp_name_or_iri, context, iri_prefix="http://localhost/persons/",
-                                iri_fragment="me")
-rsa_model = manager.create_model("LocalRSAPublicKey", context)
-gpg_model = manager.create_model("LocalGPGPublicKey", context)
+data_store.create_model(lp_name_or_iri, context, iri_prefix="http://localhost/persons/", iri_fragment="me")
+data_store.create_model("LocalRSAPublicKey", context)
+data_store.create_model("LocalGPGPublicKey", context)
 
-crud_controller = HashLessCRUDer(manager)
+client_manager = ClientResourceManager(data_store)
+client_manager.import_store_models()
+
+lp_model = client_manager.get_model(lp_name_or_iri)
+rsa_model = client_manager.get_model("LocalRSAPublicKey")
+gpg_model = client_manager.get_model("LocalGPGPublicKey")
+
+
+crud_controller = HashLessCRUDer(client_manager)
 
 bob_name = "Bob"
 bob_blog = "http://blog.example.com/"
