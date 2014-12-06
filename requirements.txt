@@ -10,5 +10,4 @@ python-coveralls
 
 -e .
 
-# TODO: port it to Python 3
-negotiator
+SPARQLWrapper
