@@ -37,7 +37,7 @@ def create_blank_nodes(manager, graph, bnode_subjects, hashless_iri=None, collec
         if (hashless_iri is not None) and (not resource.is_blank_node()) and resource.hashless_iri != hashless_iri:
             raise OMDifferentHashlessIRIError(u"%s is not the hash-less IRI of %s" % (hashless_iri, resource.id))
 
-    #When some Bnodes are interconnected
+    # When some Bnodes are interconnected
     for resource in dependent_resources:
         # Update again
         resource.update_from_graph(graph, save=False)

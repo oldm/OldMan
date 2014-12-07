@@ -1,0 +1,12 @@
+{
+  "@context": {
+    "test": "urn:test:vocab:",
+    "hydra": "http://www.w3.org/ns/hydra/core#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "MyClass": "test:MyClass",
+    "is_working": {
+      "@id": "test:isWorking",
+      "@type": "xsd:boolean"
+    }
+  }
+}

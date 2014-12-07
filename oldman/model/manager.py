@@ -52,7 +52,7 @@ class ModelManager(object):
 
         self._include_reversed_attributes = False
 
-        #TODO: examine their relevance
+        # TODO: examine their relevance
         if declare_default_operation_functions:
             self.declare_operation_function(append_to_hydra_collection, HYDRA_COLLECTION_IRI, HTTP_POST)
             self.declare_operation_function(append_to_hydra_paged_collection, HYDRA_PAGED_COLLECTION_IRI, HTTP_POST)
@@ -106,8 +106,9 @@ class ModelManager(object):
         """TODO: explain. Includes the top ancestor. """
         return self._registry.find_descendant_models(top_ancestor_name_or_iri)
 
-    def create_model(self, class_name_or_iri, context, data_store, iri_prefix=None, iri_fragment=None,
-                     iri_generator=None, untyped=False, incremental_iri=False, is_default=False):
+    def create_model(self, class_name_or_iri, context_iri_or_payload, data_store, iri_prefix=None, iri_fragment=None,
+                     iri_generator=None, untyped=False, incremental_iri=False, is_default=False,
+                     context_file_path=None):
         """Creates a :class:`~oldman.model.Model` object.
 
         TODO: remove data_store from the constructor!
@@ -125,7 +126,7 @@ class ModelManager(object):
           * created from the parameters `iri_prefix`, `iri_fragment` and `incremental_iri`.
 
         :param class_name_or_iri: IRI or JSON-LD term of a RDFS class.
-        :param context: `dict`, `list` or `IRI` that represents the JSON-LD context .
+        :param context_iri_or_payload: `dict`, `list` or `IRI` that represents the JSON-LD context .
         :param iri_generator: :class:`~oldman.iri.IriGenerator` object. If given, other `iri_*` parameters are
                ignored.
         :param iri_prefix: Prefix of generated IRIs. Defaults to `None`.
@@ -135,6 +136,7 @@ class ModelManager(object):
         :param incremental_iri: If `True` an :class:`~oldman.iri.IncrementalIriGenerator` is created instead of a
                :class:`~oldman.iri.RandomPrefixedIriGenerator`. Defaults to `False`.
                Has no effect if `iri_prefix` is not given.
+        :param context_file_path: TODO: describe.
         """
 
         # Only for the DefaultModel
@@ -143,9 +145,11 @@ class ModelManager(object):
             ancestry = ClassAncestry(class_iri, self._schema_graph)
             om_attributes = {}
         else:
-            class_iri = _extract_class_iri(class_name_or_iri, context)
+            context_file_path_or_payload = context_file_path if context_file_path is not None \
+                else context_iri_or_payload
+            class_iri = _extract_class_iri(class_name_or_iri, context_file_path_or_payload)
             ancestry = ClassAncestry(class_iri, self._schema_graph)
-            om_attributes = self._attr_extractor.extract(class_iri, ancestry.bottom_up, context,
+            om_attributes = self._attr_extractor.extract(class_iri, ancestry.bottom_up, context_file_path_or_payload,
                                                          self._schema_graph)
         if iri_generator is not None:
             id_generator = iri_generator
@@ -161,7 +165,7 @@ class ModelManager(object):
         operations = self._operation_extractor.extract(ancestry, self._schema_graph,
                                                        self._operation_functions)
 
-        model = Model(class_name_or_iri, class_iri, ancestry.bottom_up, context, om_attributes,
+        model = Model(class_name_or_iri, class_iri, ancestry.bottom_up, context_iri_or_payload, om_attributes,
                       id_generator, operations=operations)
         self._add_model(model, is_default=is_default)
 

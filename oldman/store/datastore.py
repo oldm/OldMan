@@ -238,20 +238,21 @@ class DataStore(object):
         raise UnsupportedDataStorageFeatureException("This datastore %s does not manage instance counters."
                                                      % self.__class__.__name__)
 
-    def create_model(self, class_name_or_iri, context, iri_generator=None, iri_prefix=None,
-                     iri_fragment=None, incremental_iri=False):
+    def create_model(self, class_name_or_iri, context_iri_or_payload, iri_generator=None, iri_prefix=None,
+                     iri_fragment=None, incremental_iri=False, context_file_path=None):
         """TODO: comment. Convenience function """
         if not self._accept_iri_generation_configuration:
             if iri_generator or iri_prefix or iri_fragment or incremental_iri:
-                #TODO: find a better exception
+                # TODO: find a better exception
                 raise Exception("The generator is imposed by the datastore, it cannot"
                                 "be configured by the user.")
             else:
                 iri_generator = self._create_iri_generator(class_name_or_iri)
 
-        self._model_manager.create_model(class_name_or_iri, context, self, iri_generator=iri_generator,
+        self._model_manager.create_model(class_name_or_iri, context_iri_or_payload, self, iri_generator=iri_generator,
                                          iri_prefix=iri_prefix, iri_fragment=iri_fragment,
-                                         incremental_iri=incremental_iri)
+                                         incremental_iri=incremental_iri,
+                                         context_file_path=context_file_path)
 
     def _get_first_resource_found(self):
         raise UnsupportedDataStorageFeatureException("This datastore %s cannot get a resource at random."
