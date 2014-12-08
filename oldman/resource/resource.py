@@ -159,6 +159,13 @@ class Resource(object):
         return list(self._models)[0].context
 
     @property
+    def local_context(self):
+        """TODO: describe """
+        if len(self._models) > 1:
+            raise NotImplementedError(u"TODO: merge local contexts when a Resource has multiple models")
+        return list(self._models)[0].local_context
+
+    @property
     def model_manager(self):
         """TODO: describe """
         return self._model_manager
@@ -430,7 +437,7 @@ class Resource(object):
         :return: A string in the chosen RDF format.
         """
         g = Graph()
-        g.parse(data=self.to_jsonld(), format="json-ld")
+        g.parse(data=self.to_json(), context=self.local_context, format="json-ld")
         return g.serialize(format=rdf_format)
 
     def __str__(self):

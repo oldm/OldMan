@@ -7,7 +7,7 @@ from oldman import ClientResourceManager, parse_graph_safely, SPARQLDataStore
 schema_graph = Graph()
 my_class_def = {
     "@context": {
-            "hydra": "http://www.w3.org/ns/hydra/core#",
+        "hydra": "http://www.w3.org/ns/hydra/core#",
     },
     "@id": "urn:test:vocab:MyClass",
     "@type": "hydra:Class",
@@ -37,7 +37,7 @@ class ContextUriTest(TestCase):
         obj = model.new(is_working=True)
         self.assertEquals(obj.context, context_iri)
         self.assertTrue(obj.is_working)
-        print obj.to_dict()
+        print obj.to_rdf()
 
 
 

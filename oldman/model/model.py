@@ -38,16 +38,18 @@ class Model(object):
                     :class:`~oldman.resource.Resource` object. Keys are the method names.
                     Defaults to `{}`.
     :param operations: TODO: describe.
+    :param local_context: TODO: describe.
     """
 
     def __init__(self, name, class_iri, ancestry_iris, context, om_attributes,
-                 id_generator, operations=None):
+                 id_generator, operations=None, local_context=None):
         reserved_names = ["id", "hashless_iri", "_types", "types"]
         for field in reserved_names:
             if field in om_attributes:
                 raise OMReservedAttributeNameError("%s is reserved" % field)
         self._name = name
         self._context = clean_context(context)
+        self._local_context = local_context if local_context is not None else self._context
         self._class_iri = class_iri
         self._om_attributes = om_attributes
         self._id_generator = id_generator
@@ -88,8 +90,17 @@ class Model(object):
     def context(self):
         """An IRI, a `list` or a `dict` that describes the JSON-LD context.
         See `<http://www.w3.org/TR/json-ld/#the-context>`_ for more details.
+
+        Official context that will be included in the representation.
         """
         return self._context
+
+    @property
+    def local_context(self):
+        """ Context available locally (but not to external consumer).
+        TODO: describe further
+        """
+        return self._local_context
 
     @property
     def has_reversed_attributes(self):
@@ -162,12 +173,13 @@ class ClientModel(Model):
         """TODO: describe """
         return ClientModel(resource_manager, store_model.name, store_model.class_iri,
                            store_model.ancestry_iris, store_model.context, store_model.om_attributes,
-                           store_model._id_generator, operations=store_model._operations)
+                           store_model._id_generator, operations=store_model._operations,
+                           local_context=store_model.local_context)
 
     def __init__(self, resource_manager, name, class_iri, ancestry_iris, context, om_attributes,
-                 id_generator, operations=None):
+                 id_generator, operations=None, local_context=None):
         Model.__init__(self, name, class_iri, ancestry_iris, context, om_attributes,
-                       id_generator, operations=operations)
+                       id_generator, operations=operations, local_context=local_context)
         self._resource_manager = resource_manager
         # {method_name: ancestor_class_iri}
         self._method_inheritance = {}

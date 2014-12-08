@@ -166,7 +166,7 @@ class ModelManager(object):
                                                        self._operation_functions)
 
         model = Model(class_name_or_iri, class_iri, ancestry.bottom_up, context_iri_or_payload, om_attributes,
-                      id_generator, operations=operations)
+                      id_generator, operations=operations, local_context=context_file_path)
         self._add_model(model, is_default=is_default)
 
         # Reversed attributes awareness
