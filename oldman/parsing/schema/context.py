@@ -46,7 +46,7 @@ class JsonLdContextAttributeMdExtractor(OMAttributeMdExtractor):
                         self._update_property(om_property, term)
 
                 # Not declared (worst case)
-                elif len(property_iri) == 0:
+                else:
                     name = schema_graph.qname(property_iri).replace(":", "_")
                     self._logger.warn(u"No short name found for property %s. QName %s used instead"
                                       % (property_iri, name))

@@ -1,7 +1,7 @@
 import logging
 
 from .attribute import OMAttributeMetadata, OMAttribute, ObjectOMAttribute
-from oldman.exception import OMAlreadyDeclaredDatatypeError, OMPropertyDefTypeError
+from oldman.exception import OMAlreadyDeclaredDatatypeError, OMPropertyDefTypeError, OMAttributeDefError
 from oldman.exception import OMAlreadyGeneratedAttributeError, OMInternalError, OMPropertyDefError
 from oldman.common import DATATYPE_PROPERTY, OBJECT_PROPERTY
 
@@ -51,8 +51,8 @@ class OMProperty(object):
         # 1, 42, "*", "+"
         self._cardinality = cardinality
         self._type = property_type
-        self._ranges = ranges if ranges is not None else set()
-        self._domains = domains if domains is not None else set()
+        self._ranges = set()
+        self._domains = set()
 
         if read_only and write_only:
             raise OMPropertyDefError(u"Property %s cannot be read-only and write-only" % property_iri)
@@ -63,6 +63,14 @@ class OMProperty(object):
         # Temporary list, before creating attributes
         self._tmp_attr_mds = []
         self._om_attributes = None
+
+        if domains is not None:
+            for domain in domains:
+                self.add_domain(domain)
+
+        if ranges is not None:
+            for range in ranges:
+                self.add_range(range)
 
     @property
     def iri(self):
@@ -209,7 +217,7 @@ class OMProperty(object):
             elif self.type == DATATYPE_PROPERTY:
                 jsonld_type = self.default_datatype
             elif language is None:
-                raise NotImplementedError(u"Untyped JSON-LD value (with no language) are not (yet?) supported")
+                raise OMAttributeDefError(u"Untyped attribute %s (no range, no JSON-LD value)." % name)
 
         if len([md for md in self._tmp_attr_mds if md.name == name]) > 0:
             raise OMInternalError(u"Multiple attribute named %s" % name)

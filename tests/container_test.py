@@ -95,7 +95,7 @@ context = {
             "@language": "fr"
         },
         "undeclared_set": {
-            "@id": "ex:localizedList",
+            "@id": "ex:undeclaredSet",
             "@type": "xsd:string"
         },
         "bool_list": {

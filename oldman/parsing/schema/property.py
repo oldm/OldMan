@@ -1,3 +1,4 @@
+from collections import defaultdict
 from rdflib import Namespace, URIRef
 
 from oldman.model.property import OMProperty
@@ -53,16 +54,38 @@ class HydraPropertyExtractor(OMPropertyExtractor):
             } .
         }
     """
+
+    _extract_hydra_property_domain = u"""
+        SELECT ?p ?domain
+        WHERE {
+            ?class_iri hydra:supportedProperty ?sp.
+            ?sp hydra:property ?p.
+            ?p rdfs:domain ?domain .
+        }
+    """
+
+    _extract_hydra_property_range = u"""
+        SELECT ?p ?range
+        WHERE {
+            ?class_iri hydra:supportedProperty ?sp.
+            ?sp hydra:property ?p.
+            ?p rdfs:range ?range .
+        }
+    """
+
     _ns = {u'hydra': Namespace(u"http://www.w3.org/ns/hydra/core#")}
 
     def update(self, om_properties, class_iri, type_iris, schema_graph):
         """See :func:`oldman.parsing.schema.property.OMPropertyExtractor.update`."""
         prop_params = {}
+        prop_ranges = defaultdict(set)
+        prop_domains = defaultdict(set)
 
         for type_uri in type_iris:
-            results = schema_graph.query(self._extract_hydra_properties, initNs=self._ns,
-                                         initBindings={u'class_iri': URIRef(type_uri)})
-            for property_iri, is_req, ro, wo, rev in results:
+            #TODO: make sure there is no multiple entries per property
+            property_results = schema_graph.query(self._extract_hydra_properties, initNs=self._ns,
+                                                  initBindings={u'class_iri': URIRef(type_uri)})
+            for property_iri, is_req, ro, wo, rev in property_results:
                 reversed = bool(rev)
                 prop_uri = property_iri.toPython()
                 # Booleans are false by default
@@ -74,9 +97,22 @@ class HydraPropertyExtractor(OMPropertyExtractor):
                 write_only = write_only or (wo is not None and bool(wo.toPython()))
                 prop_params[(prop_uri, reversed)] = (is_required, read_only, write_only)
 
+            # Domain
+            domain_results = schema_graph.query(self._extract_hydra_property_domain, initNs=self._ns,
+                                                initBindings={u'class_iri': URIRef(type_uri)})
+            for property, domain in domain_results:
+                prop_domains[unicode(property)].add(unicode(domain))
+
+            # Range
+            range_results = schema_graph.query(self._extract_hydra_property_range, initNs=self._ns,
+                                               initBindings={u'class_iri': URIRef(type_uri)})
+            for property, range in range_results:
+                prop_ranges[unicode(property)].add(unicode(range))
+
         for (property_iri, reversed), (is_required, read_only, write_only) in prop_params.iteritems():
             if not (property_iri, reversed) in om_properties:
                 om_property = OMProperty(property_iri, class_iri, is_required=is_required,
-                                         read_only=read_only, write_only=write_only, reversed=reversed)
+                                         read_only=read_only, write_only=write_only, reversed=reversed,
+                                         domains=prop_domains.get(property_iri), ranges=prop_ranges.get(property_iri))
                 om_properties[(property_iri, reversed)] = om_property
         return om_properties

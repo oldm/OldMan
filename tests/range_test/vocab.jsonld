@@ -1,0 +1,26 @@
+{
+  "@context": {
+    "test": "urn:test:vocab:",
+    "hydra": "http://www.w3.org/ns/hydra/core#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "range": {
+      "@id": "rdfs:range",
+      "@type": "@id"
+    },
+    "property": {
+      "@id": "hydra:property",
+      "@type": "@id"
+    }
+  },
+  "@id": "test:MyClass",
+  "@type": "hydra:Class",
+  "hydra:supportedProperty": [
+    {
+      "property": {
+        "@id": "test:hasX",
+        "range": "xsd:int"
+      }
+    }
+  ]
+}
