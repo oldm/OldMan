@@ -156,7 +156,7 @@ class OMProperty(object):
         :param domain: IRI of RDFS class.
         """
         # Detects XSD
-        if range.startswith(u"http://www.w3.org/2001/XMLSchema#"):
+        if domain.startswith(u"http://www.w3.org/2001/XMLSchema#"):
             #TODO: find a better error type
             raise Exception(u"Domain cannot have a literal datatype")
         self._domains.add(domain)
