@@ -38,10 +38,11 @@ class OMProperty(object):
            Defaults to `None` (unknown).
     :param domains: Set of class IRIs that are declared as the RDFS domain of the property. Defaults to `set()`.
     :param ranges: Set of class IRIs that are declared as the RDFS range of the property. Defaults to `set()`.
+    :param link_class_iri: TODO: describe.
     """
     def __init__(self, property_iri, supporter_class_iri, is_required=False, read_only=False,
                  write_only=False, reversed=False, cardinality=None, property_type=None,
-                 domains=None, ranges=None):
+                 domains=None, ranges=None, link_class_iri=None):
         self._logger = logging.getLogger(__name__)
         self._iri = property_iri
         self._supporter_class_iri = supporter_class_iri
@@ -64,6 +65,9 @@ class OMProperty(object):
         self._tmp_attr_mds = []
         self._om_attributes = None
 
+        # When the property is a hydra:Link
+        self._link_class_iri = link_class_iri
+
         if domains is not None:
             for domain in domains:
                 self.add_domain(domain)
@@ -71,6 +75,11 @@ class OMProperty(object):
         if ranges is not None:
             for range in ranges:
                 self.add_range(range)
+
+    @property
+    def link_class_iri(self):
+        """TODO: describe """
+        return self._link_class_iri
 
     @property
     def iri(self):

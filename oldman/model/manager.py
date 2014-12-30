@@ -50,9 +50,9 @@ class ModelManager(object):
             self.declare_operation_function(append_to_hydra_collection, HYDRA_COLLECTION_IRI, HTTP_POST)
             self.declare_operation_function(append_to_hydra_paged_collection, HYDRA_PAGED_COLLECTION_IRI, HTTP_POST)
 
-        # Create "anonymous" models
-        if schema_graph is not None:
-            self._create_anonymous_models()
+        # # Create "anonymous" models
+        # if schema_graph is not None:
+        #     self._create_anonymous_models()
 
     @property
     def include_reversed_attributes(self):
@@ -162,6 +162,9 @@ class ModelManager(object):
         if not self._include_reversed_attributes:
             self._include_reversed_attributes = model.has_reversed_attributes
 
+        # Anonymous classes derived from hydra:Link properties
+        self._create_anonymous_models(model, context_file_path, data_store)
+
         return model
 
     def get_model(self, class_name_or_iri):
@@ -170,21 +173,14 @@ class ModelManager(object):
     def _add_model(self, model, is_default=False):
         self._registry.register(model, is_default=is_default)
 
-    def _create_anonymous_models(self):
+    def _create_anonymous_models(self, model, context_iri_or_payload, data_store):
         """ These classes are typically derived from hydra:Link.
             Their role is just to support some operations.
          """
-        req = """SELECT ?c WHERE {
-            ?c a <http://www.w3.org/ns/hydra/core#Class> .
-            FILTER (CONTAINS(STR(?c), "localhost/.well-known/genid") )
-        }
-        """
-        classes = [unicode(r) for r, in self._schema_graph.query(req)]
-        # The data store can be ignored here
-        data_store = None
+        classes = {attr.om_property.link_class_iri for attr in model.om_attributes.values()}.difference({None})
 
         for cls_iri in classes:
-            self.create_model(cls_iri, {"@context": {}}, data_store)
+            self.create_model(cls_iri, context_iri_or_payload, data_store)
 
 
 class ClientModelManager(ModelManager):

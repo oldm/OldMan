@@ -36,7 +36,7 @@ class HydraPropertyExtractor(OMPropertyExtractor):
     """
 
     _extract_hydra_properties = u"""
-        SELECT ?p ?required ?readonly ?writeonly ?reversed
+        SELECT ?p ?required ?readonly ?writeonly ?reversed ?link_class
         WHERE {
             ?class_iri hydra:supportedProperty ?sp.
             ?sp hydra:property ?p.
@@ -52,6 +52,10 @@ class HydraPropertyExtractor(OMPropertyExtractor):
             OPTIONAL {
                 ?sp hydra:reversed ?reversed
             } .
+            OPTIONAL {
+                ?p a hydra:Link ;
+                   <urn:oldman:correspondingClass> ?link_class .
+            }
         }
     """
 
@@ -85,17 +89,19 @@ class HydraPropertyExtractor(OMPropertyExtractor):
             #TODO: make sure there is no multiple entries per property
             property_results = schema_graph.query(self._extract_hydra_properties, initNs=self._ns,
                                                   initBindings={u'class_iri': URIRef(type_uri)})
-            for property_iri, is_req, ro, wo, rev in property_results:
+            for property_iri, is_req, ro, wo, rev, link_class in property_results:
                 reversed = bool(rev)
                 prop_uri = property_iri.toPython()
                 # Booleans are false by default
-                is_required, read_only, write_only = prop_params.get((prop_uri, reversed), (False, False, False))
+                is_required, read_only, write_only, _ = prop_params.get((prop_uri, reversed),
+                                                                        (False, False, False, None))
 
                 # Updates these booleans
                 is_required = is_required or (is_req is not None and bool(is_req.toPython()))
                 read_only = read_only or (ro is not None and bool(ro.toPython()))
                 write_only = write_only or (wo is not None and bool(wo.toPython()))
-                prop_params[(prop_uri, reversed)] = (is_required, read_only, write_only)
+                link_class_iri = unicode(link_class) if link_class is not None else None
+                prop_params[(prop_uri, reversed)] = (is_required, read_only, write_only, link_class_iri)
 
             # Domain
             domain_results = schema_graph.query(self._extract_hydra_property_domain, initNs=self._ns,
@@ -109,10 +115,11 @@ class HydraPropertyExtractor(OMPropertyExtractor):
             for property, range in range_results:
                 prop_ranges[unicode(property)].add(unicode(range))
 
-        for (property_iri, reversed), (is_required, read_only, write_only) in prop_params.iteritems():
+        for (property_iri, reversed), (is_required, read_only, write_only, link_class_iri) in prop_params.iteritems():
             if not (property_iri, reversed) in om_properties:
                 om_property = OMProperty(property_iri, class_iri, is_required=is_required,
                                          read_only=read_only, write_only=write_only, reversed=reversed,
-                                         domains=prop_domains.get(property_iri), ranges=prop_ranges.get(property_iri))
+                                         domains=prop_domains.get(property_iri), ranges=prop_ranges.get(property_iri),
+                                         link_class_iri=link_class_iri)
                 om_properties[(property_iri, reversed)] = om_property
         return om_properties
