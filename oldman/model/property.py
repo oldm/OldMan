@@ -225,7 +225,9 @@ class OMProperty(object):
             elif self.type == DATATYPE_PROPERTY:
                 jsonld_type = self.default_datatype
             elif language is None:
-                raise OMAttributeDefError(u"Untyped attribute %s (no range, no JSON-LD value)." % name)
+                self._logger.warn(u"Untyped attribute %s (no range, no JSON-LD value). Presumed an object property."
+                                  % name)
+                jsonld_type = "@id"
 
         if len([md for md in self._tmp_attr_mds if md.name == name]) > 0:
             raise OMInternalError(u"Multiple attribute named %s" % name)
