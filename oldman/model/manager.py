@@ -180,7 +180,8 @@ class ModelManager(object):
         classes = {attr.om_property.link_class_iri for attr in model.om_attributes.values()}.difference({None})
 
         for cls_iri in classes:
-            self.create_model(cls_iri, context_iri_or_payload, data_store)
+            if self._registry.get_model(cls_iri) is None:
+                self.create_model(cls_iri, context_iri_or_payload, data_store)
 
 
 class ClientModelManager(ModelManager):
