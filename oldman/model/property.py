@@ -139,8 +139,7 @@ class OMProperty(object):
         if p_range.startswith(u"http://www.w3.org/2001/XMLSchema#"):
             self.type = DATATYPE_PROPERTY
 
-        if self.type == DATATYPE_PROPERTY and (not p_range in self._ranges) \
-                and len(self._ranges) >= 1:
+        if (self.type == DATATYPE_PROPERTY) and (p_range not in self._ranges) and (len(self._ranges) >= 1):
             raise OMAlreadyDeclaredDatatypeError(u"Property datatype can only be specified once")
 
         self._ranges.add(p_range)

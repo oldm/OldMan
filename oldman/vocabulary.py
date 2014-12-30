@@ -28,6 +28,8 @@ MODEL_HAS_PRIORITY_IRI = "urn:oldman:model:ordering:hasPriority"
 MODEL_PRIORITY_CLASS_IRI = "urn:oldman:model:ordering:class"
 MODEL_PRIORITY_IRI = "urn:oldman:model:ordering:priority"
 
+OLDM_CORRESPONDING_CLASS = "urn:oldman:correspondingClass"
+
 OLDM_SHORTNAME = "urn:oldman:shortname"
 
 #: Used to increment IRIs.

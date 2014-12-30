@@ -21,8 +21,7 @@ def get_operation_function(operation_functions, class_iri, ancestry, method):
 class OperationExtractor(object):
     """ TODO: describe
     """
-    def extract(self, class_iri, ancestry, schema_graph,
-                operation_implementations):
+    def extract(self, ancestry, schema_graph, operation_functions):
         """ TODO: describe
         """
         raise NotImplementedError("Abstract method")
@@ -127,7 +126,7 @@ class HydraOperationExtractor(OperationExtractor):
         for m in http_methods:
             method = m.upper()
 
-            if not method in operations:
+            if method not in operations:
 
                 # Get function
                 func = get_operation_function(operation_functions, class_iri, ancestry, method)

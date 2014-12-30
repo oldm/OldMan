@@ -20,19 +20,12 @@ class ModelManager(object):
     """
     TODO: update this documentation
 
-    The `model_manager` is the central object of this OLDM.
-
-    It gives access to the :class:`~oldman.store.datastore.DataStore` object
-    and creates :class:`~oldman.model.Model` objects.
-    It also creates, retrieves and caches :class:`~oldman.resource.Resource` objects.
+    The `model_manager` creates and registers :class:`~oldman.model.Model` objects.
 
     Internally, it owns a :class:`~oldman.resource.registry.ModelRegistry` object.
 
-    TODO: UPDATE DESCRIPTION
-
     :param schema_graph: :class:`rdflib.Graph` object containing all the schema triples.
-    :param data_store: :class:`~oldman.store.datastore.DataStore` object. Supports CRUD operations on
-                       :class:`~oldman.resource.Resource` objects.
+    :param data_store: :class:`~oldman.store.datastore.DataStore` object.
     :param attr_extractor: :class:`~oldman.parsing.attribute.OMAttributeExtractor` object that
                             will extract :class:`~oldman.attribute.OMAttribute` for generating
                             new :class:`~oldman.model.Model` objects.
@@ -57,13 +50,9 @@ class ModelManager(object):
             self.declare_operation_function(append_to_hydra_collection, HYDRA_COLLECTION_IRI, HTTP_POST)
             self.declare_operation_function(append_to_hydra_paged_collection, HYDRA_PAGED_COLLECTION_IRI, HTTP_POST)
 
-    @property
-    def name(self):
-        """Name of this manager.
-        The manager can be retrieved from its name by calling the
-        class method :func:`~oldman.resource.manager.ModelManager.get_manager`.
-        """
-        return self._name
+        # Create "anonymous" models
+        if schema_graph is not None:
+            self._create_anonymous_models()
 
     @property
     def include_reversed_attributes(self):
@@ -181,9 +170,29 @@ class ModelManager(object):
     def _add_model(self, model, is_default=False):
         self._registry.register(model, is_default=is_default)
 
+    def _create_anonymous_models(self):
+        """ These classes are typically derived from hydra:Link.
+            Their role is just to support some operations.
+         """
+        req = """SELECT ?c WHERE {
+            ?c a <http://www.w3.org/ns/hydra/core#Class> .
+            FILTER (CONTAINS(STR(?c), "localhost/.well-known/genid") )
+        }
+        """
+        classes = [unicode(r) for r, in self._schema_graph.query(req)]
+        # The data store can be ignored here
+        data_store = None
+
+        for cls_iri in classes:
+            self.create_model(cls_iri, {"@context": {}}, data_store)
+
 
 class ClientModelManager(ModelManager):
-    """TODO: complete the doc """
+    """Client ModelManager.
+
+    Has access to the `resource_manager`.
+    In charge of the conversion between and store and client models.
+    """
 
     def __init__(self, resource_manager, **kwargs):
         ModelManager.__init__(self, **kwargs)
@@ -195,7 +204,7 @@ class ClientModelManager(ModelManager):
         return self._resource_manager
 
     def import_model(self, store_model, data_store, is_default=False):
-        """TODO: describe """
+        """ Imports a store model. Creates the corresponding client model. """
         if is_default:
             # Default model
             client_model = self.get_model(None)
@@ -208,11 +217,11 @@ class ClientModelManager(ModelManager):
         self._conversion_manager.register_model_converter(client_model, store_model, data_store, converter)
 
     def convert_store_resources(self, store_resources):
-        """TODO: describe """
+        """Returns converted client resources. """
         return self._conversion_manager.convert_store_to_client_resources(store_resources, self._resource_manager)
 
     def convert_client_resource(self, client_resource):
-        """TODO: describe """
+        """Returns converted store resources. """
         return self._conversion_manager.convert_client_to_store_resource(client_resource)
 
 

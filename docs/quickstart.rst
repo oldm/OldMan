@@ -29,15 +29,12 @@ Here, we just need its IRI::
 
     context_iri = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_context.jsonld"
 
-We now have almost enough domain knowledge to create our models.
+We now have almost enough domain knowledge to create our datastore and its models.
 
 
-TODO: update the comments. Introduce the data store.
-It creates :class:`~oldman.model.Model` objects.
+Here, we consider an in-memory SPARQL endpoint as a datastore (:class:`~oldman.store.sparql.SPARQLDataStore`)::
 
-But first of all, we have to decide where to store our data.
-Here we create an in-memory RDF graph and use it as a SPARQL endpoint (:class:`~oldman.store.sparql.SPARQLDataStore`)::
-
+    # In-memory RDF graph
     data_graph = Graph()
     data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph)
 
@@ -45,8 +42,8 @@ We extract the prefix information from the schema graph::
 
     data_store.extract_prefixes(schema_graph)
 
-TODO: update
-We create our `LocalPerson` :class:`~oldman.model.Model` object.
+
+We create a `LocalPerson` :class:`~oldman.model.model.Model` for the datastore.
 For that, we need:
  * The IRI or a JSON-LD term of the RDFS class of the model. Here `"LocalPerson"` is an alias
    for `<http://example.org/myvoc#LocalPerson>`_ defined in the context file ;
@@ -54,24 +51,25 @@ For that, we need:
  * A prefix for creating the IRI of new resources (optional) ;
  * An IRI fragment (optional);
  * To declare that we want to generate incremental IRIs with short numbers
-   for new :class:`~oldman.resource.Resource` objects. ::
+   for new :class:`~oldman.resource.resource.Resource` objects. ::
 
     data_store.create_model("LocalPerson", context_iri, iri_prefix="http://localhost/persons/",
                             iri_fragment="me", incremental_iri=True)
 
 
-TODO: update this part.
-Then we instantiate the :class:`~oldman.resource.manager.ClientResourceManager` object.
-Basically, it offers convenient method to retrieve and create :class:`~oldman.resource.Resource` objects::
 
-    client_manager = ResourceManager(schema_graph, data_store)
+Models of the datastore are not directly manipulated; the user is expected to use their relative client models instead.
+Here, we instantiate a :class:`~oldman.resource.manager.ClientResourceManager` object that (i) gives access to client models and (ii) offers convenient method to retrieve and create :class:`~oldman.resource.resource.Resource` objects::
+
+
+    client_manager = ClientResourceManager(data_store)
     client_manager.use_all_store_models()
     lp_model = client_manager.get_model("LocalPerson")
 
 
 Resource editing
 ----------------
-Now that the domain logic has been declared, we can create :class:`~oldman.resource.Resource` objects
+Now that the domain logic has been declared, we can create :class:`~oldman.resource.resource.Resource` objects
 for two persons, Alice and Bob::
 
     alice = lp_model.create(name="Alice", emails={"alice@example.org"},
@@ -118,7 +116,7 @@ and at some other attributes::
     >>> bob.short_bio_fr
     u"J'ai grandi en ... ."
 
-We can assign an IRI when creating a  :class:`~oldman.resource.Resource` object::
+We can assign an IRI when creating a  :class:`~oldman.resource.resource.Resource` object::
 
     >>> john_iri = "http://example.org/john#me"
     >>> john = lp_model.create(id=john_iri, name="John", emails={"john@example.org"})

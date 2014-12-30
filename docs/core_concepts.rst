@@ -15,7 +15,7 @@ In OldMan, Web resources are described in conformance to the
 `Resource Description Framework (RDF) <https://en.wikipedia.org/wiki/Resource_Description_Framework>`_.
 A :class:`~oldman.resource.resource.Resource` object may have some attributes that provide the *predicate*
 (also called property) and the *object* terms of RDF triples describing the resource.
-The resource itself is the *subject* of the triple.
+The resource itself is the *subject* of the triple (expect if the property is reversed).
 Its attributes have arbitrary short names as defined in the JSON-LD context.
 
 A :class:`~oldman.resource.resource.Resource` object access to its attributes through the
@@ -77,8 +77,10 @@ Features
     <http://localhost/persons/3#me> a schema:Person, schema:Researcher ;
                 foaf:name "Alice"^^xsd:string .
 
-ResourceManager
----------------
+ClientResourceManager
+---------------------
+TODO: update
+
 A :class:`~oldman.management.manager.ResourceManager` object is the central object of OldMan.
 
 It creates :class:`~oldman.model.model.Model` objects (:func:`~oldman.management.manager.ResourceManager.create_model`)
