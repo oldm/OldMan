@@ -27,7 +27,7 @@ Another main piece of the domain logic is found in
 `the JSON-LD context <https://github.com/oldm/OldMan/blob/master/examples/quickstart_context.jsonld>`_.
 Here, we just need its IRI::
 
-    context_iri = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_context.jsonld"
+    ctx_iri = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_context.jsonld"
 
 We now have almost enough domain knowledge to create our datastore and its models.
 
@@ -53,7 +53,7 @@ For that, we need:
  * To declare that we want to generate incremental IRIs with short numbers
    for new :class:`~oldman.resource.resource.Resource` objects. ::
 
-    data_store.create_model("LocalPerson", context_iri, iri_prefix="http://localhost/persons/",
+    data_store.create_model("LocalPerson", ctx_iri, iri_prefix="http://localhost/persons/",
                             iri_fragment="me", incremental_iri=True)
 
 
@@ -63,7 +63,7 @@ Here, we instantiate a :class:`~oldman.resource.manager.ClientResourceManager` o
 
 
     client_manager = ClientResourceManager(data_store)
-    client_manager.use_all_store_models()
+    client_manager.import_store_models()
     lp_model = client_manager.get_model("LocalPerson")
 
 

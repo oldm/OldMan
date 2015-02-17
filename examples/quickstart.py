@@ -13,10 +13,10 @@ store = "default"
 schema_graph = Graph(store)
 
 # Load the schema
-parse_graph_safely(schema_graph, "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_schema.ttl",
-                   format="turtle")
+schema_url = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_schema.ttl"
+parse_graph_safely(schema_graph, schema_url, format="turtle")
 
-context_iri = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_context.jsonld"
+ctx_iri = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_context.jsonld"
 
 data_graph = Graph()
 data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph)
@@ -24,7 +24,7 @@ data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph)
 data_store.extract_prefixes(schema_graph)
 
 #LocalPerson model
-data_store.create_model("LocalPerson", context_iri, iri_prefix="http://localhost/persons/",
+data_store.create_model("LocalPerson", ctx_iri, iri_prefix="http://localhost/persons/",
                         iri_fragment="me", incremental_iri=True)
 
 #Client resource manager
