@@ -12,6 +12,8 @@ setup(name="OldMan",
                 'oldman.parsing',
                 'oldman.parsing.schema',
                 'oldman.rest',
+                'oldman.store',
+                'oldman.schema',
                 'oldman.utils',
                 'oldman.validation'
       ],
