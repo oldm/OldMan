@@ -11,10 +11,7 @@ to Python 3.x).
 Virtualenv
 ----------
 
-Because OldMan is still a young project, you will have to use development versions of some
-external libraries, such as RDFlib.
-
-Thus, we recommend you to isolate the installation of OldMan and its dependencies by using
+We recommend you to isolate the installation of OldMan and its dependencies by using
 Virtualenv.
 
 If virtualenv is not already installed on your computer, you can install it with `easy_install` or `pip`::
