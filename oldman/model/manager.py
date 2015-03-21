@@ -187,18 +187,18 @@ class ModelManager(object):
 class ClientModelManager(ModelManager):
     """Client ModelManager.
 
-    Has access to the `resource_manager`.
+    Has access to the `mediator`.
     In charge of the conversion between and store and client models.
     """
 
-    def __init__(self, resource_manager, **kwargs):
+    def __init__(self, mediator, **kwargs):
         ModelManager.__init__(self, **kwargs)
-        self._resource_manager = resource_manager
+        self._mediator = mediator
         self._conversion_manager = ModelConversionManager()
 
     @property
-    def resource_manager(self):
-        return self._resource_manager
+    def mediator(self):
+        return self._mediator
 
     def import_model(self, store_model, data_store, is_default=False):
         """ Imports a store model. Creates the corresponding client model. """
@@ -206,7 +206,7 @@ class ClientModelManager(ModelManager):
             # Default model
             client_model = self.get_model(None)
         else:
-            client_model = ClientModel.copy_store_model(self._resource_manager, store_model)
+            client_model = ClientModel.copy_store_model(self._mediator, store_model)
             # Hierarchy registration
             self._registry.register(client_model, is_default=False)
         # Converter
@@ -215,7 +215,7 @@ class ClientModelManager(ModelManager):
 
     def convert_store_resources(self, store_resources):
         """Returns converted client resources. """
-        return self._conversion_manager.convert_store_to_client_resources(store_resources, self._resource_manager)
+        return self._conversion_manager.convert_store_to_client_resources(store_resources, self._mediator)
 
     def convert_client_resource(self, client_resource):
         """Returns converted store resources. """

@@ -1,7 +1,7 @@
 from os import path
 from unittest import TestCase
 from rdflib import Graph
-from oldman import HttpDataStore, ClientResourceManager, parse_graph_safely
+from oldman import HttpDataStore, Mediator, parse_graph_safely
 
 directory = path.dirname(__file__)
 schema_graph = parse_graph_safely(Graph(), path.join(directory, 'api_schema.ttl'), format="turtle")
@@ -12,10 +12,10 @@ context_uri = path.join(directory, 'api_documentation.json')
 data_store = HttpDataStore(schema_graph=schema_graph)
 data_store.create_model('ApiDocumentation', context_uri)
 
-manager = ClientResourceManager(data_store)
+manager = Mediator(data_store)
 manager.import_store_models()
 
-doc_model = manager.get_model('ApiDocumentation')
+doc_model = manager.get_client_model('ApiDocumentation')
 
 
 class HttpStoreTest(TestCase):

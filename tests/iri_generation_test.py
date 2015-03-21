@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from rdflib import ConjunctiveGraph, URIRef, RDF, BNode, Graph
 
-from oldman import ClientResourceManager, SPARQLDataStore
+from oldman import Mediator, SPARQLDataStore
 from oldman.iri import UUIDFragmentIriGenerator
 from oldman.exception import OMRequiredHashlessIRIError
 from oldman.rest.crud import HashLessCRUDer
@@ -30,10 +30,10 @@ context = {
 data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph)
 data_store.create_model("MyClass", context, iri_generator=UUIDFragmentIriGenerator())
 
-client_manager = ClientResourceManager(data_store)
+client_manager = Mediator(data_store)
 client_manager.import_store_models()
 crud_controller = HashLessCRUDer(client_manager)
-model = client_manager.get_model("MyClass")
+model = client_manager.get_client_model("MyClass")
 
 
 class DatatypeTest(TestCase):

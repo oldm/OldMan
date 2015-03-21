@@ -1,5 +1,5 @@
 from rdflib import Graph
-from oldman import SPARQLDataStore, ClientResourceManager, parse_graph_safely
+from oldman import SPARQLDataStore, Mediator, parse_graph_safely
 from oldman.rest.controller import HTTPController
 from os import path
 import unittest
@@ -17,11 +17,11 @@ data_store.create_model("Collection", context_file, iri_prefix="http://localhost
                         incremental_iri=True)
 data_store.create_model("Item", context_file, iri_prefix="http://localhost/items/", incremental_iri=True)
 
-client_manager = ClientResourceManager(data_store)
+client_manager = Mediator(data_store)
 client_manager.import_store_models()
 
-collection_model = client_manager.get_model("Collection")
-item_model = client_manager.get_model("Item")
+collection_model = client_manager.get_client_model("Collection")
+item_model = client_manager.get_client_model("Item")
 
 collection1 = collection_model.create()
 

@@ -88,7 +88,7 @@ class Resource(object):
     """
 
     _special_attribute_names = ["_models", "_id", "_types", "_is_blank_node", "_model_manager",
-                                "_store", "_former_types", "_logger", "_resource_manager", "_is_new"]
+                                "_store", "_former_types", "_logger", "_mediator", "_is_new"]
     _pickle_attribute_names = ["_id", '_types', '_is_new']
 
     def __init__(self, model_manager, data_store, id=None, types=None, hashless_iri=None, collection_iri=None,
@@ -795,23 +795,23 @@ class StoreResource(Resource):
 class ClientResource(Resource):
     """ClientResource: resource manipulated by the end-user.
 
-    Has access to the `resource_manager`.
+    Has access to the `mediator`.
 
     Is not serializable.
     """
 
-    def __init__(self, resource_manager, model_manager, store, **kwargs):
-        Resource.__init__(self, model_manager, store, **kwargs)
-        self._resource_manager = resource_manager
+    def __init__(self, mediator, store, **kwargs):
+        Resource.__init__(self, mediator.model_manager, store, **kwargs)
+        self._mediator = mediator
 
     @classmethod
-    def load_from_graph(cls, resource_manager, model_manager, data_store, id, subgraph, is_new=True,
+    def load_from_graph(cls, mediator, model_manager, data_store, id, subgraph, is_new=True,
                         collection_iri=None):
         """Loads a new :class:`~oldman.resource.ClientResource` object from a sub-graph.
 
         TODO: update the comments.
 
-        :param manager: :class:`~oldman.resource.manager.ResourceManager` object.
+        :param mediator: :class:`~oldman.resource.mediator.Mediator` object.
         :param id: IRI of the resource.
         :param subgraph: :class:`rdflib.Graph` object containing triples about the resource.
         :param is_new: When is `True` and `id` given, checks that the IRI is not already existing in the
@@ -819,14 +819,14 @@ class ClientResource(Resource):
         :return: The :class:`~oldman.resource.Resource` object created.
         """
         types = list({unicode(t) for t in subgraph.objects(URIRef(id), RDF.type)})
-        instance = cls(resource_manager, model_manager, data_store, id=id, types=types, is_new=is_new,
+        instance = cls(mediator, model_manager, data_store, id=id, types=types, is_new=is_new,
                        collection_iri=collection_iri)
         instance.update_from_graph(subgraph, is_end_user=True, save=False, initial=True)
         return instance
 
     def get_related_resource(self, id):
         """ Gets a related `ClientResource` through the resource manager. """
-        resource = self._resource_manager.get(id=id)
+        resource = self._mediator.get(id=id)
         if resource is None:
             return id
         return resource
@@ -887,7 +887,7 @@ class ClientResource(Resource):
 
     def _filter_objects_to_delete(self, ids):
         """TODO: consider other cases than blank nodes """
-        return [self._resource_manager.get(id=id) for id in ids
+        return [self._mediator.get(id=id) for id in ids
                 if id is not None and is_blank_node(id)]
 
     # @property

@@ -6,7 +6,7 @@ See http://oldman.readthedocs.org/en/latest/examples/dbpedia.html .
 
 from rdflib import Graph
 from rdflib.plugins.stores.sparqlstore import SPARQLStore
-from oldman import ClientResourceManager, SPARQLDataStore
+from oldman import Mediator, SPARQLDataStore
 from dogpile.cache import make_region
 import logging
 from os import path
@@ -58,11 +58,11 @@ if __name__ == "__main__":
     data_store.create_model("Person", context_url)
 
     # Client resource manager
-    client_manager = ClientResourceManager(data_store)
+    mediator = Mediator(data_store)
     # Re-uses the models of the data store
-    client_manager.import_store_models()
-    film_model = client_manager.get_model("http://dbpedia.org/ontology/Film")
-    actor_model = client_manager.get_model("Person")
+    mediator.import_store_models()
+    film_model = mediator.get_client_model("http://dbpedia.org/ontology/Film")
+    actor_model = mediator.get_client_model("Person")
 
     print "10 first French films found on DBPedia (with OldMan)"
     print "----------------------------------------------------"

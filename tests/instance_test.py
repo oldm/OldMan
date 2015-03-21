@@ -5,7 +5,7 @@
 
 from unittest import TestCase
 from rdflib import ConjunctiveGraph, URIRef
-from oldman import ClientResourceManager, parse_graph_safely, SPARQLDataStore
+from oldman import Mediator, parse_graph_safely, SPARQLDataStore
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
@@ -95,7 +95,7 @@ data_store.create_model("GrandParentClass", context, iri_prefix="http://localhos
 data_store.create_model("ParentClass", context, iri_prefix="http://localhost/parents/")
 
 
-client_manager = ClientResourceManager(data_store)
+client_manager = Mediator(data_store)
 client_manager.import_store_models()
 # Methods
 client_manager.declare_method(square_value, "square_value", EXAMPLE + "GrandParentClass")
@@ -104,9 +104,9 @@ client_manager.declare_method(print_new_value, "print_new_value", EXAMPLE + "Chi
 client_manager.declare_method(disclaim1, "disclaim", EXAMPLE + "GrandParentClass")
 client_manager.declare_method(disclaim2, "disclaim", EXAMPLE + "ParentClass")
 
-child_model = client_manager.get_model("ChildClass")
-grand_parent_model = client_manager.get_model("GrandParentClass")
-parent_model = client_manager.get_model("ParentClass")
+child_model = client_manager.get_client_model("ChildClass")
+grand_parent_model = client_manager.get_client_model("GrandParentClass")
+parent_model = client_manager.get_client_model("ParentClass")
 
 
 class InstanceTest(TestCase):

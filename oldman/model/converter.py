@@ -27,13 +27,11 @@ class ModelConversionManager(object):
         return [self.convert_store_to_client_resource(r, client_resource_manager)
                 for r in store_resources]
 
-    def convert_store_to_client_resource(self, store_resource, client_resource_manager):
+    def convert_store_to_client_resource(self, store_resource, mediator):
         client_former_types, client_new_types = self._extract_types_from_store_resource(store_resource)
 
-        client_model_manager = client_resource_manager.model_manager
-
         # Mutable
-        client_resource = ClientResource(client_resource_manager, client_model_manager, store_resource.store,
+        client_resource = ClientResource(mediator, store_resource.store,
                                          id=store_resource.id, types=client_new_types, is_new=store_resource.is_new,
                                          former_types=client_former_types)
         store = store_resource.store

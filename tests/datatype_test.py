@@ -10,7 +10,7 @@ import json
 from decimal import Decimal
 from copy import copy
 from datetime import date, datetime, time
-from oldman import ClientResourceManager, parse_graph_safely, SPARQLDataStore
+from oldman import Mediator, parse_graph_safely, SPARQLDataStore
 from oldman.exception import OMAttributeTypeCheckError
 
 default_graph = ConjunctiveGraph()
@@ -150,9 +150,9 @@ context = {
 data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph)
 data_store.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
 
-client_manager = ClientResourceManager(data_store)
+client_manager = Mediator(data_store)
 client_manager.import_store_models()
-lc_model = client_manager.get_model("LocalClass")
+lc_model = client_manager.get_client_model("LocalClass")
 default_list_en = ["w1", "w2"]
 
 

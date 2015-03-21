@@ -2,7 +2,7 @@ import json
 from unittest import TestCase
 from os import path
 from rdflib import Graph
-from oldman import ClientResourceManager, parse_graph_safely, SPARQLDataStore
+from oldman import Mediator, parse_graph_safely, SPARQLDataStore
 
 schema_graph = Graph()
 my_class_def = {
@@ -26,9 +26,9 @@ context_iri = "/contexts/context.jsonld"
 store = SPARQLDataStore(Graph(), schema_graph=schema_graph)
 store.create_model("MyClass", context_iri, context_file_path=context_file_path)
 
-client_manager = ClientResourceManager(store)
+client_manager = Mediator(store)
 client_manager.import_store_models()
-model = client_manager.get_model("MyClass")
+model = client_manager.get_client_model("MyClass")
 
 
 class ContextUriTest(TestCase):

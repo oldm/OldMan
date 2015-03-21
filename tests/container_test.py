@@ -9,7 +9,7 @@ from os import path
 from rdflib import ConjunctiveGraph, URIRef
 import json
 from copy import copy
-from oldman import ClientResourceManager, parse_graph_safely, SPARQLDataStore
+from oldman import Mediator, parse_graph_safely, SPARQLDataStore
 from oldman.exception import OMRequiredPropertyError, OMAttributeTypeCheckError
 
 default_graph = ConjunctiveGraph()
@@ -118,9 +118,9 @@ context = {
 
 data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph)
 data_store.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
-client_manager = ClientResourceManager(data_store)
+client_manager = Mediator(data_store)
 client_manager.import_store_models()
-model = client_manager.get_model("LocalClass")
+model = client_manager.get_client_model("LocalClass")
 default_list_en = ["w1", "w2"]
 
 

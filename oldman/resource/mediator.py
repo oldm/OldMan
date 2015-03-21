@@ -6,7 +6,7 @@ from oldman.model.manager import ClientModelManager
 DEFAULT_MODEL_NAME = "Default_Client"
 
 
-class ClientResourceManager:
+class Mediator:
     """
     TODO: describe
     """
@@ -76,7 +76,7 @@ class ClientResourceManager:
         # Store of the resource
         store = self._store_selector.select_store(id=id, types=types, hashless_iri=hashless_iri,
                                                   collection_iri=collection_iri, **kwargs)
-        return ClientResource(self, self._model_manager, store, id=id, types=types, hashless_iri=hashless_iri,
+        return ClientResource(self, store, id=id, types=types, hashless_iri=hashless_iri,
                               collection_iri=collection_iri, **kwargs)
 
     def create(self, id=None, types=None, hashless_iri=None, collection_iri=None, **kwargs):
@@ -133,5 +133,5 @@ class ClientResourceManager:
                 self._model_manager.import_model(store_model, store,
                                                  is_default=is_default)
 
-    def get_model(self, class_name_or_iri):
+    def get_client_model(self, class_name_or_iri):
         return self._model_manager.get_model(class_name_or_iri)

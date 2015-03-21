@@ -202,7 +202,7 @@ Let's first create two :class:`~oldman.model.Model` objects: `film_model` and `p
 `context <https://raw.githubusercontent.com/oldm/OldMan/master/examples/dbpedia_film_context.jsonld>`_
 and `schema <https://raw.githubusercontent.com/oldm/OldMan/master/examples/dbpedia_film_schema.ttl>`_::
 
-    from oldman import ClientResourceManager, SPARQLDataStore
+    from oldman import Mediator, SPARQLDataStore
     from dogpile.cache import make_region
 
     schema_url = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/dbpedia_film_schema.ttl"
@@ -221,11 +221,11 @@ and `schema <https://raw.githubusercontent.com/oldm/OldMan/master/examples/dbped
     data_store.create_model("Person", context_url)
 
     # Client resource manager
-    client_manager = ClientResourceManager(data_store)
+    mediator = Mediator(data_store)
     # Re-uses the models of the data store
-    client_manager.use_all_store_models()
-    film_model = client_manager.get_model("http://dbpedia.org/ontology/Film")
-    actor_model = client_manager.get_model("Person")
+    mediator.use_all_store_models()
+    film_model = mediator.get_client_model("http://dbpedia.org/ontology/Film")
+    actor_model = mediator.get_client_model("Person")
 
 Please note that we set up a resource cache and reused the `data_graph`.
 
