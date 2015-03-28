@@ -294,5 +294,5 @@ class DataStore(object):
         return resources[0]
 
     def _create_iri_generator(self, class_name_or_iri):
-        raise UnsupportedDataStorageFeatureException("This datastore %s does create IRI generators."
+        raise UnsupportedDataStorageFeatureException("This datastore %s does not create IRI generators."
                                                      % self.__class__.__name__)

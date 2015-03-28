@@ -12,10 +12,10 @@ context_uri = path.join(directory, 'api_documentation.json')
 data_store = HttpDataStore(schema_graph=schema_graph)
 data_store.create_model('ApiDocumentation', context_uri)
 
-manager = Mediator(data_store)
-manager.import_store_models()
+mediator = Mediator(data_store)
+mediator.import_store_models()
 
-doc_model = manager.get_client_model('ApiDocumentation')
+doc_model = mediator.get_client_model('ApiDocumentation')
 
 
 class HttpStoreTest(TestCase):
