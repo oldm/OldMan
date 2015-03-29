@@ -1,5 +1,6 @@
 import types
-from oldman.resource.resource import ClientResource, StoreResource
+from oldman.resource.client import ClientResource
+from oldman.resource.store import StoreResource
 
 
 class ModelConversionManager(object):

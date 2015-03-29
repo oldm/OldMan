@@ -1,11 +1,12 @@
 import logging
 from uuid import uuid4
 from oldman.model.manager import ModelManager
+from oldman.resource.store import StoreResource
 
 from oldman.store.cache import ResourceCache
 from oldman.exception import UnsupportedDataStorageFeatureException, OMAttributeAccessError, OMUniquenessError
 from oldman.exception import OMObjectNotFoundError, OMClassInstanceError
-from oldman.resource.resource import Resource, StoreResource
+from oldman.resource.resource import Resource
 
 
 DEFAULT_MODEL_PREFIX = "Default_"
