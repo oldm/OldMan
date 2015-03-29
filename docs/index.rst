@@ -26,7 +26,7 @@ User's Guide
 API reference
 =============
 
-Main classes manipulated by end-users: :class:`~oldman.management.manager.ResourceManager`,
+Main classes manipulated by end-users: :class:`~oldman.mediation.mediator.UserMediator`,
 :class:`~oldman.model.Model` and :class:`~oldman.resource.Resource`.
 
 :class:`~oldman.iri.IriGenerator` classes can be found in the :class:`oldman.iri` module.

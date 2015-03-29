@@ -77,25 +77,25 @@ Features
     <http://localhost/persons/3#me> a schema:Person, schema:Researcher ;
                 foaf:name "Alice"^^xsd:string .
 
-ClientResourceManager
----------------------
+UserMediator
+------------
 TODO: update
 
-A :class:`~oldman.management.manager.ResourceManager` object is the central object of OldMan.
+A :class:`~oldman.mediation.mediator.UserMediator` object is the central object of OldMan.
 
-It creates :class:`~oldman.model.model.Model` objects (:func:`~oldman.management.manager.ResourceManager.create_model`)
-and retrieves :class:`~oldman.resource.resource.Resource` objects  (:func:`~oldman.management.manager.ResourceManager.get`,
-:func:`~oldman.management.manager.ResourceManager.filter`
-and :func:`~oldman.management.manager.ResourceManager.sparql_filter`).
+It creates :class:`~oldman.model.model.Model` objects (:func:`~oldman.mediation.mediator.UserMediator.create_model`)
+and retrieves :class:`~oldman.resource.resource.Resource` objects  (:func:`~oldman.mediation.mediator.UserMediator.get`,
+:func:`~oldman.mediation.mediator.UserMediator.filter`
+and :func:`~oldman.mediation.mediator.UserMediator.sparql_filter`).
 
 It accepts Python method declarations if they happen before the creation of :class:`~oldman.model.model.Model` objects
-(:func:`~oldman.management.manager.ResourceManager.declare_method`).
+(:func:`~oldman.mediation.mediator.UserMediator.declare_method`).
 
 It also provide helper functions to create new :class:`~oldman.resource.resource.Resource` objects
-(:func:`~oldman.management.manager.ResourceManager.create` and :func:`~oldman.management.manager.ResourceManager.new`)
+(:func:`~oldman.management.manager.ResourceManager.create` and :func:`~oldman.mediation.mediator.UserMediator.new`)
 but it is usually simpler to use those of a :class:`~oldman.model.model.Model` object.
 
-For creating the :class:`~oldman.management.manager.ResourceManager` object, the schema graph
+For creating the :class:`~oldman.mediation.mediator.UserMediator` object, the schema graph
 and the data store (:class:`~oldman.store.datastore.DataStore`) must be given.
 
 Basically, the schema graph describes which properties should be expected for a given RDFS class, which are
@@ -112,9 +112,9 @@ However, on the RDF side, they correspond to `RDFS classes <https://en.wikipedia
 Their main role is to provide attributes and methods to :class:`~oldman.resource.resource.Resource` objects, as explained
 above.
 
-:class:`~oldman.model.model.Model` objects are created by the :class:`~oldman.management.manager.ResourceManager` object.
+:class:`~oldman.model.model.Model` objects are created by the :class:`~oldman.mediation.mediator.UserMediator` object.
 
-A model provide some helpers above the :class:`~oldman.management.manager.ResourceManager` object (
+A model provide some helpers above the :class:`~oldman.mediation.mediator.UserMediator` object (
 :func:`~oldman.model.model.Model.get`, :func:`~oldman.model.model.Model.filter`, :func:`~oldman.model.model.Model.new` and
 :func:`~oldman.model.model.Model.create`) that include the :attr:`~oldman.model.model.Model.class_iri` to the `types`
 parameter of these methods.
@@ -123,7 +123,7 @@ DataStore
 ---------
 
 A :class:`~oldman.store.datastore.DataStore` implements the CRUD operations on Web Resources exposed by the
-:class:`~oldman.management.manager.ResourceManager` and :class:`~oldman.model.model.Model` objects.
+:class:`~oldman.mediation.mediator.UserMediator` and :class:`~oldman.model.model.Model` objects.
 
 The vision of OldMan is to include a large choice of data stores. But currently, only SPARQL endpoints
 are supported.

@@ -242,7 +242,7 @@ class BasicEditingTest(unittest.TestCase):
         data_store.resource_cache.remove_resource(bob)
         data_store.resource_cache.remove_resource(alice)
         data_store.resource_cache.remove_resource(john)
-        bob = client_manager.get(id=bob_iri)
+        bob = user_mediator.get(id=bob_iri)
         self.assertEquals([c.id for c in bob.children], bob_children_iris)
 
     def test_set_validation(self):
@@ -355,7 +355,7 @@ class BasicEditingTest(unittest.TestCase):
         # Checks if the datastore still extract reversed attributes
         # in "lazy" mode
         data_store.resource_cache.remove_resource(bob)
-        bob = client_manager.get(id=bob_iri, eager_with_reversed_attributes=False)
+        bob = user_mediator.get(id=bob_iri, eager_with_reversed_attributes=False)
         self.assertEquals(alice.id, bob.employer.id)
 
     def test_inversed_and_regular_update(self):

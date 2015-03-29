@@ -35,16 +35,10 @@ class IriTest(unittest.TestCase):
         bob_iri = bob.id
 
         with self.assertRaises(OMUniquenessError):
-            lp_model.new(id=bob_iri, name=bob_name, mboxes=bob_emails, short_bio_en=u"Will not exist")
-
-        with self.assertRaises(OMUniquenessError):
             lp_model.create(id=bob_iri, name=bob_name, mboxes=bob_emails, short_bio_en=u"Will not exist")
-
-        with self.assertRaises(OMUniquenessError):
-            lp_model.new(id=bob_iri, name=bob_name, mboxes=bob_emails, short_bio_en=u"Will not exist", create=True)
 
         # Forces the creation (by claiming your are not)
         # Dangerous!
         short_bio_en = u"Is forced to exist"
-        bob2 = lp_model.new(id=bob_iri, name=bob_name, mboxes=bob_emails, short_bio_en=short_bio_en, is_new=False)
+        bob2 = lp_model.create(id=bob_iri, name=bob_name, mboxes=bob_emails, short_bio_en=short_bio_en, is_new=False)
         self.assertEquals(bob2.short_bio_en, short_bio_en)

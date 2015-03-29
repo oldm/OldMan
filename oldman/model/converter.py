@@ -18,22 +18,21 @@ class ModelConversionManager(object):
         self._store_to_client_models[store_model] = client_model
         self._converters[(client_model, store_model)] = model_converter
 
-    def convert_store_to_client_resources(self, store_resources, client_resource_manager):
+    def convert_store_to_client_resources(self, store_resources, resource_mediator):
         """TODO: describe """
         if isinstance(store_resources, types.GeneratorType):
-            return (self.convert_store_to_client_resource(r)
+            return (self.convert_store_to_client_resource(r, resource_mediator)
                     for r in store_resources)
         # Otherwise, returns a list
-        return [self.convert_store_to_client_resource(r, client_resource_manager)
+        return [self.convert_store_to_client_resource(r, resource_mediator)
                 for r in store_resources]
 
-    def convert_store_to_client_resource(self, store_resource, mediator):
+    def convert_store_to_client_resource(self, store_resource, resource_mediator):
         client_former_types, client_new_types = self._extract_types_from_store_resource(store_resource)
 
         # Mutable
-        client_resource = ClientResource(mediator, store_resource.store,
-                                         id=store_resource.id, types=client_new_types, is_new=store_resource.is_new,
-                                         former_types=client_former_types)
+        client_resource = ClientResource(resource_mediator, id=store_resource.id, types=client_new_types,
+                                         is_new=store_resource.is_new, former_types=client_former_types)
         store = store_resource.store
 
         # Client models from the most general to the more specific
@@ -53,10 +52,8 @@ class ModelConversionManager(object):
 
         return client_resource
 
-    def convert_client_to_store_resource(self, client_resource):
-        # Same store between the client_resource and the store_resource
-        store = client_resource.store
-        store_former_types, store_new_types = self._extract_types_from_client_resource(client_resource)
+    def convert_client_to_store_resource(self, client_resource, store):
+        store_former_types, store_new_types = self._extract_types_from_client_resource(client_resource, store)
 
         #TODO: should we consider late IRI attributions?
         store_resource = StoreResource(store.model_manager, store, id=client_resource.id,
@@ -99,13 +96,12 @@ class ModelConversionManager(object):
 
         return former_types, new_types
 
-    def _extract_types_from_client_resource(self, client_resource):
+    def _extract_types_from_client_resource(self, client_resource, store):
         # Non model types
         new_types = set(client_resource.non_model_types)
         former_types = set(client_resource.former_non_model_types)
 
         # Types corresponding to models
-        store = client_resource.store
         for client_model in client_resource.models:
             store_model = self._client_to_store_models.get((client_model, store))
             if store_model is None:

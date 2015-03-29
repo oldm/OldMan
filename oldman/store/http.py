@@ -1,9 +1,10 @@
 from logging import getLogger
+
 from rdflib.plugin import PluginException
 import requests
 from rdflib import Graph
 
-from .datastore import DataStore
+from oldman.store.datastore import DataStore
 from oldman.model.manager import ModelManager
 from oldman.rest.crud import JSON_TYPES
 

@@ -5,7 +5,7 @@
 
 from unittest import TestCase
 from rdflib import ConjunctiveGraph, URIRef
-from oldman import Mediator, parse_graph_safely, SPARQLDataStore
+from oldman import create_user_mediator, parse_graph_safely, SPARQLDataStore
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
@@ -95,18 +95,18 @@ data_store.create_model("GrandParentClass", context, iri_prefix="http://localhos
 data_store.create_model("ParentClass", context, iri_prefix="http://localhost/parents/")
 
 
-client_manager = Mediator(data_store)
-client_manager.import_store_models()
+user_mediator = create_user_mediator(data_store)
+user_mediator.import_store_models()
 # Methods
-client_manager.declare_method(square_value, "square_value", EXAMPLE + "GrandParentClass")
-client_manager.declare_method(print_new_value, "print_new_value", EXAMPLE + "ChildClass")
+user_mediator.declare_method(square_value, "square_value", EXAMPLE + "GrandParentClass")
+user_mediator.declare_method(print_new_value, "print_new_value", EXAMPLE + "ChildClass")
 # Method overloading
-client_manager.declare_method(disclaim1, "disclaim", EXAMPLE + "GrandParentClass")
-client_manager.declare_method(disclaim2, "disclaim", EXAMPLE + "ParentClass")
+user_mediator.declare_method(disclaim1, "disclaim", EXAMPLE + "GrandParentClass")
+user_mediator.declare_method(disclaim2, "disclaim", EXAMPLE + "ParentClass")
 
-child_model = client_manager.get_client_model("ChildClass")
-grand_parent_model = client_manager.get_client_model("GrandParentClass")
-parent_model = client_manager.get_client_model("ParentClass")
+child_model = user_mediator.get_client_model("ChildClass")
+grand_parent_model = user_mediator.get_client_model("GrandParentClass")
+parent_model = user_mediator.get_client_model("ParentClass")
 
 
 class InstanceTest(TestCase):
@@ -245,17 +245,17 @@ class InstanceTest(TestCase):
         tom.new_value = tom_new_value
         tom.save()
 
-        tom = client_manager.get(id=tom_uri)
+        tom = user_mediator.get(id=tom_uri)
         self.assertEquals(tom.new_value, tom_new_value)
         self.assertEquals(tom.disclaim(), new_disclaim)
         self.assertTrue(tom.is_instance_of(child_model))
 
-        jack = client_manager.get(id=jack_uri)
+        jack = user_mediator.get(id=jack_uri)
         self.assertEquals(jack.mid_values, jack_mid_values)
         self.assertTrue(jack.is_instance_of(parent_model))
         self.assertFalse(jack.is_instance_of(child_model))
 
-        john = client_manager.get(id=john_uri)
+        john = user_mediator.get(id=john_uri)
         self.assertTrue(john.is_instance_of(grand_parent_model))
         self.assertFalse(john.is_instance_of(parent_model))
         self.assertFalse(john.is_instance_of(child_model))

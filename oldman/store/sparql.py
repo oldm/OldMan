@@ -9,7 +9,7 @@ from oldman.model.manager import ModelManager
 from oldman.exception import OMSPARQLParseError, OMAttributeAccessError, OMSPARQLError
 from oldman.exception import OMHashIriError
 from oldman.exception import OMDataStoreError
-from .datastore import DataStore
+from oldman.store.datastore import DataStore
 
 
 class SPARQLDataStore(DataStore):

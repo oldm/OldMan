@@ -10,7 +10,7 @@ Model creation
 First, let's import some functions and classes::
 
     from rdflib import Graph
-    from oldman import Mediator, parse_graph_safely, SPARQLDataStore
+    from oldman import create_user_mediator, parse_graph_safely, SPARQLDataStore
 
 and create the RDF graph `schema_graph` that will contain our schema::
 
@@ -59,12 +59,12 @@ For that, we need:
 
 
 Models of the datastore are not directly manipulated; the user is expected to use their relative client models instead.
-Here, we instantiate a :class:`~oldman.resource.mediator.Mediator` object that (i) gives access to client models and (ii) offers convenient method to retrieve and create :class:`~oldman.resource.resource.Resource` objects::
+Here, we instantiate a :class:`~oldman.mediation.mediator.UserMediator` object that (i) gives access to client models and (ii) offers convenient method to retrieve and create :class:`~oldman.resource.resource.Resource` objects::
 
 
-    mediator = Mediator(data_store)
-    mediator.import_store_models()
-    lp_model = mediator.get_client_model("LocalPerson")
+    user_mediator = create_user_mediator(data_store)
+    user_mediator.import_store_models()
+    lp_model = user_mediator.get_client_model("LocalPerson")
 
 
 Resource editing

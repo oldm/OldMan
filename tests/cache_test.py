@@ -4,6 +4,9 @@ from default_model import *
 # Force the cache
 data_store.resource_cache.change_cache_region(make_region().configure('dogpile.cache.memory_pickle'))
 
+# With the default implementation they are the same object. FOR TEST ONLY!
+resource_mediator = user_mediator
+
 
 class CacheTest(unittest.TestCase):
     def tearDown(self):
@@ -12,7 +15,7 @@ class CacheTest(unittest.TestCase):
     def test_direct_cache(self):
         alice1 = lp_model.new(name=alice_name, mboxes={alice_mail}, short_bio_en=alice_bio_en)
         #For test ONLY. Do not do that yourself
-        alice_store1 = alice1.model_manager.convert_client_resource(alice1)
+        alice_store1 = resource_mediator._conversion_manager.convert_client_to_store_resource(alice1, data_store)
         data_store.resource_cache.set_resource(alice_store1)
         alice2 = data_store.resource_cache.get_resource(alice1.id)
         self.assertFalse(alice1 is alice2)
@@ -26,7 +29,7 @@ class CacheTest(unittest.TestCase):
 
     def test_simple_get(self):
         alice1 = create_alice()
-        alice2 = client_manager.get(id=alice1.id)
+        alice2 = user_mediator.get(id=alice1.id)
         self.assertFalse(alice1 is alice2)
         self.assertEquals(alice1.name, alice2.name)
         self.assertEquals(alice1.id, alice2.id)
@@ -39,7 +42,7 @@ class CacheTest(unittest.TestCase):
         alice1.friends = {bob1}
         alice1.save()
 
-        alice2 = client_manager.get(id=alice1.id)
+        alice2 = user_mediator.get(id=alice1.id)
         self.assertEquals(alice1.id, alice2.id)
 
         bob2 = list(alice2.friends)[0]
@@ -59,7 +62,7 @@ class CacheTest(unittest.TestCase):
         new_name = "New Alice"
         alice1.name = new_name
 
-        alice2 = client_manager.get(id=alice1.id)
+        alice2 = user_mediator.get(id=alice1.id)
         self.assertFalse(alice1 is alice2)
         self.assertEquals(alice1.id, alice2.id)
         self.assertNotEquals(alice1.name, alice2.name)
@@ -70,7 +73,7 @@ class CacheTest(unittest.TestCase):
         self.assertFalse(bool(data_graph.query(req_name % alice_name)))
         self.assertTrue(bool(data_graph.query(req_name % new_name)))
 
-        alice3 = client_manager.get(id=alice1.id)
+        alice3 = user_mediator.get(id=alice1.id)
         self.assertFalse(alice1 is alice3)
         self.assertEquals(alice1.id, alice3.id)
         self.assertEquals(alice1.name, alice3.name)
@@ -82,7 +85,7 @@ class CacheTest(unittest.TestCase):
         self.assertFalse(bool(data_graph.query(req_name % new_name)))
         self.assertTrue(bool(data_graph.query(req_name % name3)))
 
-        alice4 = client_manager.get(id=alice1.id)
+        alice4 = user_mediator.get(id=alice1.id)
         self.assertFalse(alice3 is alice4)
         self.assertEquals(alice3.id, alice4.id)
         self.assertEquals(alice3.name, alice4.name)
@@ -93,16 +96,16 @@ class CacheTest(unittest.TestCase):
         alice_iri = alice1.id
         alice1.delete()
 
-        alice2 = client_manager.get(id=alice_iri)
+        alice2 = user_mediator.get(id=alice_iri)
         self.assertEquals(alice2.types, [])
 
     def test_delete_from_cache(self):
         alice1 = create_alice()
         alice_iri = alice1.id
 
-        alice2 = client_manager.get(id=alice_iri)
+        alice2 = user_mediator.get(id=alice_iri)
         alice2.delete()
 
-        alice3 = client_manager.get(id=alice_iri)
+        alice3 = user_mediator.get(id=alice_iri)
         self.assertEquals(alice3.types, [])
         self.assertFalse(bool(data_graph.query("ASK { <%s> ?p ?o }" % alice_iri)))

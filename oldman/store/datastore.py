@@ -3,7 +3,7 @@ from uuid import uuid4
 from oldman.model.manager import ModelManager
 
 from oldman.store.cache import ResourceCache
-from oldman.exception import UnsupportedDataStorageFeatureException, OMAttributeAccessError
+from oldman.exception import UnsupportedDataStorageFeatureException, OMAttributeAccessError, OMUniquenessError
 from oldman.exception import OMObjectNotFoundError, OMClassInstanceError
 from oldman.resource.resource import Resource, StoreResource
 
@@ -175,13 +175,17 @@ class DataStore(object):
         raise UnsupportedDataStorageFeatureException("This datastore %s does not support the SPARQL protocol."
                                                      % self.__class__.__name__)
 
-    def save(self, resource, attributes, former_types):
+    def save(self, resource, attributes, former_types, is_new):
         """End-users should not call it directly. Call :func:`oldman.Resource.save()` instead.
 
         :param resource: :class:`~oldman.resource.Resource` object.
         :param attributes: Ordered list of :class:`~oldman.attribute.OMAttribute` objects.
         :param former_types: List of RDFS class IRIs previously saved.
         """
+        # Uniqueness test
+        if is_new and self.exists(resource.id):
+            raise OMUniquenessError("Object %s already exist" % resource.id)
+
         id = self._save_resource_attributes(resource, attributes, former_types)
         resource.receive_id(id)
         # Cache

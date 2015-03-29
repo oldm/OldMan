@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from rdflib import Graph
-from oldman import Mediator, parse_graph_safely, SPARQLDataStore
+from oldman import create_user_mediator, parse_graph_safely, SPARQLDataStore
 
 # In-memory store
 store = "default"
@@ -27,11 +27,11 @@ data_store.extract_prefixes(schema_graph)
 data_store.create_model("LocalPerson", ctx_iri, iri_prefix="http://localhost/persons/",
                         iri_fragment="me", incremental_iri=True)
 
-#Mediator
-mediator = Mediator(data_store)
-mediator.import_store_models()
+#User Mediator
+user_mediator = create_user_mediator(data_store)
+user_mediator.import_store_models()
 
-lp_model = mediator.get_client_model("LocalPerson")
+lp_model = user_mediator.get_client_model("LocalPerson")
 
 alice = lp_model.create(name="Alice", emails={"alice@example.org"},
                         short_bio_en="I am ...")

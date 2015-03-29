@@ -40,7 +40,7 @@ class CrudTest(unittest.TestCase):
         doc = json.loads(crud_controller.get(doc_iri, "json")[0])
         self.assertEquals(doc["id"], doc_iri)
 
-        resources = client_manager.filter(hashless_iri=doc_iri)
+        resources = user_mediator.filter(hashless_iri=doc_iri)
         self.assertEquals({bob_iri, doc_iri}, {r.id for r in resources})
 
     def test_bob_controller_delete(self):

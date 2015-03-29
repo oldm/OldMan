@@ -6,7 +6,7 @@ from dogpile.cache import make_region
 from rdflib import Dataset, Graph
 from rdflib.namespace import FOAF
 
-from oldman import Mediator, parse_graph_safely, SPARQLDataStore
+from oldman import create_user_mediator, parse_graph_safely, SPARQLDataStore
 from oldman.rest.crud import HashLessCRUDer
 
 
@@ -257,15 +257,15 @@ data_store.create_model(lp_name_or_iri, context, iri_prefix="http://localhost/pe
 data_store.create_model("LocalRSAPublicKey", context)
 data_store.create_model("LocalGPGPublicKey", context)
 
-client_manager = Mediator(data_store)
-client_manager.import_store_models()
+user_mediator = create_user_mediator(data_store)
+user_mediator.import_store_models()
 
-lp_model = client_manager.get_client_model(lp_name_or_iri)
-rsa_model = client_manager.get_client_model("LocalRSAPublicKey")
-gpg_model = client_manager.get_client_model("LocalGPGPublicKey")
+lp_model = user_mediator.get_client_model(lp_name_or_iri)
+rsa_model = user_mediator.get_client_model("LocalRSAPublicKey")
+gpg_model = user_mediator.get_client_model("LocalGPGPublicKey")
 
 
-crud_controller = HashLessCRUDer(client_manager)
+crud_controller = HashLessCRUDer(user_mediator)
 
 bob_name = "Bob"
 bob_blog = "http://blog.example.com/"

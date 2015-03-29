@@ -194,13 +194,12 @@ class ClientModelManager(ModelManager):
     def __init__(self, mediator, **kwargs):
         ModelManager.__init__(self, **kwargs)
         self._mediator = mediator
-        self._conversion_manager = ModelConversionManager()
 
     @property
     def mediator(self):
         return self._mediator
 
-    def import_model(self, store_model, data_store, is_default=False):
+    def import_model(self, store_model, is_default=False):
         """ Imports a store model. Creates the corresponding client model. """
         if is_default:
             # Default model
@@ -209,17 +208,7 @@ class ClientModelManager(ModelManager):
             client_model = ClientModel.copy_store_model(self._mediator, store_model)
             # Hierarchy registration
             self._registry.register(client_model, is_default=False)
-        # Converter
-        converter = EquivalentModelConverter(client_model, store_model)
-        self._conversion_manager.register_model_converter(client_model, store_model, data_store, converter)
-
-    def convert_store_resources(self, store_resources):
-        """Returns converted client resources. """
-        return self._conversion_manager.convert_store_to_client_resources(store_resources, self._mediator)
-
-    def convert_client_resource(self, client_resource):
-        """Returns converted store resources. """
-        return self._conversion_manager.convert_client_to_store_resource(client_resource)
+        return client_model
 
 
 def _extract_class_iri(class_name, context):

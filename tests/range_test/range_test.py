@@ -2,7 +2,7 @@ from copy import deepcopy
 from unittest import TestCase
 from os.path import dirname, join
 from rdflib import Graph
-from oldman import SPARQLDataStore, Mediator
+from oldman import SPARQLDataStore, create_user_mediator
 from oldman.exception import OMAttributeTypeCheckError, OMAlreadyDeclaredDatatypeError
 
 NO_PROPERTY_CONTEXT_DICT = {
@@ -25,9 +25,9 @@ class RangeTest(TestCase):
 
     def test_no_property_context(self):
         self.store.create_model("MyClass", NO_PROPERTY_CONTEXT_DICT)
-        client = Mediator(self.store)
-        client.import_store_models()
-        model = client.get_client_model("MyClass")
+        user_mediator = create_user_mediator(self.store)
+        user_mediator.import_store_models()
+        model = user_mediator.get_client_model("MyClass")
 
         obj = model.new(test_hasX=2)
 
@@ -38,9 +38,9 @@ class RangeTest(TestCase):
         context = deepcopy(NO_PROPERTY_CONTEXT_DICT)
         context["@context"]["hasX"] = "test:hasX"
         self.store.create_model("MyClass", context)
-        client = Mediator(self.store)
-        client.import_store_models()
-        model = client.get_client_model("MyClass")
+        user_mediator = create_user_mediator(self.store)
+        user_mediator.import_store_models()
+        model = user_mediator.get_client_model("MyClass")
 
         obj = model.new(hasX=2)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -63,9 +63,9 @@ class RangeTest(TestCase):
             "@type": "xsd:int"
         }
         self.store.create_model("MyClass", context)
-        client = Mediator(self.store)
-        client.import_store_models()
-        model = client.get_client_model("MyClass")
+        user_mediator = create_user_mediator(self.store)
+        user_mediator.import_store_models()
+        model = user_mediator.get_client_model("MyClass")
 
         obj = model.new(hasX=2)
         with self.assertRaises(OMAttributeTypeCheckError):

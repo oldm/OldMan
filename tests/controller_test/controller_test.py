@@ -1,5 +1,5 @@
 from rdflib import Graph
-from oldman import SPARQLDataStore, Mediator, parse_graph_safely
+from oldman import SPARQLDataStore, create_user_mediator, parse_graph_safely
 from oldman.rest.controller import HTTPController
 from os import path
 import unittest
@@ -17,15 +17,15 @@ data_store.create_model("Collection", context_file, iri_prefix="http://localhost
                         incremental_iri=True)
 data_store.create_model("Item", context_file, iri_prefix="http://localhost/items/", incremental_iri=True)
 
-client_manager = Mediator(data_store)
-client_manager.import_store_models()
+user_mediator = create_user_mediator(data_store)
+user_mediator.import_store_models()
 
-collection_model = client_manager.get_client_model("Collection")
-item_model = client_manager.get_client_model("Item")
+collection_model = user_mediator.get_client_model("Collection")
+item_model = user_mediator.get_client_model("Item")
 
 collection1 = collection_model.create()
 
-controller = HTTPController(client_manager)
+controller = HTTPController(user_mediator)
 
 
 class ControllerTest(unittest.TestCase):
@@ -44,7 +44,7 @@ class ControllerTest(unittest.TestCase):
 
         print data_graph.serialize(format="turtle")
 
-        item = client_manager.get(id=item_iri)
+        item = user_mediator.get(id=item_iri)
         self.assertTrue(item is not None)
         self.assertEquals(item.title, title)
 

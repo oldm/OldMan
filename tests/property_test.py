@@ -7,7 +7,7 @@ from unittest import TestCase
 from os import path
 from rdflib import ConjunctiveGraph, URIRef, Literal, Graph, XSD
 import json
-from oldman import Mediator, parse_graph_safely, SPARQLDataStore
+from oldman import create_user_mediator, parse_graph_safely, SPARQLDataStore
 from oldman.exception import OMPropertyDefError, OMReadOnlyAttributeError
 
 default_graph = ConjunctiveGraph()
@@ -90,9 +90,9 @@ context = {
 data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph)
 data_store.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
 
-client_manager = Mediator(data_store)
-client_manager.import_store_models()
-lc_model = client_manager.get_client_model("LocalClass")
+user_mediator = create_user_mediator(data_store)
+user_mediator.import_store_models()
+lc_model = user_mediator.get_client_model("LocalClass")
 
 
 class PropertyTest(TestCase):

@@ -54,31 +54,31 @@ class FindTest(unittest.TestCase):
         ids = {alice.id, bob.id, john.id}
 
         r1 = "SELECT ?s WHERE { ?s a foaf:Person }"
-        self.assertEquals({r.id for r in client_manager.sparql_filter(r1)}, ids)
+        self.assertEquals({r.id for r in user_mediator.sparql_filter(r1)}, ids)
 
         r2 = """SELECT ?s WHERE {
             ?s a foaf:Person ;
                foaf:name "%s"^^xsd:string .
         }""" % alice_name
-        self.assertEquals({r.id for r in client_manager.sparql_filter(r2)}, {alice.id})
+        self.assertEquals({r.id for r in user_mediator.sparql_filter(r2)}, {alice.id})
 
     def test_no_filter_get(self):
-        self.assertEquals(client_manager.get(), None)
+        self.assertEquals(user_mediator.get(), None)
         alice = create_alice()
         # Unique object
-        self.assertEquals(client_manager.get().id, alice.id)
+        self.assertEquals(user_mediator.get().id, alice.id)
 
     def test_empty_filter(self):
         """
             No filtering arguments -> all()
         """
-        self.assertEquals(list(client_manager.filter()), [])
+        self.assertEquals(list(user_mediator.filter()), [])
         alice = create_alice()
         # Unique object
-        self.assertEquals(list(client_manager.filter())[0].id, alice.id)
+        self.assertEquals(list(user_mediator.filter())[0].id, alice.id)
 
         bob = create_bob()
-        self.assertEquals({r.id for r in client_manager.filter()}, {alice.id, bob.id})
+        self.assertEquals({r.id for r in user_mediator.filter()}, {alice.id, bob.id})
 
     def test_filter_hashless_iri_types_and_names(self):
         bob = create_bob()
@@ -88,31 +88,31 @@ class FindTest(unittest.TestCase):
         key = gpg_model.create(id=(doc_iri + "#key"), fingerprint=gpg_fingerprint, hex_id=gpg_hex_id)
         create_john(id=u"http://localhost/john#me")
 
-        self.assertEquals({bob.id, alice.id, key.id}, {r.id for r in client_manager.filter(hashless_iri=doc_iri)})
-        self.assertEquals({bob.id, alice.id}, {r.id for r in client_manager.filter(hashless_iri=doc_iri,
+        self.assertEquals({bob.id, alice.id, key.id}, {r.id for r in user_mediator.filter(hashless_iri=doc_iri)})
+        self.assertEquals({bob.id, alice.id}, {r.id for r in user_mediator.filter(hashless_iri=doc_iri,
                                                                             types=[MY_VOC + "LocalPerson"])})
         # Missing type (name is thus ambiguous)
         with self.assertRaises(OMAttributeAccessError):
-            client_manager.filter(hashless_iri=doc_iri, name=alice_name)
+            user_mediator.filter(hashless_iri=doc_iri, name=alice_name)
         self.assertEquals({alice.id}, {r.id for r in lp_model.filter(hashless_iri=doc_iri, name=alice_name)})
 
     def test_get_hashless_iri_types_and_names(self):
         bob = create_bob()
         doc_iri = bob.hashless_iri
         key = gpg_model.create(id=(doc_iri + "#key"), fingerprint=gpg_fingerprint, hex_id=gpg_hex_id)
-        document = client_manager.create(id=doc_iri, types=[str(FOAF + "Document")])
+        document = user_mediator.create(id=doc_iri, types=[str(FOAF + "Document")])
 
-        self.assertEquals(document.id, client_manager.get(hashless_iri=doc_iri).id)
-        self.assertEquals(bob.id, client_manager.get(hashless_iri=doc_iri, types=[MY_VOC + "LocalPerson"]).id)
-        self.assertEquals(key.id, client_manager.get(hashless_iri=doc_iri, types=[MY_VOC + "LocalGPGPublicKey"]).id)
+        self.assertEquals(document.id, user_mediator.get(hashless_iri=doc_iri).id)
+        self.assertEquals(bob.id, user_mediator.get(hashless_iri=doc_iri, types=[MY_VOC + "LocalPerson"]).id)
+        self.assertEquals(key.id, user_mediator.get(hashless_iri=doc_iri, types=[MY_VOC + "LocalGPGPublicKey"]).id)
 
     def test_limit(self):
         n = 20
         for _ in range(20):
             create_alice()
-        self.assertEquals(len(list(client_manager.filter())), n)
+        self.assertEquals(len(list(user_mediator.filter())), n)
         self.assertEquals(len(list(lp_model.filter())), n)
         self.assertEquals(len(list(lp_model.all())), n)
-        self.assertEquals(len(list(client_manager.filter(limit=10))), 10)
+        self.assertEquals(len(list(user_mediator.filter(limit=10))), 10)
         self.assertEquals(len(list(lp_model.filter(limit=10))), 10)
         self.assertEquals(len(list(lp_model.all(limit=10))), 10)

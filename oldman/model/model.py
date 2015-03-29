@@ -164,23 +164,25 @@ class Model(object):
 class ClientModel(Model):
     """TODO: describe.
 
-    TODO: further study this specific case
+    TODO: further study this specific case.
+
+    Contains methods for end-users (--> layer above the mediator).
 
      """
 
     @classmethod
-    def copy_store_model(cls, resource_manager, store_model):
+    def copy_store_model(cls, user_mediator, store_model):
         """TODO: describe """
-        return ClientModel(resource_manager, store_model.name, store_model.class_iri,
+        return ClientModel(user_mediator, store_model.name, store_model.class_iri,
                            store_model.ancestry_iris, store_model.context, store_model.om_attributes,
                            store_model._id_generator, operations=store_model._operations,
                            local_context=store_model.local_context)
 
-    def __init__(self, resource_manager, name, class_iri, ancestry_iris, context, om_attributes,
+    def __init__(self, user_mediator, name, class_iri, ancestry_iris, context, om_attributes,
                  id_generator, operations=None, local_context=None):
         Model.__init__(self, name, class_iri, ancestry_iris, context, om_attributes,
                        id_generator, operations=operations, local_context=local_context)
-        self._resource_manager = resource_manager
+        self._user_mediator = user_mediator
         # {method_name: ancestor_class_iri}
         self._method_inheritance = {}
         # {method_name: method}
@@ -194,7 +196,7 @@ class ClientModel(Model):
         return dict(self._methods)
 
     def declare_method(self, method, name, ancestor_class_iri):
-        """TODO: describe """
+        """TODO: describe. Not for end-users! """
         if name in self._methods:
             # Before overriding, compare the positions
             previous_ancestor_iri = self._method_inheritance[name]
@@ -219,7 +221,7 @@ class ClientModel(Model):
         See :func:`~oldman.resource.manager.ResourceManager.new` for more details.
         """
         types, kwargs = self._update_kwargs_and_types(kwargs, include_ancestry=True)
-        return self._resource_manager.new(id=id, hashless_iri=hashless_iri, collection_iri=collection_iri,
+        return self._user_mediator.new(id=id, hashless_iri=hashless_iri, collection_iri=collection_iri,
                                           types=types, **kwargs)
 
     def create(self, id=None, hashless_iri=None, collection_iri=None, **kwargs):
@@ -236,7 +238,7 @@ class ClientModel(Model):
 
         See :func:`oldman.resource.finder.ResourceFinder.filter` for further details."""
         types, kwargs = self._update_kwargs_and_types(kwargs)
-        return self._resource_manager.filter(types=types, hashless_iri=hashless_iri, limit=limit, eager=eager,
+        return self._user_mediator.filter(types=types, hashless_iri=hashless_iri, limit=limit, eager=eager,
                                              pre_cache_properties=pre_cache_properties, **kwargs)
 
     def get(self, id=None, hashless_iri=None, **kwargs):
@@ -252,7 +254,7 @@ class ClientModel(Model):
         if eager_with_reversed_attributes is None:
             eager_with_reversed_attributes = self._has_reversed_attributes
 
-        return self._resource_manager.get(id=id, types=types, hashless_iri=hashless_iri,
+        return self._user_mediator.get(id=id, types=types, hashless_iri=hashless_iri,
                                           eager_with_reversed_attributes=eager_with_reversed_attributes, **kwargs)
 
     def all(self, limit=None, eager=False):
