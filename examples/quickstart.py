@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 from rdflib import Graph
-from oldman import create_user_mediator, parse_graph_safely, SPARQLDataStore
+from oldman import create_user_mediator, parse_graph_safely, SparqlStore
 
-# In-memory store
-store = "default"
+# In-memory RDFLIB store
+rdflib_store = "default"
 
 # from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
-# store = SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
+# rdflib_store = SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
 #                           update_endpoint="http://localhost:3030/test/update")
 
 # Graph containing all the schema RDF triples
-schema_graph = Graph(store)
+schema_graph = Graph(rdflib_store)
 
 # Load the schema
 schema_url = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_schema.ttl"
@@ -19,16 +19,16 @@ parse_graph_safely(schema_graph, schema_url, format="turtle")
 ctx_iri = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_context.jsonld"
 
 data_graph = Graph()
-data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph)
+store = SparqlStore(data_graph, schema_graph=schema_graph)
 # Only for SPARQL data stores
-data_store.extract_prefixes(schema_graph)
+store.extract_prefixes(schema_graph)
 
 #LocalPerson store model
-data_store.create_model("LocalPerson", ctx_iri, iri_prefix="http://localhost/persons/",
+store.create_model("LocalPerson", ctx_iri, iri_prefix="http://localhost/persons/",
                         iri_fragment="me", incremental_iri=True)
 
 #User Mediator
-user_mediator = create_user_mediator(data_store)
+user_mediator = create_user_mediator(store)
 user_mediator.import_store_models()
 
 lp_model = user_mediator.get_client_model("LocalPerson")

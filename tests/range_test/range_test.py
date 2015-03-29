@@ -2,7 +2,7 @@ from copy import deepcopy
 from unittest import TestCase
 from os.path import dirname, join
 from rdflib import Graph
-from oldman import SPARQLDataStore, create_user_mediator
+from oldman import SparqlStore, create_user_mediator
 from oldman.exception import OMAttributeTypeCheckError, OMAlreadyDeclaredDatatypeError
 
 NO_PROPERTY_CONTEXT_DICT = {
@@ -21,7 +21,7 @@ class RangeTest(TestCase):
     def setUp(self):
         self.schema_graph = Graph().parse(join(dirname(__file__), "vocab.jsonld"), format="json-ld")
         print self.schema_graph.serialize(format="turtle")
-        self.store = SPARQLDataStore(Graph(), schema_graph=self.schema_graph)
+        self.store = SparqlStore(Graph(), schema_graph=self.schema_graph)
 
     def test_no_property_context(self):
         self.store.create_model("MyClass", NO_PROPERTY_CONTEXT_DICT)

@@ -29,21 +29,21 @@ Here, we just need its IRI::
 
     ctx_iri = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_context.jsonld"
 
-We now have almost enough domain knowledge to create our datastore and its models.
+We now have almost enough domain knowledge to create our store and its models.
 
 
-Here, we consider an in-memory SPARQL endpoint as a datastore (:class:`~oldman.store.sparql.SPARQLDataStore`)::
+Here, we consider an in-memory SPARQL endpoint as a store (:class:`~oldman.store.sparql.SparqlStore`)::
 
     # In-memory RDF graph
     data_graph = Graph()
-    data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph)
+    store = SparqlStore(data_graph, schema_graph=schema_graph)
 
 We extract the prefix information from the schema graph::
 
-    data_store.extract_prefixes(schema_graph)
+    store.extract_prefixes(schema_graph)
 
 
-We create a `LocalPerson` :class:`~oldman.model.model.Model` for the datastore.
+We create a `LocalPerson` :class:`~oldman.model.model.Model` for the store.
 For that, we need:
  * The IRI or a JSON-LD term of the RDFS class of the model. Here `"LocalPerson"` is an alias
    for `<http://example.org/myvoc#LocalPerson>`_ defined in the context file ;
@@ -53,16 +53,16 @@ For that, we need:
  * To declare that we want to generate incremental IRIs with short numbers
    for new :class:`~oldman.resource.resource.Resource` objects. ::
 
-    data_store.create_model("LocalPerson", ctx_iri, iri_prefix="http://localhost/persons/",
+    store.create_model("LocalPerson", ctx_iri, iri_prefix="http://localhost/persons/",
                             iri_fragment="me", incremental_iri=True)
 
 
 
-Models of the datastore are not directly manipulated; the user is expected to use their relative client models instead.
+Models of the store are not directly manipulated; the user is expected to use their relative client models instead.
 Here, we instantiate a :class:`~oldman.mediation.mediator.UserMediator` object that (i) gives access to client models and (ii) offers convenient method to retrieve and create :class:`~oldman.resource.resource.Resource` objects::
 
 
-    user_mediator = create_user_mediator(data_store)
+    user_mediator = create_user_mediator(store)
     user_mediator.import_store_models()
     lp_model = user_mediator.get_client_model("LocalPerson")
 
@@ -77,7 +77,7 @@ for two persons, Alice and Bob::
     bob = lp_model.new(name="Bob", blog="http://blog.example.com/",
                        short_bio_fr=u"J'ai grandi en ... .")
 
-Alice is already stored in the `data_store` but not Bob.
+Alice is already stored in the `store` but not Bob.
 Actually, it cannot be saved yet because some information is still missing: its email addresses.
 This information is required by our domain logic. Let's satisfy this constraint and save Bob::
 

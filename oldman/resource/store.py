@@ -13,18 +13,17 @@ class StoreResource(Resource):
      Is serializable (pickable).
 
     :param model_manager: :class:`~oldman.model.manager.ModelManager` object. Gives access to its models.
-    :param data_store: :class:`~oldman.store.datastore.DataStore` object. Datastore that has authority
-                    on this resource.
+    :param store: :class:`~oldman.store.store.Store` object. Store that has authority on this resource.
     :param kwargs: Other parameters considered by the :class:`~oldman.resource.Resource` constructor
                    and values indexed by their attribute names.
     """
 
-    def __init__(self, model_manager, data_store, **kwargs):
+    def __init__(self, model_manager, store, **kwargs):
         Resource.__init__(self, model_manager, **kwargs)
-        self._store = data_store
+        self._store = store
 
     @classmethod
-    def load_from_graph(cls, model_manager, data_store, id, subgraph, is_new=True, collection_iri=None):
+    def load_from_graph(cls, model_manager, store, id, subgraph, is_new=True, collection_iri=None):
         """Loads a new :class:`~oldman.resource.StoreResource` object from a sub-graph.
 
         TODO: update the comments.
@@ -37,7 +36,7 @@ class StoreResource(Resource):
         :return: The :class:`~oldman.resource.Resource` object created.
         """
         types = list({unicode(t) for t in subgraph.objects(URIRef(id), RDF.type)})
-        instance = cls(model_manager, data_store, id=id, types=types, is_new=is_new, collection_iri=collection_iri)
+        instance = cls(model_manager, store, id=id, types=types, is_new=is_new, collection_iri=collection_iri)
         instance.update_from_graph(subgraph, is_end_user=True, save=False, initial=True)
         return instance
 
@@ -74,8 +73,8 @@ class StoreResource(Resource):
         self._init_non_persistent_attributes(self._id)
 
         # Store
-        from oldman.store.datastore import DataStore
-        self._store = DataStore.get_store(state["store_name"])
+        from oldman.store.store import Store
+        self._store = Store.get_store(state["store_name"])
         self._model_manager = self._store.model_manager
 
         # Models and types

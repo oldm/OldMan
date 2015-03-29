@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from rdflib import ConjunctiveGraph, URIRef, RDF, BNode, Graph
 
-from oldman import create_user_mediator, SPARQLDataStore
+from oldman import create_user_mediator, SparqlStore
 from oldman.iri import UUIDFragmentIriGenerator
 from oldman.exception import OMRequiredHashlessIRIError
 from oldman.rest.crud import HashLessCRUDer
@@ -27,7 +27,7 @@ context = {
     }
 }
 
-data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph)
+data_store = SparqlStore(data_graph, schema_graph=schema_graph)
 data_store.create_model("MyClass", context, iri_generator=UUIDFragmentIriGenerator())
 
 user_mediator = create_user_mediator(data_store)

@@ -5,8 +5,8 @@ See http://oldman.readthedocs.org/en/latest/examples/dbpedia.html .
 """
 
 from rdflib import Graph
-from rdflib.plugins.stores.sparqlstore import SPARQLStore
-from oldman import create_user_mediator, SPARQLDataStore
+from rdflib.plugins.stores.sparqlstore import SPARQLStore as RdflibSPARQLStore
+from oldman import create_user_mediator, SparqlStore
 from dogpile.cache import make_region
 import logging
 from os import path
@@ -47,18 +47,18 @@ if __name__ == "__main__":
     #context_url = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/dbpedia_film_context.jsonld"
     context_url = path.join(path.dirname(__file__), "dbpedia_film_context.jsonld")
 
-    data_graph = Graph(SPARQLStore("http://dbpedia.org/sparql", context_aware=False))
+    data_graph = Graph(RdflibSPARQLStore("http://dbpedia.org/sparql", context_aware=False))
 
     cache_region = make_region().configure('dogpile.cache.memory_pickle')
 
-    # Datastore: SPARQL-aware triple store, with two models
-    data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph, cache_region=cache_region)
-    data_store.create_model("http://dbpedia.org/ontology/Film", context_url)
+    # store: SPARQL-aware triple store, with two models
+    store = SparqlStore(data_graph, schema_graph=schema_graph, cache_region=cache_region)
+    store.create_model("http://dbpedia.org/ontology/Film", context_url)
     # JSON-LD terms can be used instead of IRIs
-    data_store.create_model("Person", context_url)
+    store.create_model("Person", context_url)
 
     # Mediator for users
-    user_mediator = create_user_mediator(data_store)
+    user_mediator = create_user_mediator(store)
     # Re-uses the models of the data store
     user_mediator.import_store_models()
     film_model = user_mediator.get_client_model("http://dbpedia.org/ontology/Film")

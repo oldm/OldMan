@@ -5,7 +5,7 @@ from oldman.resource.resource import Resource, is_blank_node
 class ClientResource(Resource):
     """ClientResource: resource manipulated by the end-user.
 
-    Has access to the `mediator`.
+    Has access to the `resource_mediator`.
 
     Is not serializable.
     """

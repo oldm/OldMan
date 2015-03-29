@@ -5,7 +5,7 @@
 
 from unittest import TestCase
 from rdflib import ConjunctiveGraph, URIRef
-from oldman import create_user_mediator, parse_graph_safely, SPARQLDataStore
+from oldman import create_user_mediator, parse_graph_safely, SparqlStore
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
@@ -85,7 +85,7 @@ def disclaim2(self):
     return new_disclaim
 
 
-data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph)
+data_store = SparqlStore(data_graph, schema_graph=schema_graph)
 # ChildClass is generated before its ancestors!!
 child_prefix = "http://localhost/children/"
 uri_fragment = "this"

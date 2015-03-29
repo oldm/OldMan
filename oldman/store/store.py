@@ -1,28 +1,23 @@
 import logging
 from uuid import uuid4
-from oldman.model.manager import ModelManager
 from oldman.resource.store import StoreResource
 
 from oldman.store.cache import ResourceCache
 from oldman.exception import UnsupportedDataStorageFeatureException, OMAttributeAccessError, OMUniquenessError
 from oldman.exception import OMObjectNotFoundError, OMClassInstanceError
-from oldman.resource.resource import Resource
 
 
 DEFAULT_MODEL_PREFIX = "Default_"
 
 
-class DataStore(object):
-    """A :class:`~oldman.store.datastore.DataStore` object manages CRUD operations on
-    :class:`~oldman.resource.Resource` objects.
+class Store(object):
+    """A :class:`~oldman.store.store.Store` object manages CRUD operations on
+    :class:`~oldman.resource.store.StoreResource` objects.
 
     In the future, non-CRUD operations may also be supported.
 
     Manages the cache (:class:`~oldman.resource.cache.ResourceCache` object) of
-    :class:`~oldman.resource.Resource` object.
-
-    A :class:`~oldman.resource.manager.ResourceManager` object must be assigned
-    after instantiation of this object.
+    :class:`~oldman.resource.store.StoreResource` object.
 
     :param model_manager: TODO: describe!!!
     :param cache_region: :class:`dogpile.cache.region.CacheRegion` object.
@@ -55,7 +50,7 @@ class DataStore(object):
 
         TODO: update
 
-        Necessary for creating new :class:`~oldman.resource.Resource` objects
+        Necessary for creating new :class:`~oldman.resource.store.StoreResource` objects
         and accessing to :class:`~oldman.model.Model` objects.
         """
         return self._model_manager

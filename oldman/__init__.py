@@ -7,8 +7,8 @@
 
 from rdflib.plugin import register, Parser, Serializer
 from rdflib import Graph
-from .store.sparql import SPARQLDataStore
-from .store.http import HttpDataStore
+from .store.sparql import SparqlStore
+from .store.http import HttpStore
 from .utils.sparql import parse_graph_safely
 from .rest.controller import HTTPController
 from .mediation.default import DefaultCoreMediator

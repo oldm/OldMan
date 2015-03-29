@@ -1,7 +1,7 @@
 from unittest import TestCase
 from os.path import join, dirname
 from rdflib import Graph
-from oldman import SPARQLDataStore
+from oldman import SparqlStore
 from oldman.schema.hydra import HydraSchemaAdapter
 
 
@@ -23,4 +23,4 @@ class LinkClassTest(TestCase):
                    <http://www.w3.org/ns/hydra/core#supportedOperation> ?op .
             }"""))
 
-        self.store = SPARQLDataStore(Graph(), schema_graph=self.schema_graph)
+        self.store = SparqlStore(Graph(), schema_graph=self.schema_graph)

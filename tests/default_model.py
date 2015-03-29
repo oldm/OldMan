@@ -6,7 +6,7 @@ from dogpile.cache import make_region
 from rdflib import Dataset, Graph
 from rdflib.namespace import FOAF
 
-from oldman import create_user_mediator, parse_graph_safely, SPARQLDataStore
+from oldman import create_user_mediator, parse_graph_safely, SparqlStore
 from oldman.rest.crud import HashLessCRUDer
 
 
@@ -247,7 +247,7 @@ context = {
 #cache_region = None
 cache_region = make_region().configure('dogpile.cache.memory_pickle')
 
-data_store = SPARQLDataStore(data_graph, schema_graph=schema_graph, cache_region=cache_region)
+data_store = SparqlStore(data_graph, schema_graph=schema_graph, cache_region=cache_region)
 # Takes the prefixes from the schema graph
 data_store.extract_prefixes(schema_graph)
 

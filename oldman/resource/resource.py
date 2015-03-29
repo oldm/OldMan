@@ -85,6 +85,8 @@ class Resource(object):
                    `data_store`. Defaults to `True`.
     :param former_types: IRI list or set of the RDFS classes the resource was instance of. Defaults to `set()`.
     :param kwargs: values indexed by their attribute names.
+
+    TODO: update this comment!!!!!
     """
 
     _special_attribute_names = ["_models", "_id", "_types", "_is_blank_node", "_model_manager",
