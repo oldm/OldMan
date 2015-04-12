@@ -50,7 +50,7 @@ class ClientResource(Resource):
         :return: The :class:`~oldman.resource.resource.Resource` object itself."""
         attributes = self._extract_attribute_list()
         for attr in attributes:
-            attr.check_validity(self, is_end_user)
+            attr.check_validity(self, is_end_user, resource_mediator=self._resource_mediator)
 
         # The ID may be updated (if was a temporary IRI before)
         self._id = self._resource_mediator.save_resource(self, is_end_user)

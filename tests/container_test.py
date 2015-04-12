@@ -148,12 +148,12 @@ class ContainerTest(TestCase):
 
     def test_localized_lists(self):
         obj = model.new()
-        uri = obj.id
         list_fr = ["Salut", "Bonjour"]
         list_en = ["Hi", "Hello"]
         obj.list_fr = copy(list_fr)
         obj.list_en = copy(list_en)
         obj.save()
+        uri = obj.id
 
         obj = model.get(id=uri)
         self.assertEquals(obj.list_fr, list_fr)

@@ -198,6 +198,11 @@ class OMUnauthorizedTypeChangeError(OMEditError):
     pass
 
 
+class OMTemporaryIriError(OMEditError):
+    """When saving a Resource that has an attribute that points to a temporary IRI."""
+    pass
+
+
 class OMAccessError(OMUserError):
     """Error when accessing objects."""
     pass

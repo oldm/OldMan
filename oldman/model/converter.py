@@ -1,4 +1,5 @@
 import types
+from oldman.common import is_temporary_iri
 from oldman.resource.client import ClientResource
 from oldman.resource.store import StoreResource
 
@@ -56,8 +57,10 @@ class ModelConversionManager(object):
     def convert_client_to_store_resource(self, client_resource, store):
         store_former_types, store_new_types = self._extract_types_from_client_resource(client_resource, store)
 
+        client_id = client_resource.id if not is_temporary_iri(client_resource.id) else None
+
         #TODO: should we consider late IRI attributions?
-        store_resource = StoreResource(store.model_manager, store, id=client_resource.id,
+        store_resource = StoreResource(store.model_manager, store, id=client_id,
                                        types=store_new_types, is_new=client_resource.is_new,
                                        former_types=store_former_types)
 

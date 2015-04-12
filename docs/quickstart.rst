@@ -10,7 +10,7 @@ Model creation
 First, let's import some functions and classes::
 
     from rdflib import Graph
-    from oldman import create_user_mediator, parse_graph_safely, SPARQLDataStore
+    from oldman import create_user_mediator, parse_graph_safely, SparqlStore
 
 and create the RDF graph `schema_graph` that will contain our schema::
 

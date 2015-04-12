@@ -150,10 +150,10 @@ class PropertyTest(TestCase):
 
     def test_read_only_graph_update(self):
         obj = lc_model.new()
-        obj_iri = URIRef(obj.id)
         admin_str = "An admin is allowed to write it"
         obj.ro_property = admin_str
         obj.save(is_end_user=False)
+        obj_iri = URIRef(obj.id)
 
         graph = Graph()
         graph.parse(data=obj.to_rdf("nt"), format="nt")

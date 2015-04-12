@@ -58,18 +58,17 @@ class UserMediator(RootMediator):
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
     def filter(self, types=None, hashless_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
-        """See :func:`oldman.store.datastore.DataStore.filter`."""
+        """See :func:`oldman.store.store.Store.filter`."""
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
     def sparql_filter(self, query):
-        """See :func:`oldman.store.datastore.DataStore.sparql_filter`."""
+        """See :func:`oldman.store.store.Store.sparql_filter`."""
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
-    def use_store_model(self, class_iri, data_store=None):
+    def import_store_model(self, class_iri, store=None):
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
-    def import_store_models(self):
-        """TODO: check possible conflicts with local models."""
+    def import_store_models(self, store=None):
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
     def get_client_model(self, class_name_or_iri):
@@ -92,5 +91,9 @@ class ResourceMediator(RootMediator):
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
     def delete_resource(self, client_resource):
+        """TODO: describe"""
+        raise NotImplementedError("Should be implemented by a concrete implementation.")
+
+    def get_updated_iri(self, tmp_iri):
         """TODO: describe"""
         raise NotImplementedError("Should be implemented by a concrete implementation.")

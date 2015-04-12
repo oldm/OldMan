@@ -3,7 +3,7 @@ from unittest import TestCase
 from rdflib import ConjunctiveGraph, URIRef, RDF, BNode, Graph
 
 from oldman import create_user_mediator, SparqlStore
-from oldman.iri import UUIDFragmentIriGenerator
+from oldman.iri.generator import UUIDFragmentIriGenerator
 from oldman.exception import OMRequiredHashlessIRIError
 from oldman.rest.crud import HashLessCRUDer
 
@@ -36,7 +36,7 @@ crud_controller = HashLessCRUDer(user_mediator)
 model = user_mediator.get_client_model("MyClass")
 
 
-class DatatypeTest(TestCase):
+class HashlessIriTest(TestCase):
 
     def tearDown(self):
         """ Clears the data graph """
@@ -44,7 +44,7 @@ class DatatypeTest(TestCase):
 
     def test_generation(self):
         hashless_iri = "http://example.org/doc1"
-        obj1 = model.new(hashless_iri=hashless_iri)
+        obj1 = model.create(hashless_iri=hashless_iri)
         self.assertEquals(obj1.hashless_iri, hashless_iri)
         self.assertTrue(hashless_iri in obj1.id)
 

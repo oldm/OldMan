@@ -108,13 +108,16 @@ child_model = user_mediator.get_client_model("ChildClass")
 grand_parent_model = user_mediator.get_client_model("GrandParentClass")
 parent_model = user_mediator.get_client_model("ParentClass")
 
+# Only for reset the counter
+child_store_model = data_store.model_manager.get_model(child_model.class_iri)
+
 
 class InstanceTest(TestCase):
 
     def tearDown(self):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
-        child_model.reset_counter()
+        child_store_model.reset_counter()
 
     def test_types(self):
         john = grand_parent_model.new()
@@ -126,15 +129,15 @@ class InstanceTest(TestCase):
 
     def test_ancestor_assignment(self):
         john = grand_parent_model.new()
-        uri = john.id
         old_value = 5
         john.old_number_value = old_value
         john.save()
+        iri = john.id
         with self.assertRaises(AttributeError):
             john.mid_values = {"not saved"}
         with self.assertRaises(AttributeError):
             john.new_value = "not saved (again)"
-        john = grand_parent_model.get(id=uri)
+        john = grand_parent_model.get(id=iri)
         self.assertEquals(john.old_number_value, old_value)
         with self.assertRaises(AttributeError):
             print john.mid_values
@@ -143,7 +146,6 @@ class InstanceTest(TestCase):
 
     def test_parent_assignment(self):
         jack = parent_model.new()
-        uri = jack.id
         mid_values = {"Hello", "world"}
         jack.mid_values = mid_values
         old_value = 8
@@ -151,6 +153,7 @@ class InstanceTest(TestCase):
         with self.assertRaises(AttributeError):
             jack.new_value = "not saved"
         jack.save()
+        uri = jack.id
         jack = parent_model.get(id=uri)
         self.assertEquals(jack.mid_values, mid_values)
         self.assertEquals(jack.old_number_value, old_value)
@@ -159,7 +162,6 @@ class InstanceTest(TestCase):
 
     def test_child_assignment(self):
         tom = child_model.new()
-        uri = tom.id
         mid_values = {"Hello", "world"}
         tom.mid_values = mid_values
         old_value = 10
@@ -167,6 +169,7 @@ class InstanceTest(TestCase):
         new_value = u"ok!"
         tom.new_value = new_value
         tom.save()
+        uri = tom.id
         tom = child_model.get(id=uri)
         self.assertEquals(tom.new_value, new_value)
         self.assertEquals(tom.mid_values, mid_values)
@@ -262,6 +265,6 @@ class InstanceTest(TestCase):
 
     def test_uris(self):
         for i in range(1, 6):
-            child = child_model.new()
+            child = child_model.create()
             self.assertEquals(child.id, "%s%d#%s" % (child_prefix, i, uri_fragment))
             print child.id

@@ -1,5 +1,11 @@
 import logging
+from oldman.common import TMP_IRI_PREFIX
 from oldman.exception import OMReservedAttributeNameError, OMAttributeAccessError
+from oldman.iri.generator import PrefixedUUIDIriGenerator, BlankNodeIriGenerator
+
+
+TMP_IRI_GENERATOR = PrefixedUUIDIriGenerator(TMP_IRI_PREFIX)
+BLANK_NODE_GENERATOR = BlankNodeIriGenerator()
 
 
 class Model(object):
@@ -107,6 +113,10 @@ class Model(object):
         """Is `True` if one of its attributes is reversed."""
         return self._has_reversed_attributes
 
+    @property
+    def is_generating_blank_nodes(self):
+        return self._id_generator.is_generating_blank_nodes
+
     def get_operation(self, http_method):
         """TODO: describe"""
         return self._operations.get(http_method)
@@ -166,7 +176,7 @@ class ClientModel(Model):
 
     TODO: further study this specific case.
 
-    Contains methods for end-users (--> layer above the mediator).
+    Contains methods for end-users (--> layer above the user mediator).
 
      """
 
@@ -175,13 +185,14 @@ class ClientModel(Model):
         """TODO: describe """
         return ClientModel(user_mediator, store_model.name, store_model.class_iri,
                            store_model.ancestry_iris, store_model.context, store_model.om_attributes,
-                           store_model._id_generator, operations=store_model._operations,
-                           local_context=store_model.local_context)
+                           operations=store_model._operations, local_context=store_model.local_context,
+                           generate_blank_nodes=store_model.is_generating_blank_nodes)
 
-    def __init__(self, user_mediator, name, class_iri, ancestry_iris, context, om_attributes,
-                 id_generator, operations=None, local_context=None):
-        Model.__init__(self, name, class_iri, ancestry_iris, context, om_attributes,
-                       id_generator, operations=operations, local_context=local_context)
+    def __init__(self, user_mediator, name, class_iri, ancestry_iris, context, om_attributes, operations=None,
+                 local_context=None, generate_blank_nodes=False):
+        generator = BLANK_NODE_GENERATOR if generate_blank_nodes else TMP_IRI_GENERATOR
+        Model.__init__(self, name, class_iri, ancestry_iris, context, om_attributes, generator,
+                       operations=operations, local_context=local_context)
         self._user_mediator = user_mediator
         # {method_name: ancestor_class_iri}
         self._method_inheritance = {}

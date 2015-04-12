@@ -24,10 +24,9 @@ class IriTest(unittest.TestCase):
         partial_uri = u"http://localhost/persons"
         bob_uri = partial_uri + "#bob"
         bob = lp_model.create(id=bob_uri, name=bob_name, blog=bob_blog, mboxes=bob_emails,
-                                         short_bio_en=bob_bio_en, short_bio_fr=bob_bio_fr)
+                              short_bio_en=bob_bio_en, short_bio_fr=bob_bio_fr)
         alice_uri = partial_uri + "#alice"
-        alice = lp_model.create(id=alice_uri, name=alice_name, mboxes={alice_mail},
-                                           short_bio_en=alice_bio_en)
+        alice = lp_model.create(id=alice_uri, name=alice_name, mboxes={alice_mail}, short_bio_en=alice_bio_en)
         self.assertTrue(bob.in_same_document(alice))
 
     def test_iri_uniqueness(self):

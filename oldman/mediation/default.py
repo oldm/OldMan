@@ -25,6 +25,8 @@ class DefaultCoreMediator(UserMediator, ResourceMediator):
                                          is_default=True)
 
         self._conversion_manager = ModelConversionManager()
+        #TODO: find a way to control its size. Weakrefs on unicode are not accepted.
+        self._updated_iris = {}
 
     @property
     def model_manager(self):
@@ -114,9 +116,18 @@ class DefaultCoreMediator(UserMediator, ResourceMediator):
         store = self._store_selector.select_store(id=client_resource, types=client_resource.types)
         store_resource = self._conversion_manager.convert_client_to_store_resource(client_resource, store)
         store_resource.save(is_end_user)
-        return store_resource.id
+        previous_id = client_resource.id
+        new_id = store_resource.id
+
+        # Keeps track of the temporary IRI replacement
+        if previous_id != new_id:
+            self._updated_iris[previous_id] = new_id
+        return new_id
 
     def delete_resource(self, client_resource):
         store = self._store_selector.select_store(id=client_resource, types=client_resource.types)
         store_resource = self._conversion_manager.convert_client_to_store_resource(client_resource, store)
         store_resource.delete()
+
+    def get_updated_iri(self, tmp_iri):
+        return self._updated_iris.get(tmp_iri, tmp_iri)

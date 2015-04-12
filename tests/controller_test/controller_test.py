@@ -36,7 +36,7 @@ class ControllerTest(unittest.TestCase):
         self.assertTrue(operation is not None)
 
         title = u"First item"
-        item = item_model.new(title=title)
+        item = item_model.create(title=title)
         #item_graph = Graph().parse(data=item.to_rdf(rdf_format="nt"), format="nt")
         #print item_graph.serialize(format="turtle")
         item_iri = item.id

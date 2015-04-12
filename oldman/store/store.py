@@ -244,8 +244,7 @@ class Store(object):
         if not self._accept_iri_generation_configuration:
             if iri_generator or iri_prefix or iri_fragment or incremental_iri:
                 # TODO: find a better exception
-                raise Exception("The generator is imposed by the datastore, it cannot"
-                                "be configured by the user.")
+                raise Exception("The generator is imposed by the store, it cannot be configured by the user.")
             else:
                 iri_generator = self._create_iri_generator(class_name_or_iri)
 

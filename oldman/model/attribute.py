@@ -3,11 +3,13 @@ from collections import namedtuple
 from weakref import WeakKeyDictionary
 
 from rdflib import Literal
+from oldman.common import is_temporary_iri
 
-from oldman.exception import OMAttributeTypeCheckError, OMRequiredPropertyError, OMReadOnlyAttributeError, OMEditError
+from oldman.exception import OMAttributeTypeCheckError, OMRequiredPropertyError, OMReadOnlyAttributeError, OMEditError, \
+    OMTemporaryIriError
 from oldman.parsing.value import AttributeValueExtractor
 from oldman.validation.value_format import ValueFormatError
-from oldman.iri import _skolemize
+from oldman.iri.generator import _skolemize
 
 
 OMAttributeMetadata = namedtuple("OMAttributeMetadata", ["name", "property", "language", "jsonld_type",
@@ -135,16 +137,19 @@ class OMAttribute(object):
         except OMEditError:
             return False
 
-    def check_validity(self, resource, is_end_user=True):
+    def check_validity(self, resource, is_end_user=True, resource_mediator=None):
         """Raises an :class:`~oldman.exception.OMEditError` exception if
         the attribute value assigned to a resource is invalid.
 
         :param resource: :class:`~oldman.resource.Resource` object.
         :param is_end_user: `False` when an authorized user (not a regular end-user)
                              wants to force some rights. Defaults to `True`.
+        :param resource_mediator: TODO: explain why we need it for TMP IRIs.
         """
         self._check_local_constraints(resource, is_end_user)
         self._check_requirement(resource)
+        if resource_mediator is not None:
+            self._check_iris(resource, resource_mediator)
 
     def _check_local_constraints(self, resource, is_end_user):
         # Read-only constraint
@@ -159,6 +164,10 @@ class OMAttribute(object):
             if other.has_value(resource):
                 return
         raise OMRequiredPropertyError(self.name)
+
+    def _check_iris(self, resource, resource_mediator):
+        """ Does nothing by default. Does not concern literals. """
+        pass
 
     def has_value(self, resource):
         """Tests if the resource attribute has a non-None value.
@@ -371,7 +380,6 @@ class OMAttribute(object):
 
         self._entries[resource] = entry
 
-
     def _check_container(self, value):
         """Checks that container used is authorized
         and its items are formatted properly.
@@ -454,6 +462,33 @@ class ObjectOMAttribute(OMAttribute):
         else:
             values = f(value)
         OMAttribute.set(self, resource, values)
+
+    def _check_iris(self, resource, resource_mediator):
+        """ Checks that the IRI is not temporary """
+        value = self.get_lightly(resource)
+        if value is None:
+            return
+
+        resource_id = resource.id
+        if isinstance(value, set):
+            updated_value = {self._check_iri(resource_id, v, resource_mediator) for v in value}
+        elif isinstance(value, list):
+            updated_value = [self._check_iri(resource_id, v, resource_mediator) for v in value]
+        else:
+            updated_value = self._check_iri(resource_id, value, resource_mediator)
+
+        self.set(resource, updated_value)
+
+    def _check_iri(self, resource_id, object_id, resource_mediator):
+        if is_temporary_iri(object_id):
+            new_id = resource_mediator.get_updated_iri(object_id)
+            if new_id == object_id:
+                # Still temporary. Not supported.
+                raise OMTemporaryIriError("The attribute %s of %s is a temporary IRI (%s). Currently not supported."
+                                          % (self.name, resource_id, object_id))
+            return new_id
+        else:
+            return object_id
 
 
 class Entry(object):
