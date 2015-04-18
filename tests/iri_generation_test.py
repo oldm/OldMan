@@ -3,7 +3,7 @@ from unittest import TestCase
 from rdflib import ConjunctiveGraph, URIRef, RDF, BNode, Graph
 
 from oldman import create_user_mediator, SparqlStore
-from oldman.iri.generator import UUIDFragmentIriGenerator
+from oldman.iri.permanent import UUIDFragmentPermanentIDGenerator
 from oldman.exception import OMRequiredHashlessIRIError
 from oldman.rest.crud import HashLessCRUDer
 
@@ -28,7 +28,7 @@ context = {
 }
 
 data_store = SparqlStore(data_graph, schema_graph=schema_graph)
-data_store.create_model("MyClass", context, iri_generator=UUIDFragmentIriGenerator())
+data_store.create_model("MyClass", context, iri_generator=UUIDFragmentPermanentIDGenerator())
 
 user_mediator = create_user_mediator(data_store)
 user_mediator.import_store_models()
@@ -45,18 +45,18 @@ class HashlessIriTest(TestCase):
     def test_generation(self):
         hashless_iri = "http://example.org/doc1"
         obj1 = model.create(hashless_iri=hashless_iri)
-        self.assertEquals(obj1.hashless_iri, hashless_iri)
-        self.assertTrue(hashless_iri in obj1.id)
+        self.assertEquals(obj1.id.hashless_iri, hashless_iri)
+        self.assertTrue(hashless_iri in obj1.id.iri)
 
         obj2 = model.create(hashless_iri=hashless_iri)
-        self.assertEquals(obj2.hashless_iri, hashless_iri)
-        self.assertTrue(hashless_iri in obj2.id)
-        self.assertNotEquals(obj1.id, obj2.id)
+        self.assertEquals(obj2.id.hashless_iri, hashless_iri)
+        self.assertTrue(hashless_iri in obj2.id.iri)
+        self.assertNotEquals(obj1.id.iri, obj2.id.iri)
 
         with self.assertRaises(OMRequiredHashlessIRIError):
-            model.new()
+            model.create()
         with self.assertRaises(OMRequiredHashlessIRIError):
-            model.new(hashless_iri="http://localhost/not#a-base-iri")
+            model.create(hashless_iri="http://localhost/not#a-base-iri")
 
     def test_controller_put(self):
         hashless_iri = "http://example.org/doc2"
@@ -66,8 +66,8 @@ class HashlessIriTest(TestCase):
 
         resource = user_mediator.get(hashless_iri=hashless_iri)
         self.assertTrue(resource is not None)
-        self.assertTrue(hashless_iri in resource.id)
-        self.assertTrue('#' in resource.id)
+        self.assertTrue(hashless_iri in resource.id.iri)
+        self.assertTrue('#' in resource.id.iri)
 
     def test_relative_iri(self):
         """
@@ -81,4 +81,4 @@ class HashlessIriTest(TestCase):
         hashless_iri = "http://example.org/doc3"
         crud_controller.update(hashless_iri, ttl, "turtle", allow_new_type=True)
         resource = user_mediator.get(hashless_iri=hashless_iri)
-        self.assertEquals(resource.id, hashless_iri + "#this")
+        self.assertEquals(resource.id.iri, hashless_iri + "#this")

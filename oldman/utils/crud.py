@@ -1,7 +1,8 @@
 from rdflib import RDF, URIRef, BNode
+from oldman.common import is_blank_node
 
 from oldman.exception import OMDifferentHashlessIRIError, OMForbiddenSkolemizedIRIError, OMClassInstanceError, OMInternalError
-from oldman.resource.resource import Resource, is_blank_node
+from oldman.resource.resource import Resource
 
 
 def extract_subjects(graph):
@@ -25,7 +26,7 @@ def create_blank_nodes(manager, graph, bnode_subjects, hashless_iri=None, collec
     for bnode in bnode_subjects:
         types = {unicode(t) for t in graph.objects(bnode, RDF.type)}
         resource = manager.new(hashless_iri=hashless_iri, collection_iri=collection_iri, types=types)
-        _alter_bnode_triples(graph, bnode, URIRef(resource.id))
+        _alter_bnode_triples(graph, bnode, URIRef(resource.id.iri))
         resource.update_from_graph(graph, save=False)
         resources.append(resource)
 
@@ -34,7 +35,7 @@ def create_blank_nodes(manager, graph, bnode_subjects, hashless_iri=None, collec
         if len(deps) > 0:
             dependent_resources.append(resource)
 
-        if (hashless_iri is not None) and (not resource.is_blank_node()) and resource.hashless_iri != hashless_iri:
+        if (hashless_iri is not None) and (not resource.is_blank_node()) and resource.id.hashless_iri != hashless_iri:
             raise OMDifferentHashlessIRIError(u"%s is not the hash-less IRI of %s" % (hashless_iri, resource.id))
 
     # When some Bnodes are interconnected
@@ -59,7 +60,7 @@ def create_regular_resources(manager, graph, subjects, hashless_iri=None, collec
             raise OMDifferentHashlessIRIError(u"%s is not the hash-less IRI of %s" % (hashless_iri, iri))
 
         try:
-            resource = manager.get(id=iri)
+            resource = manager.get(iri=iri)
             resources_to_update.append(resource)
 
         except OMClassInstanceError:

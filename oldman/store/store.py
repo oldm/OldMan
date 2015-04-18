@@ -82,7 +82,7 @@ class Store(object):
         """
         return self._support_sparql
 
-    def get(self, id=None, types=None, hashless_iri=None, eager_with_reversed_attributes=True, **kwargs):
+    def get(self, iri=None, types=None, hashless_iri=None, eager_with_reversed_attributes=True, **kwargs):
         """Gets the first :class:`~oldman.resource.Resource` object matching the given criteria.
 
         The `kwargs` dict can contains regular attribute key-values.
@@ -91,7 +91,7 @@ class Store(object):
         is raised if the resource is not instance of these classes.
         **Other criteria are not checked**.
 
-        :param id: IRI of the resource. Defaults to `None`.
+        :param iri: IRI of the resource. Defaults to `None`.
         :param types: IRIs of the RDFS classes filtered resources must be instance of. Defaults to `None`.
         :param hashless_iri: Hash-less IRI of filtered resources. Defaults to `None`.
         :param eager_with_reversed_attributes: Allow to Look eagerly for reversed RDF properties.
@@ -101,8 +101,8 @@ class Store(object):
         """
         types = set(types) if types is not None else set()
 
-        if id is not None:
-            resource = self._get_by_id(id)
+        if iri is not None:
+            resource = self._get_by_iri(iri)
             if not types.issubset(resource.types):
                 missing_types = types.difference(resource.types)
                 raise OMClassInstanceError(u"%s found, but is not instance of %s" % (id, missing_types))
@@ -147,10 +147,10 @@ class Store(object):
         if not eager and pre_cache_properties is not None:
             raise AttributeError(u"Eager properties are incompatible with lazyness. Please set eager to True.")
 
-        id = kwargs.pop("id") if "id" in kwargs else None
+        iri = kwargs.pop("iri") if "iri" in kwargs else None
         type_iris = types if types is not None else []
-        if id is not None:
-            return self.get(id=id, types=types, hashless_iri=hashless_iri, **kwargs)
+        if iri is not None:
+            return self.get(iri=iri, types=types, hashless_iri=hashless_iri, **kwargs)
 
         if len(type_iris) == 0 and len(kwargs) > 0:
             raise OMAttributeAccessError(u"No type given in filter() so attributes %s are ambiguous."
@@ -257,7 +257,7 @@ class Store(object):
         raise UnsupportedDataStorageFeatureException("This datastore %s cannot get a resource at random."
                                                      % self.__class__.__name__)
 
-    def _get_by_id(self, id):
+    def _get_by_iri(self, id):
         raise UnsupportedDataStorageFeatureException("This datastore %s cannot get a resource from its IRI."
                                                      % self.__class__.__name__)
 
@@ -285,7 +285,7 @@ class Store(object):
             raise OMObjectNotFoundError(u"No resource with hash-less iri %s" % hashless_iri)
         elif len(resources) > 1:
             for r in resources:
-                if r.id == hashless_iri:
+                if r.id.iri == hashless_iri:
                     return r
             # TODO: avoid such arbitrary selection
             self._logger.warn(u"Multiple resources have the same base_uri: %s\n. "

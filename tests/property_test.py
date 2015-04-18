@@ -153,7 +153,7 @@ class PropertyTest(TestCase):
         admin_str = "An admin is allowed to write it"
         obj.ro_property = admin_str
         obj.save(is_end_user=False)
-        obj_iri = URIRef(obj.id)
+        obj_iri = URIRef(obj.id.iri)
 
         graph = Graph()
         graph.parse(data=obj.to_rdf("nt"), format="nt")

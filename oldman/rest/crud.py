@@ -129,10 +129,10 @@ class HashLessCRUDer(object):
             r.save()
 
         #Delete omitted resources
-        all_resource_iris = {r.id for r in self._manager.filter(hashless_iri=hashless_iri)}
-        resource_iris_to_remove = all_resource_iris.difference({r.id for r in resources})
+        all_resource_iris = {r.id.iri for r in self._manager.filter(hashless_iri=hashless_iri)}
+        resource_iris_to_remove = all_resource_iris.difference({r.id.iri for r in resources})
         for iri in resource_iris_to_remove:
             # Cheap because already in the resource cache
-            r = self._manager.get(id=iri)
+            r = self._manager.get(iri=iri)
             if r is not None:
                 r.delete()

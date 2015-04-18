@@ -135,13 +135,13 @@ class ContainerTest(TestCase):
 
     def test_basic_list(self):
         obj = self.create_object()
-        uri = obj.id
+        uri = obj.id.iri
         lst = ["Hello", "hi", "hi", "Hello"]
         backup_list = copy(lst)
         obj.primary_list = lst
         obj.save()
 
-        obj = model.get(id=uri)
+        obj = model.get(iri=uri)
         self.assertEquals(lst, backup_list)
         self.assertEquals(obj.primary_list, lst)
         self.assertNotEquals(obj.primary_list, list(set(lst)))
@@ -153,9 +153,9 @@ class ContainerTest(TestCase):
         obj.list_fr = copy(list_fr)
         obj.list_en = copy(list_en)
         obj.save()
-        uri = obj.id
+        uri = obj.id.iri
 
-        obj = model.get(id=uri)
+        obj = model.get(iri=uri)
         self.assertEquals(obj.list_fr, list_fr)
         self.assertEquals(obj.list_en, list_en)
 
@@ -169,7 +169,7 @@ class ContainerTest(TestCase):
 
     def test_undeclared_set(self):
         obj = self.create_object()
-        uri = obj.id
+        uri = obj.id.iri
         lst = ["Hello", "hi", "hi", "Hello"]
         # No declaration -> implicit set or unique value
         # (lists and dict are not accepted)
@@ -194,12 +194,12 @@ class ContainerTest(TestCase):
 
     def test_bool_list(self):
         obj = self.create_object()
-        uri = obj.id
+        uri = obj.id.iri
         lst = [True, False, True, False]
         obj.bool_list = lst
         self.assertEquals(obj.bool_list, lst)
         obj.save()
-        obj = model.get(id=uri)
+        obj = model.get(iri=uri)
         self.assertEquals(obj.bool_list, lst)
         obj.bool_list = [True]
         obj.save()
@@ -210,11 +210,11 @@ class ContainerTest(TestCase):
 
     def test_bool_set(self):
         obj = self.create_object()
-        uri = obj.id
+        uri = obj.id.iri
         bools = {False, True}
         obj.bool_set = bools
         obj.save()
-        obj = model.get(id=uri)
+        obj = model.get(iri=uri)
         self.assertEquals(obj.bool_set, bools)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.bool_set = [True]
@@ -223,12 +223,12 @@ class ContainerTest(TestCase):
 
     def test_lang_map(self):
         obj = self.create_object()
-        uri = obj.id
+        uri = obj.id.iri
         values = {'fr': u"Hé, salut!",
                   'en': u"What's up?"}
         obj.lang_map = values
         obj.save()
-        obj = model.get(id=uri)
+        obj = model.get(iri=uri)
         self.assertEquals(obj.lang_map, values)
 
         with self.assertRaises(OMAttributeTypeCheckError):

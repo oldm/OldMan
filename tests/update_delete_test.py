@@ -21,7 +21,7 @@ class UpdateDeleteTest(TestCase):
 
         # LocalPerson and Person types are missing
         with self.assertRaises(OMClassInstanceError):
-            lp_model.get(id=str(jason_iri))
+            lp_model.get(iri=str(jason_iri))
         # Cleans the cache
         data_store.resource_cache.remove_resource_from_id(jason_iri)
 
@@ -29,7 +29,7 @@ class UpdateDeleteTest(TestCase):
             data_graph.add((jason_iri, RDF.type, URIRef(class_iri)))
 
         # Mboxes is still missing
-        jason = lp_model.get(id=str(jason_iri))
+        jason = lp_model.get(iri=str(jason_iri))
         self.assertFalse(jason.is_valid())
 
         mboxes = {"jason@example.com", "jason@example.org"}
@@ -41,7 +41,7 @@ class UpdateDeleteTest(TestCase):
 
         # Clear the cache (out-of-band update)
         data_store.resource_cache.remove_resource(jason)
-        jason = lp_model.get(id=jason_iri)
+        jason = lp_model.get(iri=jason_iri)
         self.assertEquals(jason.mboxes, mboxes)
         self.assertTrue(jason.is_valid())
 
@@ -181,7 +181,7 @@ class UpdateDeleteTest(TestCase):
 
     def test_basic_bob_graph_update(self):
         bob = create_bob()
-        bob_iri = URIRef(bob.id)
+        bob_iri = URIRef(bob.id.iri)
         foaf_name = URIRef(FOAF + "name")
         olb = URIRef(BIO + "olb")
         graph = Graph()
@@ -226,8 +226,8 @@ class UpdateDeleteTest(TestCase):
 
     def test_alice_rdf_update_types(self):
         alice = create_alice()
-        alice_ref = URIRef(alice.id)
-        alice_iri = alice.id
+        alice_ref = URIRef(alice.id.iri)
+        alice_iri = alice.id.iri
 
         g1 = Graph().parse(data=alice.to_rdf("turtle"), format="turtle")
 
@@ -243,7 +243,7 @@ class UpdateDeleteTest(TestCase):
 
         # If any cache
         data_store.resource_cache.remove_resource(alice)
-        alice = lp_model.get(id=alice_iri)
+        alice = lp_model.get(iri=alice_iri)
         self.assertEquals(set(alice.types), set(lp_model.ancestry_iris + additional_types))
 
         # Remove these new types
@@ -252,7 +252,7 @@ class UpdateDeleteTest(TestCase):
         alice.update_from_graph(g1, allow_type_removal=True)
         # If any cache
         data_store.resource_cache.remove_resource(alice)
-        alice = lp_model.get(id=alice_iri)
+        alice = lp_model.get(iri=alice_iri)
         self.assertEquals(set(alice.types), set(lp_model.ancestry_iris))
 
     def test_add_list_by_dict_update(self):
@@ -262,14 +262,14 @@ class UpdateDeleteTest(TestCase):
 
         # Not saved
         alice.children = [bob, john]
-        children_iris = [bob.id, john.id]
-        self.assertEquals([c.id for c in alice.children], children_iris)
+        children_iris = [bob.id.iri, john.id.iri]
+        self.assertEquals([c.id.iri for c in alice.children], children_iris)
         alice_dict = dict(alice.to_dict())
         alice.children = None
         self.assertEquals(alice.children, None)
 
         alice.update(alice_dict)
-        self.assertEquals([c.id for c in alice.children], children_iris)
+        self.assertEquals([c.id.iri for c in alice.children], children_iris)
 
     def test_add_list_by_graph_update(self):
         alice = create_alice()
@@ -278,12 +278,12 @@ class UpdateDeleteTest(TestCase):
 
         # Not saved
         alice.children = [bob, john]
-        children_iris = [bob.id, john.id]
-        self.assertEquals([c.id for c in alice.children], children_iris)
+        children_iris = [bob.id.iri, john.id.iri]
+        self.assertEquals([c.id.iri for c in alice.children], children_iris)
 
         alice_graph = Graph().parse(data=alice.to_rdf(rdf_format="nt"), format="nt")
         alice.children = None
         self.assertEquals(alice.children, None)
 
         alice.update_from_graph(alice_graph)
-        self.assertEquals([c.id for c in alice.children], children_iris)
+        self.assertEquals([c.id.iri for c in alice.children], children_iris)

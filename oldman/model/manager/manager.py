@@ -3,11 +3,8 @@ import logging
 from urlparse import urlparse
 
 from rdflib import Graph
-from oldman.model.converter import ModelConversionManager, EquivalentModelConverter
 
-from oldman.model.model import Model, ClientModel
 from oldman.exception import OMUndeclaredClassNameError, OMExpiredMethodDeclarationTimeSlotError
-from oldman.iri import PrefixedUUIDIriGenerator, IncrementalIriGenerator, BlankNodeIriGenerator
 from oldman.parsing.schema.attribute import OMAttributeExtractor
 from oldman.parsing.operation import HydraOperationExtractor
 from oldman.vocabulary import HYDRA_COLLECTION_IRI, HYDRA_PAGED_COLLECTION_IRI, HTTP_POST
@@ -88,74 +85,42 @@ class ModelManager(object):
             self._operation_functions[class_iri] = {http_method: func}
 
     def find_models_and_types(self, type_set):
-        """See :func:`oldman.resource.registry.ModelRegistry.find_models_and_types`."""
+        """See :func:`oldman.model.registry.ModelRegistry.find_models_and_types`."""
         return self._registry.find_models_and_types(type_set)
+
+    def find_main_model(self, type_set):
+        """See :func:`oldman.model.registry.ModelRegistry.find_main_model`."""
+        return self._registry.find_main_model(type_set)
 
     def find_descendant_models(self, top_ancestor_name_or_iri):
         """TODO: explain. Includes the top ancestor. """
         return self._registry.find_descendant_models(top_ancestor_name_or_iri)
 
-    def create_model(self, class_name_or_iri, context_iri_or_payload, data_store, iri_prefix=None, iri_fragment=None,
-                     iri_generator=None, untyped=False, incremental_iri=False, is_default=False,
-                     context_file_path=None):
-        """Creates a :class:`~oldman.model.Model` object.
-
-        TODO: remove data_store from the constructor!
-
-        To create it, they are three elements to consider:
-
-          1. Its class IRI which can be retrieved from `class_name_or_iri`;
-          2. Its JSON-LD context for mapping :class:`~oldman.attribute.OMAttribute` values to RDF triples;
-          3. The :class:`~oldman.iri.IriGenerator` object that generates IRIs from new
-             :class:`~oldman.resource.Resource` objects.
-
-        The :class:`~oldman.iri.IriGenerator` object is either:
-
-          * directly given: `iri_generator`;
-          * created from the parameters `iri_prefix`, `iri_fragment` and `incremental_iri`.
-
-        :param class_name_or_iri: IRI or JSON-LD term of a RDFS class.
-        :param context_iri_or_payload: `dict`, `list` or `IRI` that represents the JSON-LD context .
-        :param iri_generator: :class:`~oldman.iri.IriGenerator` object. If given, other `iri_*` parameters are
-               ignored.
-        :param iri_prefix: Prefix of generated IRIs. Defaults to `None`.
-               If is `None` and no `iri_generator` is given, a :class:`~oldman.iri.BlankNodeIriGenerator` is created.
-        :param iri_fragment: IRI fragment that is added at the end of generated IRIs. For instance, `"me"`
-               adds `"#me"` at the end of the new IRI. Defaults to `None`. Has no effect if `iri_prefix` is not given.
-        :param incremental_iri: If `True` an :class:`~oldman.iri.IncrementalIriGenerator` is created instead of a
-               :class:`~oldman.iri.RandomPrefixedIriGenerator`. Defaults to `False`.
-               Has no effect if `iri_prefix` is not given.
-        :param context_file_path: TODO: describe.
-        """
+    def _create_model(self, class_name_or_iri, context_iri_or_payload,
+                      untyped=False, is_default=False, context_file_path=None, **kwargs):
 
         # Only for the DefaultModel
         if untyped:
             class_iri = None
             ancestry = ClassAncestry(class_iri, self._schema_graph)
             om_attributes = {}
+
+        # Regular models
         else:
             context_file_path_or_payload = context_file_path if context_file_path is not None \
                 else context_iri_or_payload
             class_iri = _extract_class_iri(class_name_or_iri, context_file_path_or_payload)
             ancestry = ClassAncestry(class_iri, self._schema_graph)
-            om_attributes = self._attr_extractor.extract(class_iri, ancestry.bottom_up, context_file_path_or_payload,
+            om_attributes = self._attr_extractor.extract(class_iri, ancestry.bottom_up,
+                                                         context_file_path_or_payload,
                                                          self._schema_graph)
-        if iri_generator is not None:
-            id_generator = iri_generator
-        elif iri_prefix is not None:
-            if incremental_iri:
-                id_generator = IncrementalIriGenerator(iri_prefix, data_store,
-                                                       class_iri, fragment=iri_fragment)
-            else:
-                id_generator = PrefixedUUIDIriGenerator(iri_prefix, fragment=iri_fragment)
-        else:
-            id_generator = BlankNodeIriGenerator()
 
         operations = self._operation_extractor.extract(ancestry, self._schema_graph,
                                                        self._operation_functions)
 
-        model = Model(class_name_or_iri, class_iri, ancestry.bottom_up, context_iri_or_payload, om_attributes,
-                      id_generator, operations=operations, local_context=context_file_path)
+        model = self._instantiate_model(class_name_or_iri, class_iri, ancestry, context_iri_or_payload,
+                                        om_attributes, operations, context_file_path, **kwargs)
+
         self._add_model(model, is_default=is_default)
 
         # Reversed attributes awareness
@@ -163,9 +128,13 @@ class ModelManager(object):
             self._include_reversed_attributes = model.has_reversed_attributes
 
         # Anonymous classes derived from hydra:Link properties
-        self._create_anonymous_models(model, context_file_path, data_store)
+        # self._create_anonymous_models(model, context_file_path, data_store)
 
         return model
+
+    def _instantiate_model(self, class_name_or_iri, class_iri, ancestry, context_iri_or_payload, om_attributes,
+                           operations, local_context, **kwargs):
+        raise NotImplementedError("To be implemented in sub-classes")
 
     def get_model(self, class_name_or_iri):
         return self._registry.get_model(class_name_or_iri)
@@ -173,42 +142,15 @@ class ModelManager(object):
     def _add_model(self, model, is_default=False):
         self._registry.register(model, is_default=is_default)
 
-    def _create_anonymous_models(self, model, context_iri_or_payload, data_store):
-        """ These classes are typically derived from hydra:Link.
-            Their role is just to support some operations.
-         """
-        classes = {attr.om_property.link_class_iri for attr in model.om_attributes.values()}.difference({None})
-
-        for cls_iri in classes:
-            if self._registry.get_model(cls_iri) is None:
-                self.create_model(cls_iri, context_iri_or_payload, data_store)
-
-
-class ClientModelManager(ModelManager):
-    """Client ModelManager.
-
-    Has access to the `mediator`.
-    In charge of the conversion between and store and client models.
-    """
-
-    def __init__(self, mediator, **kwargs):
-        ModelManager.__init__(self, **kwargs)
-        self._mediator = mediator
-
-    @property
-    def mediator(self):
-        return self._mediator
-
-    def import_model(self, store_model, is_default=False):
-        """ Imports a store model. Creates the corresponding client model. """
-        if is_default:
-            # Default model
-            client_model = self.get_model(None)
-        else:
-            client_model = ClientModel.copy_store_model(self._mediator, store_model)
-            # Hierarchy registration
-            self._registry.register(client_model, is_default=False)
-        return client_model
+    # def _create_anonymous_models(self, model, context_iri_or_payload, data_store):
+    #     """ These classes are typically derived from hydra:Link.
+    #         Their role is just to support some operations.
+    #      """
+    #     classes = {attr.om_property.link_class_iri for attr in model.om_attributes.values()}.difference({None})
+    #
+    #     for cls_iri in classes:
+    #         if self._registry.get_model(cls_iri) is None:
+    #             self.create_model(cls_iri, context_iri_or_payload, data_store)
 
 
 def _extract_class_iri(class_name, context):

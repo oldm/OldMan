@@ -1,11 +1,5 @@
 import logging
-from oldman.common import TMP_IRI_PREFIX
 from oldman.exception import OMReservedAttributeNameError, OMAttributeAccessError
-from oldman.iri.generator import PrefixedUUIDIriGenerator, BlankNodeIriGenerator
-
-
-TMP_IRI_GENERATOR = PrefixedUUIDIriGenerator(TMP_IRI_PREFIX)
-BLANK_NODE_GENERATOR = BlankNodeIriGenerator()
 
 
 class Model(object):
@@ -29,8 +23,6 @@ class Model(object):
         :class:`~oldman.model.Model` objects.
 
 
-    :param manager: :class:`~oldman.resource.manager.ResourceManager` object
-                    that has created this model.
     :param name: Model name. Usually corresponds to a JSON-LD term or to a class IRI.
     :param class_iri: IRI of the RDFS class represented by this :class:`~oldman.model.Model` object.
     :param ancestry_iris: ancestry of the attribute `class_iri`.
@@ -38,17 +30,16 @@ class Model(object):
     :param context: An IRI, a `list` or a `dict` that describes the JSON-LD context.
                     See `<http://www.w3.org/TR/json-ld/#the-context>`_ for more details.
     :param om_attributes: `dict` of :class:`~oldman.attribute.OMAttribute` objects. Keys are their names.
-    :param id_generator: :class:`~oldman.iri.IriGenerator` object that generates IRIs from new
-                         :class:`~oldman.resource.Resource` objects.
+    :param accept_new_blank_nodes: TODO: describe.
     :param methods: `dict` of Python functions that takes as first argument a
                     :class:`~oldman.resource.Resource` object. Keys are the method names.
-                    Defaults to `{}`.
+                    Defaults to `{}`. TODO: remove??
     :param operations: TODO: describe.
     :param local_context: TODO: describe.
     """
 
     def __init__(self, name, class_iri, ancestry_iris, context, om_attributes,
-                 id_generator, operations=None, local_context=None):
+                 accept_new_blank_nodes, operations=None, local_context=None):
         reserved_names = ["id", "hashless_iri", "_types", "types"]
         for field in reserved_names:
             if field in om_attributes:
@@ -58,7 +49,7 @@ class Model(object):
         self._local_context = local_context if local_context is not None else self._context
         self._class_iri = class_iri
         self._om_attributes = om_attributes
-        self._id_generator = id_generator
+        self._accept_new_blank_nodes = accept_new_blank_nodes
         self._class_types = ancestry_iris
         self._operations = operations if operations is not None else {}
         self._operation_by_name = {op.name: op for op in operations.values()
@@ -114,8 +105,10 @@ class Model(object):
         return self._has_reversed_attributes
 
     @property
-    def is_generating_blank_nodes(self):
-        return self._id_generator.is_generating_blank_nodes
+    def accept_new_blank_nodes(self):
+        """TODO: describe. Useful for knowing if a bnode ID of a resource
+         is temporary or maybe not."""
+        return self._accept_new_blank_nodes
 
     def get_operation(self, http_method):
         """TODO: describe"""
@@ -151,141 +144,6 @@ class Model(object):
             return self._om_attributes[name]
         except KeyError:
             raise OMAttributeAccessError("%s has no supported attribute %s" % (self, name))
-
-    def generate_iri(self, **kwargs):
-        """Generates a new IRI.
-
-        Used by the :class:`~oldman.resource.Resource` class but an end-user
-        should not need to call it.
-
-        :return: A new IRI.
-        """
-        return self._id_generator.generate(**kwargs)
-
-    def reset_counter(self):
-        """Resets the counter of the IRI generator.
-
-        Please use it only for test purposes.
-        """
-        if hasattr(self._id_generator, "reset_counter"):
-            self._id_generator.reset_counter()
-
-
-class ClientModel(Model):
-    """TODO: describe.
-
-    TODO: further study this specific case.
-
-    Contains methods for end-users (--> layer above the user mediator).
-
-     """
-
-    @classmethod
-    def copy_store_model(cls, user_mediator, store_model):
-        """TODO: describe """
-        return ClientModel(user_mediator, store_model.name, store_model.class_iri,
-                           store_model.ancestry_iris, store_model.context, store_model.om_attributes,
-                           operations=store_model._operations, local_context=store_model.local_context,
-                           generate_blank_nodes=store_model.is_generating_blank_nodes)
-
-    def __init__(self, user_mediator, name, class_iri, ancestry_iris, context, om_attributes, operations=None,
-                 local_context=None, generate_blank_nodes=False):
-        generator = BLANK_NODE_GENERATOR if generate_blank_nodes else TMP_IRI_GENERATOR
-        Model.__init__(self, name, class_iri, ancestry_iris, context, om_attributes, generator,
-                       operations=operations, local_context=local_context)
-        self._user_mediator = user_mediator
-        # {method_name: ancestor_class_iri}
-        self._method_inheritance = {}
-        # {method_name: method}
-        self._methods = {}
-
-    @property
-    def methods(self):
-        """`dict` of Python functions that takes as first argument a
-        :class:`~oldman.resource.Resource` object. Keys are the method names.
-        """
-        return dict(self._methods)
-
-    def declare_method(self, method, name, ancestor_class_iri):
-        """TODO: describe. Not for end-users! """
-        if name in self._methods:
-            # Before overriding, compare the positions
-            previous_ancestor_iri = self._method_inheritance[name]
-            previous_ancestor_pos = self._class_types.index(previous_ancestor_iri)
-            new_ancestor_pos = self._class_types.index(ancestor_class_iri)
-
-            if new_ancestor_pos > previous_ancestor_pos:
-                # Too distant, cannot override
-                self._logger.warn(u"Method %s of %s is ignored by %s." % (name, ancestor_class_iri, self._class_iri))
-                return
-
-            self._logger.warn(u"Method %s of %s is overloaded for %s." % (name, ancestor_class_iri, self._class_iri))
-
-        self._method_inheritance[name] = ancestor_class_iri
-        self._methods[name] = method
-
-    def new(self, id=None, hashless_iri=None, collection_iri=None, **kwargs):
-        """Creates a new :class:`~oldman.resource.Resource` object without saving it.
-
-        The `class_iri` attribute is added to the `types`.
-
-        See :func:`~oldman.resource.manager.ResourceManager.new` for more details.
-        """
-        types, kwargs = self._update_kwargs_and_types(kwargs, include_ancestry=True)
-        return self._user_mediator.new(id=id, hashless_iri=hashless_iri, collection_iri=collection_iri,
-                                          types=types, **kwargs)
-
-    def create(self, id=None, hashless_iri=None, collection_iri=None, **kwargs):
-        """ Creates a new resource and saves it.
-
-        See :func:`~oldman.model.Model.new` for more details.
-        """
-        return self.new(id=id, hashless_iri=hashless_iri, collection_iri=collection_iri, **kwargs).save()
-
-    def filter(self, hashless_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
-        """Finds the :class:`~oldman.resource.Resource` objects matching the given criteria.
-
-        The `class_iri` attribute is added to the `types`.
-
-        See :func:`oldman.resource.finder.ResourceFinder.filter` for further details."""
-        types, kwargs = self._update_kwargs_and_types(kwargs)
-        return self._user_mediator.filter(types=types, hashless_iri=hashless_iri, limit=limit, eager=eager,
-                                             pre_cache_properties=pre_cache_properties, **kwargs)
-
-    def get(self, id=None, hashless_iri=None, **kwargs):
-        """Gets the first :class:`~oldman.resource.Resource` object matching the given criteria.
-
-        The `class_iri` attribute is added to the `types`.
-        Also looks if reversed attributes should be considered eagerly.
-
-        See :func:`oldman.store.datastore.DataStore.get` for further details."""
-        types, kwargs = self._update_kwargs_and_types(kwargs)
-
-        eager_with_reversed_attributes = kwargs.get("eager_with_reversed_attributes")
-        if eager_with_reversed_attributes is None:
-            eager_with_reversed_attributes = self._has_reversed_attributes
-
-        return self._user_mediator.get(id=id, types=types, hashless_iri=hashless_iri,
-                                          eager_with_reversed_attributes=eager_with_reversed_attributes, **kwargs)
-
-    def all(self, limit=None, eager=False):
-        """Finds every :class:`~oldman.resource.Resource` object that is instance
-        of its RDFS class.
-
-        :param limit: Upper bound on the number of solutions returned (SPARQL LIMIT). Positive integer.
-                      Defaults to `None`.
-        :param eager: If `True` loads all the Resource objects within one single SPARQL query.
-                      Defaults to `False` (lazy).
-        :return: A generator of :class:`~oldman.resource.Resource` objects.
-        """
-        return self.filter(types=[self._class_iri], limit=limit, eager=eager)
-
-    def _update_kwargs_and_types(self, kwargs, include_ancestry=False):
-        types = list(self._class_types) if include_ancestry else [self._class_iri]
-        if "types" in kwargs:
-            new_types = kwargs.pop("types")
-            types += [t for t in new_types if t not in types]
-        return types, kwargs
 
 
 def clean_context(context):

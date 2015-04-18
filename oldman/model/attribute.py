@@ -3,13 +3,13 @@ from collections import namedtuple
 from weakref import WeakKeyDictionary
 
 from rdflib import Literal
-from oldman.common import is_temporary_iri
+from oldman.common import is_blank_node
 
 from oldman.exception import OMAttributeTypeCheckError, OMRequiredPropertyError, OMReadOnlyAttributeError, OMEditError, \
     OMTemporaryIriError
+from oldman.iri.id import generate_uuid_iri
 from oldman.parsing.value import AttributeValueExtractor
 from oldman.validation.value_format import ValueFormatError
-from oldman.iri.generator import _skolemize
 
 
 OMAttributeMetadata = namedtuple("OMAttributeMetadata", ["name", "property", "language", "jsonld_type",
@@ -243,12 +243,12 @@ class OMAttribute(object):
         if self.container == "@list":
             # list_value = u"( " + u" ".join(converted_values) + u" )"
             # List with skolemized nodes
-            first_node = "<%s>" % _skolemize()
+            first_node = "<%s>" % generate_uuid_iri()
             node = first_node
             for v in converted_values:
                 lines += u'  %s rdf:first %s .\n' % (node, v)
                 previous_node = node
-                node = "<%s>" % _skolemize()
+                node = "<%s>" % generate_uuid_iri()
                 lines += u'  %s rdf:rest %s .\n' % (previous_node, node)
             lines += u'  %s rdf:rest rdf:nil .\n' % node
             serialized_values = [first_node]
@@ -423,11 +423,11 @@ class ObjectOMAttribute(OMAttribute):
         iris = OMAttribute.get(self, resource)
         if isinstance(iris, (list, set)):
             # Returns a generator
-            return (resource.get_related_resource(id=iri) for iri in iris)
+            return (resource.get_related_resource(iri=iri) for iri in iris)
         elif isinstance(iris, dict):
             raise NotImplementedError(u"Should we implement it?")
         elif iris is not None:
-            return resource.get_related_resource(id=iris)
+            return resource.get_related_resource(iri=iris)
         else:
             return None
 
@@ -447,7 +447,7 @@ class ObjectOMAttribute(OMAttribute):
             Accepts :class:`~oldman.resource.Resource` object(s) or IRI(s).
         """
         from oldman.resource.resource import Resource
-        f = lambda x: x.id if isinstance(x, Resource) else x
+        f = lambda x: x.id.iri if isinstance(x, Resource) else x
 
         if isinstance(value, set):
             values = {f(v) for v in value}
@@ -469,26 +469,26 @@ class ObjectOMAttribute(OMAttribute):
         if value is None:
             return
 
-        resource_id = resource.id
+        resource_iri = resource.id.iri
         if isinstance(value, set):
-            updated_value = {self._check_iri(resource_id, v, resource_mediator) for v in value}
+            updated_value = {self._check_iri(resource_iri, v, resource_mediator) for v in value}
         elif isinstance(value, list):
-            updated_value = [self._check_iri(resource_id, v, resource_mediator) for v in value]
+            updated_value = [self._check_iri(resource_iri, v, resource_mediator) for v in value]
         else:
-            updated_value = self._check_iri(resource_id, value, resource_mediator)
+            updated_value = self._check_iri(resource_iri, value, resource_mediator)
 
         self.set(resource, updated_value)
 
-    def _check_iri(self, resource_id, object_id, resource_mediator):
-        if is_temporary_iri(object_id):
-            new_id = resource_mediator.get_updated_iri(object_id)
-            if new_id == object_id:
+    def _check_iri(self, resource_iri, object_iri, resource_mediator):
+        if is_blank_node(object_iri):
+            new_iri = resource_mediator.get_updated_iri(object_iri)
+            if new_iri == object_iri:
                 # Still temporary. Not supported.
                 raise OMTemporaryIriError("The attribute %s of %s is a temporary IRI (%s). Currently not supported."
-                                          % (self.name, resource_id, object_id))
-            return new_id
+                                          % (self.name, resource_iri, object_iri))
+            return new_iri
         else:
-            return object_id
+            return object_iri
 
 
 class Entry(object):

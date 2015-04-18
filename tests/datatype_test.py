@@ -167,62 +167,62 @@ class DatatypeTest(TestCase):
 
     def test_single_bool(self):
         obj = self.create_object()
-        uri = obj.id
+        uri = obj.id.iri
         obj.single_bool = True
         obj.save()
-        obj = lc_model.get(id=uri)
+        obj = lc_model.get(iri=uri)
         self.assertEquals(obj.single_bool, True)
 
         obj.single_bool = None
         obj.save()
-        obj = lc_model.get(id=uri)
+        obj = lc_model.get(iri=uri)
         self.assertEquals(obj.single_bool, None)
 
         obj.single_bool = False
         obj.save()
-        obj = lc_model.get(id=uri)
+        obj = lc_model.get(iri=uri)
         self.assertEquals(obj.single_bool, False)
 
     def test_single_date(self):
         obj = self.create_object()
-        uri = obj.id
+        uri = obj.id.iri
         d = date(2009, 11, 2)
         obj.date = copy(d)
         obj.save()
-        obj = lc_model.get(id=uri)
+        obj = lc_model.get(iri=uri)
         self.assertEquals(obj.date, d)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.date = "not a date object"
 
     def test_single_datetime(self):
         obj = self.create_object()
-        uri = obj.id
+        uri = obj.id.iri
         d = datetime.now()
         obj.datetime = copy(d)
         obj.save()
-        obj = lc_model.get(id=uri)
+        obj = lc_model.get(iri=uri)
         self.assertEquals(obj.datetime, d)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.datetime = "not a date time object"
 
     def test_single_time(self):
         obj = self.create_object()
-        uri = obj.id
+        uri = obj.id.iri
         t = time(12, 55, 30)
         obj.time = copy(t)
         obj.save()
-        obj = lc_model.get(id=uri)
+        obj = lc_model.get(iri=uri)
         self.assertEquals(obj.time, t)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.time = "not a time object"
 
     def test_int(self):
         obj = self.create_object()
-        uri = obj.id
+        uri = obj.id.iri
         value = -5
         obj.int = value
         obj.save()
-        obj = lc_model.get(id=uri)
+        obj = lc_model.get(iri=uri)
         self.assertEquals(obj.int, value)
         obj.int = 0
         obj.int = 5
@@ -233,11 +233,11 @@ class DatatypeTest(TestCase):
 
     def test_integer(self):
         obj = self.create_object()
-        uri = obj.id
+        uri = obj.id.iri
         value = 5
         obj.integer = value
         obj.save()
-        obj = lc_model.get(id=uri)
+        obj = lc_model.get(iri=uri)
         self.assertEquals(obj.integer, value)
         obj.integer = 0
         obj.integer = -5
@@ -248,11 +248,11 @@ class DatatypeTest(TestCase):
 
     def test_short(self):
         obj = self.create_object()
-        uri = obj.id
+        uri = obj.id.iri
         value = -5
         obj.short = value
         obj.save()
-        obj = lc_model.get(id=uri)
+        obj = lc_model.get(iri=uri)
         self.assertEquals(obj.short, value)
         obj.short = 0
         obj.short = 5
@@ -263,11 +263,11 @@ class DatatypeTest(TestCase):
 
     def test_positive_int(self):
         obj = self.create_object()
-        uri = obj.id
+        uri = obj.id.iri
         value = 5
         obj.positiveInt = value
         obj.save()
-        obj = lc_model.get(id=uri)
+        obj = lc_model.get(iri=uri)
         self.assertEquals(obj.positiveInt, value)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.positiveInt = -1
@@ -280,11 +280,11 @@ class DatatypeTest(TestCase):
 
     def test_negative_int(self):
         obj = self.create_object()
-        uri = obj.id
+        uri = obj.id.iri
         value = -5
         obj.negativeInt = value
         obj.save()
-        obj = lc_model.get(id=uri)
+        obj = lc_model.get(iri=uri)
         self.assertEquals(obj.negativeInt, value)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.negativeInt = 1
@@ -297,11 +297,11 @@ class DatatypeTest(TestCase):
 
     def test_non_positive_int(self):
         obj = self.create_object()
-        uri = obj.id
+        uri = obj.id.iri
         value = -5
         obj.nonPositiveInt = value
         obj.save()
-        obj = lc_model.get(id=uri)
+        obj = lc_model.get(iri=uri)
         self.assertEquals(obj.nonPositiveInt, value)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.nonPositiveInt = 1
@@ -313,11 +313,11 @@ class DatatypeTest(TestCase):
 
     def test_non_negative_int(self):
         obj = self.create_object()
-        uri = obj.id
+        uri = obj.id.iri
         value = 5
         obj.nonNegativeInt = value
         obj.save()
-        obj = lc_model.get(id=uri)
+        obj = lc_model.get(iri=uri)
         self.assertEquals(obj.nonNegativeInt, value)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.nonNegativeInt = -1
@@ -329,11 +329,11 @@ class DatatypeTest(TestCase):
     
     def test_decimal(self):
         obj = self.create_object()
-        uri = obj.id
+        uri = obj.id.iri
         value = Decimal(23.05)
         obj.decimal = value
         obj.save()
-        obj = lc_model.get(id=uri)
+        obj = lc_model.get(iri=uri)
         self.assertEquals(obj.decimal, value)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.decimal = "not a number"
@@ -342,11 +342,11 @@ class DatatypeTest(TestCase):
 
     def test_double(self):
         obj = self.create_object()
-        uri = obj.id
+        uri = obj.id.iri
         value = Decimal(23.05)
         obj.double = value
         obj.save()
-        obj = lc_model.get(id=uri)
+        obj = lc_model.get(iri=uri)
         self.assertEquals(obj.double, value)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.double = "not a number"
@@ -355,11 +355,11 @@ class DatatypeTest(TestCase):
         
     def test_float(self):
         obj = self.create_object()
-        uri = obj.id
+        uri = obj.id.iri
         value = Decimal(23.05)
         obj.float = value
         obj.save()
-        obj = lc_model.get(id=uri)
+        obj = lc_model.get(iri=uri)
         self.assertEquals(obj.float, value)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.float = "not a number"
@@ -368,11 +368,11 @@ class DatatypeTest(TestCase):
 
     def test_mbox(self):
         obj = self.create_object()
-        uri = obj.id
+        uri = obj.id.iri
         mail = "john.doe@example.org"
         obj.mbox = mail
         obj.save()
-        obj = lc_model.get(id=uri)
+        obj = lc_model.get(iri=uri)
         self.assertEquals(obj.mbox, mail)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.mbox = "john@somewhere@nowhereindeed.org"
@@ -384,11 +384,11 @@ class DatatypeTest(TestCase):
 
     def test_email(self):
         obj = self.create_object()
-        uri = obj.id
+        uri = obj.id.iri
         mail = "john.doe@example.org"
         obj.email = mail
         obj.save()
-        obj = lc_model.get(id=uri)
+        obj = lc_model.get(iri=uri)
         self.assertEquals(obj.email, mail)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.email = "john@somewhere@nowhereindeed.org"

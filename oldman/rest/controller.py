@@ -96,7 +96,7 @@ class HTTPController(object):
         #    raise BadRequestException("No payload given.")
 
         # Must be its ID (we do not consider resources with hash IRIs)
-        resource = self._manager.get(id=hashless_iri)
+        resource = self._manager.get(iri=hashless_iri)
         if resource is None:
             raise OMResourceNotFoundException()
 

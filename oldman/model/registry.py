@@ -148,6 +148,11 @@ class ModelRegistry(object):
         # Protection against mutation
         return list(leaf_models), list(types)
 
+    def find_main_model(self, type_set):
+        """TODO: see if it can be made more efficient. """
+        models, _ = self.find_models_and_types(type_set)
+        return models[0]
+
     def _find_leaf_models(self, type_set):
         leaf_models = []
         for type_iri in type_set:

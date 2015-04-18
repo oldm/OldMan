@@ -79,7 +79,7 @@ def _append_resources_to_hydra_collection(collection_resource, new_resources):
     collection_graph = Graph().parse(data=collection_resource.to_rdf(rdf_format="nt"), format="nt")
     for new_resource in new_resources:
         new_resource.save()
-        collection_graph.add((URIRef(collection_resource.id), URIRef(HYDRA_MEMBER_IRI), URIRef(new_resource.id)))
+        collection_graph.add((URIRef(collection_resource.id.iri), URIRef(HYDRA_MEMBER_IRI), URIRef(new_resource.id.iri)))
     collection_resource.update_from_graph(collection_graph)
 
 

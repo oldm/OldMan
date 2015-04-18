@@ -32,7 +32,7 @@ class OMUserError(OMRuntimeError):
     pass
 
 
-class OMDataStoreError(OMRuntimeError):
+class OMStoreError(OMRuntimeError):
     """Error detected in the stored data."""
     pass
 
@@ -95,6 +95,12 @@ class OMNotAcceptableException(OMControllerException):
 # For clarity
 # No need to except them in a programmatic manner, prefer generic exceptions
 #---------------------------------------------------------------------
+
+
+class OMIriError(OMRuntimeError):
+    """Root class for problems with an IRI (generation, validation).
+    """
+    pass
 
 
 class AlreadyAllocatedModelError(ModelGenerationError):
@@ -175,11 +181,16 @@ class OMWrongResourceError(OMEditError):
     pass
 
 
-class OMDifferentHashlessIRIError(OMEditError):
+class OMDifferentHashlessIRIError(OMIriError, OMEditError):
     """When creating or updating an object with a different hashless IRI is forbidden.
 
         Blank nodes are not concerned.
     """
+    pass
+
+
+class OMUnsupportedUserIRIError(OMIriError, OMEditError):
+    """ The IRI provided by the user is not supported."""
     pass
 
 
@@ -248,5 +259,5 @@ class OMAlreadyGeneratedAttributeError(OMInternalError):
     pass
 
 
-class UnsupportedDataStorageFeatureException(OMDataStoreError):
+class UnsupportedDataStorageFeatureException(OMStoreError):
     """Feature not supported by the data store."""

@@ -25,7 +25,7 @@ store.extract_prefixes(schema_graph)
 
 #LocalPerson store model
 store.create_model("LocalPerson", ctx_iri, iri_prefix="http://localhost/persons/",
-                        iri_fragment="me", incremental_iri=True)
+                   iri_fragment="me", incremental_iri=True)
 
 #User Mediator
 user_mediator = create_user_mediator(store)
@@ -49,8 +49,8 @@ bob.friends = {alice}
 alice.save()
 bob.save()
 
-print alice.id
-print bob.id
+print alice.id.iri
+print bob.id.iri
 print bob.types
 
 print alice.name
@@ -59,13 +59,13 @@ print bob.short_bio_en
 print bob.short_bio_fr
 
 john_iri = "http://example.org/john#me"
-john = lp_model.create(id=john_iri, name="John", emails={"john@example.org"})
-print john.id
+john = lp_model.create(iri=john_iri, name="John", emails={"john@example.org"})
+print john.id.iri
 
-alice_iri = alice.id
+alice_iri = alice.id.iri
 # First person found named Bob
 bob = lp_model.get(name="Bob")
-alice = lp_model.get(id=alice_iri)
+alice = lp_model.get(iri=alice_iri)
 print alice.name
 
 # Or retrieve her as the unique friend of Bob

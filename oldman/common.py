@@ -1,8 +1,15 @@
+from urlparse import urlparse
+
 DATATYPE_PROPERTY = "datatype"
 OBJECT_PROPERTY = "object"
 
-TMP_IRI_PREFIX = "http://localhost/.well-known/oldman/tmp-uri/"
+def is_blank_node(iri):
+    """Tests if `id` is a locally skolemized IRI.
 
+    External skolemized blank nodes are not considered as blank nodes.
 
-def is_temporary_iri(iri):
-    return iri.startswith(TMP_IRI_PREFIX)
+    :param iri: IRI of the resource.
+    :return: `True` if is a blank node.
+    """
+    id_result = urlparse(iri)
+    return (u"/.well-known/genid/" in id_result.path) and (id_result.hostname == u"localhost")

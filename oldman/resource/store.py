@@ -1,8 +1,9 @@
 from types import GeneratorType
 from rdflib import URIRef, RDF
-from oldman.common import OBJECT_PROPERTY
+from oldman.common import OBJECT_PROPERTY, is_blank_node
 from oldman.exception import OMInternalError
-from oldman.resource.resource import Resource, should_delete_resource, is_blank_node
+from oldman.iri.id import PermanentId
+from oldman.resource.resource import Resource, should_delete_resource
 
 
 class StoreResource(Resource):
@@ -12,31 +13,37 @@ class StoreResource(Resource):
 
      Is serializable (pickable).
 
+    :param previous_id: TODO: describe (maybe a temporary one).
     :param model_manager: :class:`~oldman.model.manager.ModelManager` object. Gives access to its models.
     :param store: :class:`~oldman.store.store.Store` object. Store that has authority on this resource.
     :param kwargs: Other parameters considered by the :class:`~oldman.resource.Resource` constructor
                    and values indexed by their attribute names.
     """
 
-    def __init__(self, model_manager, store, **kwargs):
-        Resource.__init__(self, model_manager, **kwargs)
+    def __init__(self, previous_id, model_manager, store, types=None, is_new=True, **kwargs):
+        if not previous_id.is_permanent:
+            main_model = model_manager.find_main_model(types)
+            resource_id = main_model.generate_permanent_id(previous_id)
+        else:
+            resource_id = previous_id
+        Resource.__init__(self, resource_id, model_manager, types=types, is_new=is_new, **kwargs)
         self._store = store
 
     @classmethod
-    def load_from_graph(cls, model_manager, store, id, subgraph, is_new=True, collection_iri=None):
+    def load_from_graph(cls, model_manager, store, iri, subgraph, is_new=True):
         """Loads a new :class:`~oldman.resource.StoreResource` object from a sub-graph.
 
         TODO: update the comments.
 
-        :param manager: :class:`~oldman.resource.manager.ResourceManager` object.
-        :param id: IRI of the resource.
+        :param model_manager: :class:`~oldman.model.manager.StoreModelManager` object.
+        :param iri: IRI of the resource.
         :param subgraph: :class:`rdflib.Graph` object containing triples about the resource.
         :param is_new: When is `True` and `id` given, checks that the IRI is not already existing in the
                        `union_graph`. Defaults to `True`.
-        :return: The :class:`~oldman.resource.Resource` object created.
+        :return: The :class:`~oldman.resource.store.StoreResource` object created.
         """
-        types = list({unicode(t) for t in subgraph.objects(URIRef(id), RDF.type)})
-        instance = cls(model_manager, store, id=id, types=types, is_new=is_new, collection_iri=collection_iri)
+        types = list({unicode(t) for t in subgraph.objects(URIRef(iri), RDF.type)})
+        instance = cls(PermanentId(iri), model_manager, store, types=types, is_new=is_new)
         instance.update_from_graph(subgraph, is_end_user=True, save=False, initial=True)
         return instance
 
@@ -94,11 +101,11 @@ class StoreResource(Resource):
                 # Clears former values (allows modification)
                 attribute.receive_storage_ack(self)
 
-    def get_related_resource(self, id):
+    def get_related_resource(self, iri):
         """ Gets a related `StoreResource` by calling the datastore directly. """
-        resource = self.store.get(id=id)
+        resource = self.store.get(iri=iri)
         if resource is None:
-            return id
+            return iri
         return resource
 
     def save(self, is_end_user=True):

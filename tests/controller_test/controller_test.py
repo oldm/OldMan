@@ -39,12 +39,12 @@ class ControllerTest(unittest.TestCase):
         item = item_model.create(title=title)
         #item_graph = Graph().parse(data=item.to_rdf(rdf_format="nt"), format="nt")
         #print item_graph.serialize(format="turtle")
-        item_iri = item.id
+        item_iri = item.id.iri
         operation(collection1, new_resources=[item])
 
         print data_graph.serialize(format="turtle")
 
-        item = user_mediator.get(id=item_iri)
+        item = user_mediator.get(iri=item_iri)
         self.assertTrue(item is not None)
         self.assertEquals(item.title, title)
 
@@ -53,27 +53,25 @@ class ControllerTest(unittest.TestCase):
         #TODO: test mutiple formats
 
         title = u"Append test"
-        # Skolem IRI that should not be serialized
-        skolem_iri = "http://localhost/.well-known/genid/3832"
-        item = item_model.new(id=skolem_iri, title=title)
+        item = item_model.new(title=title)
+        self.assertTrue(item.id.is_blank_node)
 
         payloads = {}
         payloads["application/ld+json"] = item.to_jsonld()
         payloads["application/json"] = item.to_json()
         payloads["text/turtle"] = item.to_rdf("turtle")
 
-
         for content_type in payloads:
 
-            controller.post(collection1.id, content_type, payloads[content_type])
+            controller.post(collection1.id.iri, content_type, payloads[content_type])
             #TODO: retrieve the IRI of the newly created resource
 
             items = list(item_model.filter(title=title))
             self.assertEquals(len(items), 1)
             retrieved_item = items[0]
             self.assertEquals(retrieved_item.title, title)
-            self.assertNotEquals(retrieved_item.id, skolem_iri)
-            print retrieved_item.id
+            self.assertFalse(retrieved_item.is_blank_node())
+            print retrieved_item.id.iri
 
             #TODO: test the member part
             retrieved_item.delete()

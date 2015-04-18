@@ -2,7 +2,7 @@ from logging import getLogger
 from oldman.model.converter import EquivalentModelConverter, ModelConversionManager
 from oldman.resource.client import ClientResource
 from oldman.mediation.store_selector import StoreSelector
-from oldman.model.manager import ClientModelManager
+from oldman.model.manager.client import ClientModelManager
 from oldman.mediation.mediator import UserMediator, ResourceMediator
 
 
@@ -10,6 +10,7 @@ DEFAULT_MODEL_NAME = "Default_Client"
 
 
 class DefaultCoreMediator(UserMediator, ResourceMediator):
+
     def __init__(self, data_stores, schema_graph=None, attr_extractor=None, oper_extractor=None,
                  declare_default_operation_functions=True):
         self._logger = getLogger(__name__)
@@ -20,12 +21,11 @@ class DefaultCoreMediator(UserMediator, ResourceMediator):
                                                  declare_default_operation_functions=declare_default_operation_functions)
 
         # Default model
-        self._model_manager.create_model(DEFAULT_MODEL_NAME, {u"@context": {}}, self, untyped=True,
-                                         iri_prefix=u"http://localhost/.well-known/genid/client/",
-                                         is_default=True)
+        self._model_manager.create_model(DEFAULT_MODEL_NAME, {u"@context": {}}, untyped=True,is_default=True,
+                                         accept_new_blank_nodes=True)
 
         self._conversion_manager = ModelConversionManager()
-        #TODO: find a way to control its size. Weakrefs on unicode are not accepted.
+        #TODO: consider using an external cache, like for store resources.
         self._updated_iris = {}
 
     @property
@@ -43,30 +43,30 @@ class DefaultCoreMediator(UserMediator, ResourceMediator):
                 continue
             model.declare_method(method, name, class_iri)
 
-    def new(self, id=None, types=None, hashless_iri=None, collection_iri=None, **kwargs):
+    def new(self, iri=None, types=None, hashless_iri=None, collection_iri=None, **kwargs):
         """
             TODO: point this comment to the definition.
         """
         if (types is None or len(types) == 0) and len(kwargs) == 0:
-            name = id if id is not None else ""
+            name = iri if iri is not None else ""
             self._logger.info(u"""New resource %s has no type nor attribute.
             As such, nothing is stored in the data graph.""" % name)
 
-        return ClientResource(self, id=id, types=types, hashless_iri=hashless_iri,
+        return ClientResource(self, iri=iri, types=types, hashless_iri=hashless_iri,
                               collection_iri=collection_iri, **kwargs)
 
-    def create(self, id=None, types=None, hashless_iri=None, collection_iri=None, **kwargs):
+    def create(self, iri=None, types=None, hashless_iri=None, collection_iri=None, **kwargs):
         """TODO: point this comment to the definition.
         """
-        return self.new(id=id, types=types, hashless_iri=hashless_iri,
+        return self.new(iri=iri, types=types, hashless_iri=hashless_iri,
                         collection_iri=collection_iri, **kwargs).save()
 
-    def get(self, id=None, types=None, hashless_iri=None, eager_with_reversed_attributes=True, **kwargs):
+    def get(self, iri=None, types=None, hashless_iri=None, eager_with_reversed_attributes=True, **kwargs):
         """See :func:`oldman.store.datastore.DataStore.get`."""
         #TODO: consider parallelism
-        store_resources = [store.get(id=id, types=types, hashless_iri=hashless_iri,
+        store_resources = [store.get(iri=iri, types=types, hashless_iri=hashless_iri,
                                      eager_with_reversed_attributes=eager_with_reversed_attributes, **kwargs)
-                           for store in self._store_selector.select_stores(id=id, types=types,
+                           for store in self._store_selector.select_stores(iri=iri, types=types,
                                                                            hashless_iri=hashless_iri, **kwargs)]
         returned_store_resources = filter(lambda x: x, store_resources)
         resources = self._conversion_manager.convert_store_to_client_resources(returned_store_resources, self)
@@ -96,7 +96,7 @@ class DefaultCoreMediator(UserMediator, ResourceMediator):
                            for r in store.sparql_filter(query)]
         return self._conversion_manager.convert_store_to_client_resources(store_resources, self)
 
-    def use_store_model(self, class_iri, data_store=None):
+    def import_store_model(self, class_iri, data_store=None):
         raise NotImplementedError("TODO: implement me here")
 
     def import_store_models(self):

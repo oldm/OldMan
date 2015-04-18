@@ -38,7 +38,7 @@ class BasicEditingTest(unittest.TestCase):
 
         # Check the triplestore
         type_request = """SELECT ?t WHERE {?x a ?t }"""
-        retrieved_types = {str(r) for r, in data_graph.query(type_request, initBindings={'x': URIRef(bob.id)})}
+        retrieved_types = {str(r) for r, in data_graph.query(type_request, initBindings={'x': URIRef(bob.id.iri)})}
         self.assertEquals(set(expected_types), retrieved_types)
 
     def test_bob_in_triplestore(self):
@@ -50,24 +50,24 @@ class BasicEditingTest(unittest.TestCase):
     def test_bob_attributes(self):
         bob = create_bob()
         self.assertEquals(bob_name, bob.name)
-        self.assertEquals(bob_blog, bob.blog.id)
+        self.assertEquals(bob_blog, bob.blog.id.iri)
         self.assertEquals(bob_emails, bob.mboxes)
         self.assertEquals(bob_bio_en, bob.short_bio_en)
         self.assertEquals(bob_bio_fr, bob.short_bio_fr)
 
     def test_bob_loading(self):
         bob = create_bob()
-        bob_uri = bob.id
+        bob_uri = bob.id.iri
 
         # Not saved
         bob.name = "You should not retrieve this string"
 
         # If any cache
         data_store.resource_cache.remove_resource(bob)
-        bob = lp_model.get(id=bob_uri)
+        bob = lp_model.get(iri=bob_uri)
 
         self.assertEquals(bob_name, bob.name)
-        self.assertEquals(bob_blog, bob.blog.id)
+        self.assertEquals(bob_blog, bob.blog.id.iri)
         self.assertEquals(bob_emails, bob.mboxes)
         self.assertEquals(bob_bio_en, bob.short_bio_en)
         self.assertEquals(bob_bio_fr, bob.short_bio_fr)
@@ -104,10 +104,10 @@ class BasicEditingTest(unittest.TestCase):
         bob = create_bob()
         bob.short_bio_en = None
         bob.save()
-        bob_uri = bob.id
+        bob_iri = bob.id.iri
         # If any cache
         data_store.resource_cache.remove_resource(bob)
-        bob = lp_model.get(id=bob_uri)
+        bob = lp_model.get(iri=bob_iri)
 
         self.assertEquals(bob.short_bio_en, None)
         self.assertEquals(bob.short_bio_fr, bob_bio_fr)
@@ -123,7 +123,7 @@ class BasicEditingTest(unittest.TestCase):
         bob = create_bob()
         bob.short_bio_en = None
         bob.save()
-        bob_id = bob.id
+        bob_iri = bob.id.iri
 
         # To make sure this object won't be retrieved in the cache
         forbidden_string = "You should not retrieve this string"
@@ -132,7 +132,7 @@ class BasicEditingTest(unittest.TestCase):
 
         # If any cache
         data_store.resource_cache.remove_resource(bob)
-        bob = lp_model.get(id=bob_id)
+        bob = lp_model.get(iri=bob_iri)
         self.assertEquals(bob.short_bio_en, None)
         self.assertEquals(bob.short_bio_fr, bob_bio_fr)
 
@@ -142,16 +142,16 @@ class BasicEditingTest(unittest.TestCase):
         bob.short_bio_en = "You should not retrieve this string (again)"
 
         data_store.resource_cache.remove_resource(bob)
-        bob = lp_model.get(id=bob_id)
+        bob = lp_model.get(iri=bob_iri)
         self.assertEquals(bob.short_bio_en, bob_bio_en_2)
         self.assertEquals(bob.short_bio_fr, bob_bio_fr)
 
     def test_rsa_key(self):
         rsa_key = create_rsa_key()
-        rsa_skolemized_iri = rsa_key.id
+        rsa_skolemized_iri = rsa_key.id.iri
         # If any cache
         data_store.resource_cache.remove_resource(rsa_key)
-        rsa_key = rsa_model.get(id=rsa_skolemized_iri)
+        rsa_key = rsa_model.get(iri=rsa_skolemized_iri)
         self.assertEquals(rsa_key.exponent, key_exponent)
         self.assertEquals(rsa_key.modulus, key_modulus)
         self.assertEquals(rsa_key.label, key_label)
@@ -173,9 +173,9 @@ class BasicEditingTest(unittest.TestCase):
 
         # Children
         bob_children = [alice, john]
-        bob_children_ids = [c.id for c in bob_children]
+        bob_children_ids = [c.id.iri for c in bob_children]
         bob.children = bob_children
-        bob_uri = bob.id
+        bob_uri = bob.id.iri
         bob.save()
 
         # Force reload from the triplestore
@@ -183,16 +183,16 @@ class BasicEditingTest(unittest.TestCase):
         data_store.resource_cache.remove_resource(bob)
         data_store.resource_cache.remove_resource(alice)
         data_store.resource_cache.remove_resource(john)
-        bob = lp_model.get(id=bob_uri)
-        self.assertEquals(bob_children_ids, [c.id for c in bob.children])
+        bob = lp_model.get(iri=bob_uri)
+        self.assertEquals(bob_children_ids, [c.id.iri for c in bob.children])
 
     def test_children_uri_assignment(self):
         bob = create_bob()
         alice = create_alice()
         john = create_john()
 
-        bob_uri = bob.id
-        bob_children_uris = [alice.id, john.id]
+        bob_uri = bob.id.iri
+        bob_children_uris = [alice.id.iri, john.id.iri]
         bob.children = bob_children_uris
         bob.save()
 
@@ -202,10 +202,10 @@ class BasicEditingTest(unittest.TestCase):
         data_store.resource_cache.remove_resource(alice)
         data_store.resource_cache.remove_resource(john)
 
-        bob = lp_model.get(id=bob_uri)
-        self.assertEquals(bob.id, bob_uri)
+        bob = lp_model.get(iri=bob_uri)
+        self.assertEquals(bob.id.iri, bob_uri)
         self.assertEquals(bob.name, bob_name)
-        self.assertEquals(bob_children_uris, [c.id for c in bob.children])
+        self.assertEquals(bob_children_uris, [c.id.iri for c in bob.children])
 
     def test_set_assignment_instead_of_list(self):
         bob = create_bob()
@@ -214,11 +214,11 @@ class BasicEditingTest(unittest.TestCase):
 
         #Set assignment instead of a list
         with self.assertRaises(OMAttributeTypeCheckError):
-            bob.children = {alice.id, john.id}
+            bob.children = {alice.id.iri, john.id.iri}
 
     def test_children_list(self):
         bob = create_bob()
-        bob_iri = bob.id
+        bob_iri = bob.id.iri
         alice = create_alice()
         john = create_john()
 
@@ -231,19 +231,19 @@ class BasicEditingTest(unittest.TestCase):
                               WHERE
                               { <%s> rel:parentOf ?children.
                                 ?children rdf:rest*/rdf:first ?child
-                              } """ % bob.id
+                              } """ % bob.id.iri
         children_found = [str(r) for r, in data_graph.query(children_request)]
         #print default_graph.serialize(format="turtle")
         # No guarantee about the order
-        self.assertEquals(set(children_found), set([c.id for c in bob_children]))
+        self.assertEquals(set(children_found), set([c.id.iri for c in bob_children]))
 
-        bob_children_iris = [c.id for c in bob_children]
+        bob_children_iris = [c.id.iri for c in bob_children]
         # If any cache
         data_store.resource_cache.remove_resource(bob)
         data_store.resource_cache.remove_resource(alice)
         data_store.resource_cache.remove_resource(john)
-        bob = user_mediator.get(id=bob_iri)
-        self.assertEquals([c.id for c in bob.children], bob_children_iris)
+        bob = user_mediator.get(iri=bob_iri)
+        self.assertEquals([c.id.iri for c in bob.children], bob_children_iris)
 
     def test_set_validation(self):
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -255,7 +255,7 @@ class BasicEditingTest(unittest.TestCase):
 
     def test_gpg_key(self):
         bob = create_bob()
-        bob_id = bob.id
+        bob_iri = bob.id.iri
         bob.gpg_key = create_gpg_key()
         self.assertEquals(bob.gpg_key.fingerprint, gpg_fingerprint)
         self.assertEquals(bob.gpg_key.hex_id, gpg_hex_id)
@@ -267,7 +267,7 @@ class BasicEditingTest(unittest.TestCase):
         # If any cache
         data_store.resource_cache.remove_resource(bob)
         data_store.resource_cache.remove_resource(bob.gpg_key)
-        bob = lp_model.get(id=bob_id)
+        bob = lp_model.get(iri=bob_iri)
         self.assertEquals(bob.gpg_key.fingerprint, gpg_fingerprint)
         self.assertEquals(bob.gpg_key.hex_id, gpg_hex_id)
 
@@ -294,7 +294,7 @@ class BasicEditingTest(unittest.TestCase):
         self.assertFalse(data_graph.query(john_parent_alice_query))
         self.assertTrue(data_graph.query(alice_parent_john_query))
 
-        john.parents = {bob.id, alice.id}
+        john.parents = {bob.id.iri, alice.id.iri}
         john.save()
         self.assertFalse(data_graph.query(john_parent_bob_query))
         self.assertTrue(data_graph.query(bob_parent_john_query))
@@ -308,13 +308,13 @@ class BasicEditingTest(unittest.TestCase):
         john = create_john()
         john.parents = {alice, bob}
         john.save()
-        self.assertEquals({alice.id, bob.id}, {p.id for p in john.parents})
+        self.assertEquals({alice.id.iri, bob.id.iri}, {p.id.iri for p in john.parents})
 
         # Loads John from the datastore (not from its cache)
-        john_iri = john.id
+        john_iri = john.id.iri
         data_store.resource_cache.remove_resource(john)
-        john = lp_model.get(id=john_iri)
-        self.assertEquals({alice.id, bob.id}, {p.id for p in john.parents})
+        john = lp_model.get(iri=john_iri)
+        self.assertEquals({alice.id.iri, bob.id.iri}, {p.id.iri for p in john.parents})
 
     def test_inversed_property_single_value(self):
         alice = create_alice()
@@ -322,8 +322,8 @@ class BasicEditingTest(unittest.TestCase):
         bob.employer = alice
         bob.save()
 
-        alice_employer_bob_query = u"ASK { <%s> schema:employee <%s> . }" % (bob.id, alice.id)
-        bob_employer_alice_query = u"ASK { <%s> schema:employee <%s> . }" % (alice.id, bob.id)
+        alice_employer_bob_query = u"ASK { <%s> schema:employee <%s> . }" % (bob.id.iri, alice.id.iri)
+        bob_employer_alice_query = u"ASK { <%s> schema:employee <%s> . }" % (alice.id.iri, bob.id.iri)
 
         self.assertFalse(data_graph.query(alice_employer_bob_query))
         self.assertTrue(data_graph.query(bob_employer_alice_query))
@@ -331,8 +331,8 @@ class BasicEditingTest(unittest.TestCase):
         john = create_john()
         bob.employer = john
         bob.save()
-        bob_employer_john_query = u"ASK { <%s> schema:employee <%s> . }" % (bob.id, john.id)
-        john_employer_bob_query = u"ASK { <%s> schema:employee <%s> . }" % (john.id, bob.id)
+        bob_employer_john_query = u"ASK { <%s> schema:employee <%s> . }" % (bob.id.iri, john.id.iri)
+        john_employer_bob_query = u"ASK { <%s> schema:employee <%s> . }" % (john.id.iri, bob.id.iri)
 
         self.assertFalse(data_graph.query(alice_employer_bob_query))
         self.assertFalse(data_graph.query(bob_employer_alice_query))
@@ -344,19 +344,19 @@ class BasicEditingTest(unittest.TestCase):
         bob = create_bob()
         bob.employer = alice
         bob.save()
-        self.assertEquals(alice.id, bob.employer.id)
+        self.assertEquals(alice.id.iri, bob.employer.id.iri)
 
         # Loads Bob from the datastore (not from its cache)
-        bob_iri = bob.id
+        bob_iri = bob.id.iri
         data_store.resource_cache.remove_resource(bob)
-        bob = lp_model.get(id=bob_iri)
-        self.assertEquals(alice.id, bob.employer.id)
+        bob = lp_model.get(iri=bob_iri)
+        self.assertEquals(alice.id.iri, bob.employer.id.iri)
 
         # Checks if the datastore still extract reversed attributes
         # in "lazy" mode
         data_store.resource_cache.remove_resource(bob)
-        bob = user_mediator.get(id=bob_iri, eager_with_reversed_attributes=False)
-        self.assertEquals(alice.id, bob.employer.id)
+        bob = user_mediator.get(iri=bob_iri, eager_with_reversed_attributes=False)
+        self.assertEquals(alice.id.iri, bob.employer.id.iri)
 
     def test_inversed_and_regular_update(self):
         alice = create_alice()
@@ -364,15 +364,15 @@ class BasicEditingTest(unittest.TestCase):
         bob.employer = alice
         bob.save()
 
-        alice_iri = alice.id
+        alice_iri = alice.id.iri
         alice = lp_model.get(alice_iri)
         self.assertTrue(alice.employee is not None)
-        self.assertEquals(alice.employee.id, bob.id)
+        self.assertEquals(alice.employee.id.iri, bob.id.iri)
 
         alice.employee = None
         alice.save()
 
-        bob_iri = bob.id
+        bob_iri = bob.id.iri
         bob = lp_model.get(bob_iri)
         self.assertTrue(bob.employer is None)
 
@@ -382,10 +382,10 @@ class BasicEditingTest(unittest.TestCase):
         bob.employer = alice
         bob.save()
 
-        alice_iri = alice.id
+        alice_iri = alice.id.iri
         alice = lp_model.get(alice_iri)
         self.assertTrue(alice.employee is not None)
-        self.assertEquals(alice.employee.id, bob.id)
+        self.assertEquals(alice.employee.id.iri, bob.id.iri)
 
         bob.delete()
         alice = lp_model.get(alice_iri)

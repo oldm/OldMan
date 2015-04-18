@@ -3,12 +3,12 @@ from threading import Lock
 
 from rdflib import URIRef, Graph, RDF
 from rdflib.plugins.sparql.parser import ParseException
+from oldman.model.manager.store import StoreModelManager
 
 from oldman.utils.sparql import build_query_part, build_update_query_part
-from oldman.model.manager import ModelManager
 from oldman.exception import OMSPARQLParseError, OMAttributeAccessError, OMSPARQLError
 from oldman.exception import OMHashIriError
-from oldman.exception import OMDataStoreError
+from oldman.exception import OMStoreError
 from oldman.store.store import Store
 
 
@@ -49,7 +49,7 @@ class SparqlStore(Store):
             }"""
 
     def __init__(self, data_graph, schema_graph=None, model_manager=None, union_graph=None, cache_region=None):
-        manager = model_manager if model_manager is not None else ModelManager(schema_graph)
+        manager = model_manager if model_manager is not None else StoreModelManager(schema_graph)
         Store.__init__(self, manager, cache_region, support_sparql=True)
         self._logger = logging.getLogger(__name__)
         self._data_graph = data_graph
@@ -76,10 +76,10 @@ class SparqlStore(Store):
             results = self._union_graph.query(query)
         except ParseException as e:
             raise OMSPARQLError(u"%s\n %s" % (query, e))
-        return (self.get(id=unicode(r[0])) for r in results)
+        return (self.get(iri=unicode(r[0])) for r in results)
 
     def exists(self, id):
-        return bool(self._union_graph.query(u"ASK {?id ?p ?o .}", initBindings={'id': URIRef(id)}))
+        return bool(self._union_graph.query(u"ASK {?id ?p ?o .}", initBindings={'id': URIRef(id.iri)}))
 
     def generate_instance_number(self, class_iri):
         """ Needed for generating incremental IRIs. """
@@ -95,9 +95,9 @@ class SparqlStore(Store):
             self._iri_mutex.release()
 
         if len(numbers) == 0:
-            raise OMDataStoreError(u"No counter for class %s (has disappeared)" % class_iri)
+            raise OMStoreError(u"No counter for class %s (has disappeared)" % class_iri)
         elif len(numbers) > 1:
-            raise OMDataStoreError(u"Multiple counter for class %s" % class_iri)
+            raise OMStoreError(u"Multiple counter for class %s" % class_iri)
 
         return numbers[0]
 
@@ -112,7 +112,7 @@ class SparqlStore(Store):
         if len(numbers) == 0:
             self.reset_instance_counter(class_iri)
         elif len(numbers) > 1:
-            raise OMDataStoreError(u"Multiple counter for class %s" % class_iri)
+            raise OMStoreError(u"Multiple counter for class %s" % class_iri)
 
     def reset_instance_counter(self, class_iri):
         """ Reset the counter related to a given RDFS class.
@@ -146,16 +146,16 @@ class SparqlStore(Store):
         except ParseException as e:
             raise OMSPARQLParseError(u"%s\n %s" % (query, e))
         for r, in results:
-            return self._get_by_id(unicode(r))
+            return self._get_by_iri(unicode(r))
         # If no resource in the union graph
         return None
 
-    def _get_by_id(self, id, eager_with_reversed_attributes=True):
-        resource = self.resource_cache.get_resource(id)
+    def _get_by_iri(self, iri, eager_with_reversed_attributes=True):
+        resource = self.resource_cache.get_resource(iri)
         if resource:
             return resource
         resource_graph = Graph()
-        iri = URIRef(id)
+        iri_ref = URIRef(iri)
 
         eager = eager_with_reversed_attributes and self.model_manager.include_reversed_attributes
         if eager:
@@ -171,23 +171,23 @@ class SparqlStore(Store):
                  ?s ?p ?o .
                  VALUES ?o { ?subject }
                }
-            }""".replace("?subject", "<%s>" % iri)
+            }""".replace("?subject", "<%s>" % iri_ref)
             for s, p, o in self._union_graph.query(triple_query):
                 resource_graph.add((s, p, o))
         #Lazy
         else:
-            resource_graph += self._union_graph.triples((iri, None, None))
+            resource_graph += self._union_graph.triples((iri_ref, None, None))
 
             if self.model_manager.include_reversed_attributes:
                 #Extracts the types
-                types = {unicode(o) for o in resource_graph.objects(iri, RDF.type)}
+                types = {unicode(o) for o in resource_graph.objects(iri_ref, RDF.type)}
                 models, _ = self.model_manager.find_models_and_types(types)
 
                 #TODO: improve by looking at specific properties
                 if True in [m.include_reversed_attributes for m in models]:
-                    resource_graph += self._union_graph.triples((None, None, iri))
+                    resource_graph += self._union_graph.triples((None, None, iri_ref))
 
-        self._logger.debug(u"All triples with subject %s loaded from the union_graph" % iri)
+        self._logger.debug(u"All triples with subject %s loaded from the union_graph" % iri_ref)
         # Extracts lists
         list_items_request = u"""
         SELECT ?subList ?value ?previous
@@ -196,14 +196,14 @@ class SparqlStore(Store):
           ?l rdf:rest* ?subList .
           ?subList rdf:first ?value .
           OPTIONAL { ?previous rdf:rest ?subList }
-        }""" % id
+        }""" % iri
         results = list(self._union_graph.query(list_items_request))
         for subList, value, previous in results:
             if previous is not None:
                 resource_graph.add((previous, RDF.rest, subList))
             resource_graph.add((subList, RDF.first, value))
 
-        return self._new_resource_object(id, resource_graph)
+        return self._new_resource_object(iri, resource_graph)
 
     def _filter(self, type_iris, hashless_iri, limit, eager, pre_cache_properties, **kwargs):
         if len(type_iris) == 0 and len(kwargs) == 0:
@@ -249,7 +249,7 @@ class SparqlStore(Store):
             raise OMSPARQLParseError(u"%s\n %s" % (query, e))
 
         # Generator expression
-        return (self.get(id=unicode(r[0])) for r in results)
+        return (self.get(iri=unicode(r[0])) for r in results)
 
     def _filter_eagerly(self, sub_query, pre_cache_properties, erase_cache=False):
         """Eager: requests all the properties of all returned resource

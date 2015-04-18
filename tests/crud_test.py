@@ -14,8 +14,8 @@ class CrudTest(unittest.TestCase):
 
     def test_bob_controller_get(self):
         bob = create_bob()
-        bob_iri = bob.id
-        bob_hashless_iri = bob.hashless_iri
+        bob_iri = bob.id.iri
+        bob_hashless_iri = bob.id.hashless_iri
         bob2, content_type = crud_controller.get(bob_hashless_iri)
 
         self.assertEquals(bob.to_rdf(content_type), bob2)
@@ -34,33 +34,33 @@ class CrudTest(unittest.TestCase):
 
     def test_document_controller_get(self):
         bob = create_bob()
-        bob_iri = bob.id
+        bob_iri = bob.id.iri
         doc_iri = bob_iri.split("#")[0]
         data_graph.add((URIRef(doc_iri), RDF.type, FOAF.Document))
         doc = json.loads(crud_controller.get(doc_iri, "json")[0])
         self.assertEquals(doc["id"], doc_iri)
 
         resources = user_mediator.filter(hashless_iri=doc_iri)
-        self.assertEquals({bob_iri, doc_iri}, {r.id for r in resources})
+        self.assertEquals({bob_iri, doc_iri}, {r.id.iri for r in resources})
 
     def test_bob_controller_delete(self):
         ask_bob = """ASK {?x foaf:name "%s"^^xsd:string }""" % bob_name
         self.assertFalse(bool(data_graph.query(ask_bob)))
         bob = create_bob()
         self.assertTrue(bool(data_graph.query(ask_bob)))
-        bob_iri = bob.id
+        bob_iri = bob.id.iri
         doc_iri = bob_iri.split("#")[0]
 
         ask_alice = """ASK {?x foaf:name "%s"^^xsd:string }""" % alice_name
         self.assertFalse(bool(data_graph.query(ask_alice)))
-        lp_model.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
+        lp_model.create(iri=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
                                    short_bio_en=alice_bio_en)
         self.assertTrue(bool(data_graph.query(ask_alice)))
 
         #John is the base uri (bad practise, only for test convenience)
         ask_john = """ASK {?x foaf:name "%s"^^xsd:string }""" % john_name
         self.assertFalse(bool(data_graph.query(ask_john)))
-        lp_model.create(id=doc_iri, name=john_name, mboxes={john_mail},
+        lp_model.create(iri=doc_iri, name=john_name, mboxes={john_mail},
                                    short_bio_en=john_bio_en)
         self.assertTrue(bool(data_graph.query(ask_john)))
 
@@ -80,12 +80,12 @@ class CrudTest(unittest.TestCase):
         self.assertFalse(bool(data_graph.query(ask_bob)))
         bob = create_bob()
         self.assertTrue(bool(data_graph.query(ask_bob)))
-        bob_iri = bob.id
+        bob_iri = bob.id.iri
         doc_iri = bob_iri.split("#")[0]
 
         ask_alice = """ASK {?x foaf:name "%s"^^xsd:string }""" % alice_name
         self.assertFalse(bool(data_graph.query(ask_alice)))
-        lp_model.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
+        lp_model.create(iri=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
                                    short_bio_en=alice_bio_en)
         self.assertTrue(bool(data_graph.query(ask_alice)))
 
@@ -101,11 +101,11 @@ class CrudTest(unittest.TestCase):
 
     def test_controller_put_change_name(self):
         bob = create_bob()
-        doc_iri = bob.hashless_iri
-        alice = lp_model.create(id=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
+        doc_iri = bob.id.hashless_iri
+        alice = lp_model.create(iri=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
                                 short_bio_en=alice_bio_en)
-        alice_ref = URIRef(alice.id)
-        bob_ref = URIRef(bob.id)
+        alice_ref = URIRef(alice.id.iri)
+        bob_ref = URIRef(bob.id.iri)
         new_alice_name = alice_name + " A."
         new_bob_name = bob_name + " B."
 
@@ -129,8 +129,8 @@ class CrudTest(unittest.TestCase):
 
     def test_controller_put_json(self):
         alice = create_alice()
-        alice_iri = alice.id
-        alice_hashless_iri = alice.hashless_iri
+        alice_iri = alice.id.iri
+        alice_hashless_iri = alice.id.hashless_iri
         alice_ref = URIRef(alice_iri)
 
         new_alice_name = "New alice"
@@ -150,9 +150,9 @@ class CrudTest(unittest.TestCase):
 
     def test_controller_put_scope(self):
         alice = create_alice()
-        alice_ref = URIRef(alice.id)
+        alice_ref = URIRef(alice.id.iri)
         bob = create_bob()
-        bob_hashless_iri = bob.hashless_iri
+        bob_hashless_iri = bob.id.hashless_iri
 
         bob_graph = Graph().parse(data=bob.to_rdf("xml"), format="xml")
         # No problem
@@ -167,7 +167,7 @@ class CrudTest(unittest.TestCase):
         alice = create_alice()
         alice.gpg_key = create_gpg_key()
         alice.save()
-        gpg_skolem_ref = URIRef(alice.gpg_key.id)
+        gpg_skolem_ref = URIRef(alice.gpg_key.id.iri)
         self.assertTrue(alice.gpg_key.is_blank_node())
 
         bob = create_bob()
@@ -182,4 +182,5 @@ class CrudTest(unittest.TestCase):
         # No modification
         self.assertEquals({unicode(r) for r in data_graph.objects(gpg_skolem_ref, wot_fingerprint)},
                           {gpg_fingerprint})
+
 

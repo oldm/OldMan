@@ -132,12 +132,12 @@ class InstanceTest(TestCase):
         old_value = 5
         john.old_number_value = old_value
         john.save()
-        iri = john.id
+        iri = john.id.iri
         with self.assertRaises(AttributeError):
             john.mid_values = {"not saved"}
         with self.assertRaises(AttributeError):
             john.new_value = "not saved (again)"
-        john = grand_parent_model.get(id=iri)
+        john = grand_parent_model.get(iri=iri)
         self.assertEquals(john.old_number_value, old_value)
         with self.assertRaises(AttributeError):
             print john.mid_values
@@ -153,8 +153,8 @@ class InstanceTest(TestCase):
         with self.assertRaises(AttributeError):
             jack.new_value = "not saved"
         jack.save()
-        uri = jack.id
-        jack = parent_model.get(id=uri)
+        uri = jack.id.iri
+        jack = parent_model.get(iri=uri)
         self.assertEquals(jack.mid_values, mid_values)
         self.assertEquals(jack.old_number_value, old_value)
         with self.assertRaises(AttributeError):
@@ -169,8 +169,8 @@ class InstanceTest(TestCase):
         new_value = u"ok!"
         tom.new_value = new_value
         tom.save()
-        uri = tom.id
-        tom = child_model.get(id=uri)
+        uri = tom.id.iri
+        tom = child_model.get(iri=uri)
         self.assertEquals(tom.new_value, new_value)
         self.assertEquals(tom.mid_values, mid_values)
         self.assertEquals(tom.old_number_value, old_value)
@@ -236,29 +236,29 @@ class InstanceTest(TestCase):
 
     def test_gets(self):
         john = grand_parent_model.create()
-        john_uri = john.id
+        john_uri = john.id.iri
         jack = parent_model.create()
-        jack_uri = jack.id
+        jack_uri = jack.id.iri
         jack_mid_values = {"jack"}
         jack.mid_values = jack_mid_values
         jack.save()
         tom = child_model.create()
-        tom_uri = tom.id
+        tom_uri = tom.id.iri
         tom_new_value = "Tom new value"
         tom.new_value = tom_new_value
         tom.save()
 
-        tom = user_mediator.get(id=tom_uri)
+        tom = user_mediator.get(iri=tom_uri)
         self.assertEquals(tom.new_value, tom_new_value)
         self.assertEquals(tom.disclaim(), new_disclaim)
         self.assertTrue(tom.is_instance_of(child_model))
 
-        jack = user_mediator.get(id=jack_uri)
+        jack = user_mediator.get(iri=jack_uri)
         self.assertEquals(jack.mid_values, jack_mid_values)
         self.assertTrue(jack.is_instance_of(parent_model))
         self.assertFalse(jack.is_instance_of(child_model))
 
-        john = user_mediator.get(id=john_uri)
+        john = user_mediator.get(iri=john_uri)
         self.assertTrue(john.is_instance_of(grand_parent_model))
         self.assertFalse(john.is_instance_of(parent_model))
         self.assertFalse(john.is_instance_of(child_model))
@@ -266,5 +266,5 @@ class InstanceTest(TestCase):
     def test_uris(self):
         for i in range(1, 6):
             child = child_model.create()
-            self.assertEquals(child.id, "%s%d#%s" % (child_prefix, i, uri_fragment))
-            print child.id
+            self.assertEquals(child.id.iri, "%s%d#%s" % (child_prefix, i, uri_fragment))
+            print child.id.iri

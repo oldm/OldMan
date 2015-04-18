@@ -1,7 +1,7 @@
 import logging
 from rdflib import URIRef, Literal
 from rdflib.collection import Collection
-from oldman.exception import OMDataStoreError
+from oldman.exception import OMStoreError
 
 
 class AttributeValueExtractor(object):
@@ -30,11 +30,11 @@ class AttributeValueExtractor(object):
         :param subgraph: :class:`rdflib.graph.Graph` object containing the value to extract.
         :return: Collection or atomic value.
         """
-        instance_uri = URIRef(resource.id)
+        instance_iri = URIRef(resource.id.iri)
         if self._reversed:
-            raw_rdf_values = list(subgraph.subjects(self._property_iri, instance_uri))
+            raw_rdf_values = list(subgraph.subjects(self._property_iri, instance_iri))
         else:
-            raw_rdf_values = list(subgraph.objects(instance_uri, self._property_iri))
+            raw_rdf_values = list(subgraph.objects(instance_iri, self._property_iri))
         if len(raw_rdf_values) == 0:
             return None
         return self._extract_fct(self, raw_rdf_values, graph=subgraph)
@@ -54,7 +54,7 @@ class AttributeValueExtractor(object):
     def _extract_list_values(self, raw_rdf_values, graph):
         """Filters by language (unique way to discriminate)."""
         if not self._language and len(raw_rdf_values) > 1:
-            raise OMDataStoreError(u"Multiple list found for the property %s"
+            raise OMStoreError(u"Multiple list found for the property %s"
                                    % self._property_iri)
         final_list = None
         for vlist in raw_rdf_values:
@@ -62,7 +62,7 @@ class AttributeValueExtractor(object):
             values = self._filter_and_convert(rdf_values)
             if len(values) > 0:
                 if final_list is not None:
-                    raise OMDataStoreError(u"Same language in multiple list for the property %s"
+                    raise OMStoreError(u"Same language in multiple list for the property %s"
                                            % self._property_iri)
                 final_list = values
             else:

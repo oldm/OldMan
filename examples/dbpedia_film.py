@@ -28,7 +28,7 @@ def extract_name(person):
             if key in person.names:
                 return person.names[key]
         return person.names.values()[0]
-    return person.id
+    return person.id.iri
 
 if __name__ == "__main__":
     # Main SPARQL requests
