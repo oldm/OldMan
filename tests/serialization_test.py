@@ -33,7 +33,7 @@ class SerializationTest(unittest.TestCase):
         self.assertEquals(bob_jsonld["types"], lp_model.ancestry_iris)
 
     def test_rsa_jsonld(self):
-        rsa_key = create_rsa_key()
+        rsa_key = new_rsa_key()
         key_jsonld = json.loads(rsa_key.to_jsonld())
         self.assertEquals(key_jsonld["modulus"], key_modulus)
         self.assertEquals(key_jsonld["exponent"], key_exponent)
@@ -114,8 +114,9 @@ class SerializationTest(unittest.TestCase):
     def test_bob_key_jsonld(self):
         bob = create_bob()
         bob_iri = bob.id.iri
-        rsa_key = create_rsa_key()
+        rsa_key = new_rsa_key()
         bob.keys = {rsa_key}
+        self.assertTrue(bob.is_valid)
         bob.save()
         # If any cache
         data_store.resource_cache.remove_resource(bob)

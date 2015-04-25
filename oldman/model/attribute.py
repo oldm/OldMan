@@ -6,7 +6,7 @@ from rdflib import Literal
 from oldman.common import is_blank_node
 
 from oldman.exception import OMAttributeTypeCheckError, OMRequiredPropertyError, OMReadOnlyAttributeError, OMEditError, \
-    OMTemporaryIriError
+    OMTemporaryIriError, OMInternalError
 from oldman.iri.id import generate_uuid_iri
 from oldman.parsing.value import AttributeValueExtractor
 from oldman.validation.value_format import ValueFormatError
@@ -137,19 +137,16 @@ class OMAttribute(object):
         except OMEditError:
             return False
 
-    def check_validity(self, resource, is_end_user=True, resource_mediator=None):
+    def check_validity(self, resource, is_end_user=True):
         """Raises an :class:`~oldman.exception.OMEditError` exception if
         the attribute value assigned to a resource is invalid.
 
         :param resource: :class:`~oldman.resource.Resource` object.
         :param is_end_user: `False` when an authorized user (not a regular end-user)
                              wants to force some rights. Defaults to `True`.
-        :param resource_mediator: TODO: explain why we need it for TMP IRIs.
         """
         self._check_local_constraints(resource, is_end_user)
         self._check_requirement(resource)
-        if resource_mediator is not None:
-            self._check_iris(resource, resource_mediator)
 
     def _check_local_constraints(self, resource, is_end_user):
         # Read-only constraint
@@ -420,14 +417,16 @@ class ObjectOMAttribute(OMAttribute):
         :return: :class:`~oldman.resource.Resource` object
                  or a generator of :class:`~oldman.resource.Resource` objects.
         """
-        iris = OMAttribute.get(self, resource)
-        if isinstance(iris, (list, set)):
+        values = OMAttribute.get(self, resource)
+        if isinstance(values, (list, set)):
             # Returns a generator
-            return (resource.get_related_resource(iri=iri) for iri in iris)
-        elif isinstance(iris, dict):
+            # TODO: do not call get_related_resource() if the object is already available
+            return (resource.get_related_resource(iri=get_iri(v)) for v in values)
+        elif isinstance(values, dict):
             raise NotImplementedError(u"Should we implement it?")
-        elif iris is not None:
-            return resource.get_related_resource(iri=iris)
+        elif values is not None:
+            v = values
+            return resource.get_related_resource(iri=get_iri(v))
         else:
             return None
 
@@ -439,56 +438,25 @@ class ObjectOMAttribute(OMAttribute):
 
         :return: An IRI, a list or a set of IRIs or `None`.
         """
-        return OMAttribute.get(self, resource)
+        values = OMAttribute.get(self, resource)
+        return get_iris(values)
 
     def set(self, resource, value):
         """See :func:`~oldman.attribute.OMAttribute.set`.
 
             Accepts :class:`~oldman.resource.Resource` object(s) or IRI(s).
         """
-        from oldman.resource.resource import Resource
-        f = lambda x: x.id.iri if isinstance(x, Resource) else x
-
-        if isinstance(value, set):
-            values = {f(v) for v in value}
-        elif isinstance(value, list):
-            values = [f(v) for v in value]
-        elif isinstance(value, dict):
+        if isinstance(value, dict):
             if self.container == "@index":
                 raise NotImplementedError(u"Index maps are not yet supported")
             else:
                 raise OMAttributeTypeCheckError(u"Index maps must be declared. Other dict structures "
                                                 u"are not supported for objects.")
-        else:
-            values = f(value)
-        OMAttribute.set(self, resource, values)
 
-    def _check_iris(self, resource, resource_mediator):
-        """ Checks that the IRI is not temporary """
-        value = self.get_lightly(resource)
-        if value is None:
-            return
+        if isinstance(value, (str, unicode)) and is_blank_node(value):
+            raise OMAttributeTypeCheckError(u"Cannot assign directly a skolemized blank node IRI.")
 
-        resource_iri = resource.id.iri
-        if isinstance(value, set):
-            updated_value = {self._check_iri(resource_iri, v, resource_mediator) for v in value}
-        elif isinstance(value, list):
-            updated_value = [self._check_iri(resource_iri, v, resource_mediator) for v in value]
-        else:
-            updated_value = self._check_iri(resource_iri, value, resource_mediator)
-
-        self.set(resource, updated_value)
-
-    def _check_iri(self, resource_iri, object_iri, resource_mediator):
-        if is_blank_node(object_iri):
-            new_iri = resource_mediator.get_updated_iri(object_iri)
-            if new_iri == object_iri:
-                # Still temporary. Not supported.
-                raise OMTemporaryIriError("The attribute %s of %s is a temporary IRI (%s). Currently not supported."
-                                          % (self.name, resource_iri, object_iri))
-            return new_iri
-        else:
-            return object_iri
+        OMAttribute.set(self, resource, value)
 
 
 class Entry(object):
@@ -542,6 +510,23 @@ class Entry(object):
         return value
 
 
+def get_iri(x):
+    """ Gets the IRI from Resource or a IRI."""
+    return x.id.iri if hasattr(x, "id") else x
 
 
+def get_iris(values):
+    """TODO: describe it """
+    if isinstance(values, list):
+        return [get_iri(v) for v in values]
+    elif isinstance(values, set):
+        return {get_iri(v) for v in values}
+    elif isinstance(values, dict):
+        raise NotImplementedError(u"Should we implement it?")
+    elif values is not None:
+        # A Resource object or an IRI
+        v = values
+        return get_iri(v)
+    else:
+        return None
 

@@ -147,7 +147,7 @@ class BasicEditingTest(unittest.TestCase):
         self.assertEquals(bob.short_bio_fr, bob_bio_fr)
 
     def test_rsa_key(self):
-        rsa_key = create_rsa_key()
+        rsa_key = new_rsa_key()
         rsa_skolemized_iri = rsa_key.id.iri
         # If any cache
         data_store.resource_cache.remove_resource(rsa_key)
@@ -256,7 +256,7 @@ class BasicEditingTest(unittest.TestCase):
     def test_gpg_key(self):
         bob = create_bob()
         bob_iri = bob.id.iri
-        bob.gpg_key = create_gpg_key()
+        bob.gpg_key = new_gpg_key()
         self.assertEquals(bob.gpg_key.fingerprint, gpg_fingerprint)
         self.assertEquals(bob.gpg_key.hex_id, gpg_hex_id)
 

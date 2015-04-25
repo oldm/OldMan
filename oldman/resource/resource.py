@@ -149,11 +149,6 @@ class Resource(object):
         return self._model_manager
 
     @property
-    def store(self):
-        """:class:`~oldman.store.datastore.DataStore` object."""
-        return self._store
-
-    @property
     def is_new(self):
         """True if the resource has never been saved."""
         return self._is_new

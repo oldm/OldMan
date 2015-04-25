@@ -325,9 +325,9 @@ def create_john(iri=None):
     return lp_model.create(iri=iri, name=john_name, mboxes={john_mail}, short_bio_en=john_bio_en)
 
 
-def create_rsa_key():
-    return rsa_model.create(exponent=key_exponent, modulus=key_modulus, label=key_label)
+def new_rsa_key():
+    return rsa_model.new(exponent=key_exponent, modulus=key_modulus, label=key_label)
 
 
-def create_gpg_key():
-    return gpg_model.create(fingerprint=gpg_fingerprint, hex_id=gpg_hex_id)
+def new_gpg_key():
+    return gpg_model.new(fingerprint=gpg_fingerprint, hex_id=gpg_hex_id)

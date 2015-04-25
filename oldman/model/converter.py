@@ -1,4 +1,5 @@
 import types
+from oldman.model.conversion.entry import ClientToStoreEntryCloner, StoreToClientEntryCloner
 from oldman.resource.client import ClientResource
 from oldman.resource.store import StoreResource
 
@@ -49,11 +50,12 @@ class ModelConversionManager(object):
             converter = self._converters[(client_model, store_model)]
 
             # Update the client resource according to the model properties
-            converter.from_store_to_client(store_resource, client_resource)
+            converter.from_store_to_client(store_resource, client_resource, self)
 
         return client_resource
 
     def convert_client_to_store_resource(self, client_resource, store):
+        """TODO: explain """
         store_former_types, store_new_types = self._extract_types_from_client_resource(client_resource, store)
 
         client_id = client_resource.id
@@ -74,7 +76,7 @@ class ModelConversionManager(object):
             converter = self._converters[(client_model, store_model)]
 
             # Update the client resource according to the model properties
-            converter.from_client_to_store(client_resource, store_resource)
+            converter.from_client_to_store(client_resource, store_resource, self)
 
         return store_resource
 
@@ -120,10 +122,10 @@ class ModelConversionManager(object):
 class ModelConverter(object):
     """TODO: find a better name and explain """
 
-    def from_client_to_store(self, client_resource, store_resource):
+    def from_client_to_store(self, client_resource, store_resource, conversion_manager):
         raise NotImplementedError("Should be implemented by a sub-class")
 
-    def from_store_to_client(self, store_resource, client_resource):
+    def from_store_to_client(self, store_resource, client_resource, conversion_manager):
         raise NotImplementedError("Should be implemented by a sub-class")
 
 
@@ -138,14 +140,18 @@ class DirectMappingModelConverter(ModelConverter):
         self._client_to_store_mappings = client_to_store_mappings
         self._store_to_client_mappings = {v: k for k, v in client_to_store_mappings.items()}
 
-    def from_client_to_store(self, client_resource, store_resource):
-        self._transfer_values(client_resource, store_resource, self._client_to_store_mappings)
+    def from_client_to_store(self, client_resource, store_resource, conversion_manager):
+        entry_cloner = ClientToStoreEntryCloner(conversion_manager, store_resource.store)
+        self._transfer_values(client_resource, store_resource, self._client_to_store_mappings,
+                              entry_cloner)
 
-    def from_store_to_client(self, store_resource, client_resource):
-        self._transfer_values(store_resource, client_resource, self._store_to_client_mappings)
+    def from_store_to_client(self, store_resource, client_resource, conversion_manager):
+        entry_cloner = StoreToClientEntryCloner(conversion_manager, store_resource.store)
+        self._transfer_values(store_resource, client_resource, self._store_to_client_mappings,
+                              entry_cloner)
 
     @staticmethod
-    def _transfer_values(source_resource, target_resource, mappings):
+    def _transfer_values(source_resource, target_resource, mappings, entry_cloner):
         for source_attr_name, target_attr_name in mappings.items():
             # Attributes
             source_attr = source_resource.get_attribute(source_attr_name)
@@ -154,7 +160,7 @@ class DirectMappingModelConverter(ModelConverter):
             # Transfers a clone of the source entry
             source_entry = source_attr.get_entry(source_resource)
             if source_entry is not None:
-                target_attr.set_entry(target_resource, source_entry.clone())
+                target_attr.set_entry(target_resource, entry_cloner.clone(source_attr, source_entry))
 
 
 class EquivalentModelConverter(DirectMappingModelConverter):
@@ -164,5 +170,3 @@ class EquivalentModelConverter(DirectMappingModelConverter):
         mappings = {attr_name: attr_name for attr_name in client_model.om_attributes}
         DirectMappingModelConverter.__init__(self, mappings)
         #TODO: check that the models are equivalent
-
-

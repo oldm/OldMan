@@ -47,6 +47,10 @@ class StoreResource(Resource):
         instance.update_from_graph(subgraph, is_end_user=True, save=False, initial=True)
         return instance
 
+    @property
+    def store(self):
+        return self._store
+
     def __getstate__(self):
         """Pickles this resource."""
         state = {name: getattr(self, name) for name in self._pickle_attribute_names}
@@ -142,7 +146,8 @@ class StoreResource(Resource):
                 resources_to_invalidate.update(former_value)
                 for r in resources_to_invalidate:
                     if r is not None:
-                        self._store.resource_cache.remove_resource_from_id(r)
+                        iri = r.id.iri if isinstance(r, Resource) else r
+                        self._store.resource_cache.remove_resource_from_iri(iri)
 
                 objects_to_delete += self._filter_objects_to_delete(former_value)
 
@@ -194,5 +199,5 @@ class StoreResource(Resource):
         self._is_new = False
 
     def _filter_objects_to_delete(self, ids):
-        return [self.store.get(id=id) for id in ids
-                if id is not None and is_blank_node(id)]
+        return [self.store.get(iri=iri) for iri in ids
+                if iri is not None and is_blank_node(iri)]

@@ -23,7 +23,7 @@ class UpdateDeleteTest(TestCase):
         with self.assertRaises(OMClassInstanceError):
             lp_model.get(iri=str(jason_iri))
         # Cleans the cache
-        data_store.resource_cache.remove_resource_from_id(jason_iri)
+        data_store.resource_cache.remove_resource_from_iri(jason_iri)
 
         for class_iri in lp_model.ancestry_iris:
             data_graph.add((jason_iri, RDF.type, URIRef(class_iri)))
@@ -65,7 +65,7 @@ class UpdateDeleteTest(TestCase):
 
         bob = create_bob()
         alice = create_alice()
-        rsa_key = create_rsa_key()
+        rsa_key = new_rsa_key()
         bob.keys = {rsa_key}
         bob.children = [alice]
         bob.save()
@@ -82,7 +82,7 @@ class UpdateDeleteTest(TestCase):
         self.assertFalse(bool(data_graph.query(ask_modulus)))
 
         bob = create_bob()
-        rsa_key = create_rsa_key()
+        rsa_key = new_rsa_key()
         bob.keys = {rsa_key}
         bob.save()
         self.assertTrue(bool(data_graph.query(ask_modulus)))
@@ -94,7 +94,7 @@ class UpdateDeleteTest(TestCase):
     def test_gpg_key_removal(self):
         bob = create_bob()
         self.assertFalse(bool(data_graph.query(ask_fingerprint)))
-        bob.gpg_key = create_gpg_key()
+        bob.gpg_key = new_gpg_key()
         bob.save()
         self.assertTrue(bool(data_graph.query(ask_fingerprint)))
 
@@ -106,7 +106,7 @@ class UpdateDeleteTest(TestCase):
         self.assertFalse(bool(data_graph.query(ask_fingerprint)))
 
         bob = create_bob()
-        gpg_key = create_gpg_key()
+        gpg_key = new_gpg_key()
         self.assertEquals(gpg_key.fingerprint, gpg_fingerprint)
         bob.gpg_key = gpg_key
         bob.save()
@@ -144,7 +144,7 @@ class UpdateDeleteTest(TestCase):
     def test_bob_gpg_update(self):
         bob = create_bob()
         self.assertFalse(bool(data_graph.query(ask_fingerprint)))
-        bob.gpg_key = create_gpg_key()
+        bob.gpg_key = new_gpg_key()
         bob.save()
         self.assertTrue(bool(data_graph.query(ask_fingerprint)))
         bob_dict = bob.to_dict()

@@ -81,16 +81,16 @@ class ResourceCache(object):
             self._region.delete(unicode(resource.id))
             self._logger.debug(u"%s removed from the cache." % resource.id)
 
-    def remove_resource_from_id(self, id):
+    def remove_resource_from_iri(self, iri):
         """:func:`~oldman.resource.cache.ResourceCache.remove_resource` is usually preferred.
 
         Indempotent and does nothing if `cache_region` is `None`.
 
-        :param id: IRI of the resource to remove from the cache.
+        :param iri: IRI of the resource to remove from the cache.
         """
         if self._region is not None:
-            self._region.delete(unicode(id))
-            self._logger.debug(u"%s removed from the cache." % id)
+            self._region.delete(unicode(iri))
+            self._logger.debug(u"%s removed from the cache." % iri)
 
     def invalidate_cache(self):
         """See :func:`dogpile.cache.region.CacheRegion.invalidate`.

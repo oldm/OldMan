@@ -165,7 +165,7 @@ class CrudTest(unittest.TestCase):
 
     def test_controller_put_skolemized_iris(self):
         alice = create_alice()
-        alice.gpg_key = create_gpg_key()
+        alice.gpg_key = new_gpg_key()
         alice.save()
         gpg_skolem_ref = URIRef(alice.gpg_key.id.iri)
         self.assertTrue(alice.gpg_key.is_blank_node())

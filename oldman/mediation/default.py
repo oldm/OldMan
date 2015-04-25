@@ -113,19 +113,20 @@ class DefaultCoreMediator(UserMediator, ResourceMediator):
         return self._model_manager.get_model(class_name_or_iri)
 
     def save_resource(self, client_resource, is_end_user):
-        store = self._store_selector.select_store(id=client_resource, types=client_resource.types)
+        store = self._store_selector.select_store(client_resource, types=client_resource.types)
         store_resource = self._conversion_manager.convert_client_to_store_resource(client_resource, store)
         store_resource.save(is_end_user)
         previous_id = client_resource.id
         new_id = store_resource.id
 
         # Keeps track of the temporary IRI replacement
+        # TODO: remove this!
         if previous_id != new_id:
             self._updated_iris[previous_id] = new_id
         return new_id
 
     def delete_resource(self, client_resource):
-        store = self._store_selector.select_store(id=client_resource, types=client_resource.types)
+        store = self._store_selector.select_store(client_resource, types=client_resource.types)
         store_resource = self._conversion_manager.convert_client_to_store_resource(client_resource, store)
         store_resource.delete()
 

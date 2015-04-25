@@ -95,5 +95,5 @@ class ResourceMediator(RootMediator):
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
     def get_updated_iri(self, tmp_iri):
-        """TODO: describe"""
+        """TODO: remove"""
         raise NotImplementedError("Should be implemented by a concrete implementation.")

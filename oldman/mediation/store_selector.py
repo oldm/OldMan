@@ -21,7 +21,7 @@ class StoreSelector:
         #TODO: implement seriously
         return self._stores
 
-    def select_store(self, **kwargs):
+    def select_store(self, client_resource, **kwargs):
         """TODO: what is the correct behavior when multiple stores are returned? """
         return self.select_stores(**kwargs)[0]
 
