@@ -1,5 +1,7 @@
 from logging import getLogger
-from oldman.model.converter import EquivalentModelConverter, ModelConversionManager
+
+from oldman.model.conversion.converter import EquivalentModelConverter
+from oldman.model.conversion.manager import ModelConversionManager
 from oldman.resource.client import ClientResource
 from oldman.mediation.store_selector import StoreSelector
 from oldman.model.manager.client import ClientModelManager
