@@ -67,7 +67,8 @@ if __name__ == "__main__":
     print "10 first French films found on DBPedia (with OldMan)"
     print "----------------------------------------------------"
     q1_start_time = time.time()
-    for film in film_model.filter(subjects=["http://dbpedia.org/resource/Category:French_films"],
+    session = user_mediator.create_session()
+    for film in film_model.filter(session, subjects=["http://dbpedia.org/resource/Category:French_films"],
                                   limit=10
                                   , eager=True, pre_cache_properties=["http://dbpedia.org/ontology/starring"]
                                   ):
@@ -81,7 +82,7 @@ if __name__ == "__main__":
 
     print "Again, with the cache:"
     q1_start_time = time.time()
-    for film in film_model.filter(subjects=["http://dbpedia.org/resource/Category:French_films"],
+    for film in film_model.filter(session, subjects=["http://dbpedia.org/resource/Category:French_films"],
                                   limit=10
                                   #, eager=True, pre_cache_properties=["http://dbpedia.org/ontology/starring"]
                                   ):
@@ -93,11 +94,12 @@ if __name__ == "__main__":
     print "Films starring Michel Piccoli (with OldMan)"
     print "-------------------------------------------"
     q2_start_time = time.time()
-    for film in film_model.filter(actors=["http://dbpedia.org/resource/Michel_Piccoli"]
+    for film in film_model.filter(session, actors=["http://dbpedia.org/resource/Michel_Piccoli"]
                                   , eager=True
                                   ):
         print "   %s" % extract_title(film)
     print "Done in %.3f seconds" % (time.time() - q2_start_time)
+    session.close()
 
     print "10 first French films found on DBPedia (without OldMan)"
     print "-------------------------------------------------------"
