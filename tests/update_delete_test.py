@@ -65,6 +65,7 @@ class UpdateDeleteTest(TestCase):
         self.assertTrue(bool(data_graph.query(req_type)))
 
         session1.delete(bob)
+        session1.commit()
         self.assertFalse(bool(data_graph.query(req_name)))
         self.assertFalse(bool(data_graph.query(req_type)))
         session1.close()
@@ -85,6 +86,7 @@ class UpdateDeleteTest(TestCase):
         self.assertTrue(bool(data_graph.query(ask_alice)))
 
         session1.delete(bob)
+        session1.commit()
         session1.close()
         # Blank node is deleted
         self.assertFalse(bool(data_graph.query(ask_modulus)))
@@ -131,6 +133,7 @@ class UpdateDeleteTest(TestCase):
         self.assertTrue(bool(data_graph.query(ask_fingerprint)))
 
         session1.delete(bob)
+        session1.commit()
         session1.close()
         # Blank node is deleted
         self.assertFalse(bool(data_graph.query(ask_fingerprint)))
@@ -183,6 +186,7 @@ class UpdateDeleteTest(TestCase):
 
         bob_dict["gpg_key"] = None
         bob.update(bob_dict)
+        session1.commit()
         self.assertFalse(bool(data_graph.query(ask_fingerprint)))
         session1.close()
 
@@ -271,6 +275,7 @@ class UpdateDeleteTest(TestCase):
         with self.assertRaises(OMUnauthorizedTypeChangeError):
             alice.update_from_graph(g2)
         alice.update_from_graph(g2, allow_new_type=True)
+        session1.commit()
 
         # If any cache
         data_store.resource_cache.remove_resource(alice)

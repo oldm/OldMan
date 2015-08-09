@@ -201,8 +201,10 @@ class BasicEditingTest(unittest.TestCase):
         with self.assertRaises(OMAttributeTypeCheckError):
             rsa_key2.modulus = 235
         rsa_key2.modulus = format(235, "x")
+        rsa_model.new(session2, exponent=key_exponent)
         with self.assertRaises(OMRequiredPropertyError):
-            rsa_model.new(session2, exponent=key_exponent)
+            session2.commit()
+
         session2.close()
 
     def test_children_object_assignment(self):
@@ -296,7 +298,7 @@ class BasicEditingTest(unittest.TestCase):
         session1.close()
 
         session2 = user_mediator.create_session()
-        bob = session2.get(session2, iri=bob_iri)
+        bob = session2.get(iri=bob_iri)
         self.assertEquals([c.id.iri for c in bob.children], bob_children_iris)
         session2.close()
 
@@ -430,7 +432,7 @@ class BasicEditingTest(unittest.TestCase):
         data_store.resource_cache.remove_resource(bob2)
 
         session3 = user_mediator.create_session()
-        bob3 = session3.get(session3, iri=bob_iri, eager_with_reversed_attributes=False)
+        bob3 = session3.get(iri=bob_iri, eager_with_reversed_attributes=False)
         self.assertEquals(alice.id.iri, bob3.employer.id.iri)
         session1.close()
         session2.close()

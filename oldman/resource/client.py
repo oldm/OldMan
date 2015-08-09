@@ -47,6 +47,10 @@ class ClientResource(Resource):
         Resource.__init__(self, resource_id, model_manager, is_new=is_new, **kwargs)
         self._session = session
 
+    @property
+    def session(self):
+        return self._session
+
     @classmethod
     def load_from_graph(cls, mediator, model_manager, id, subgraph, is_new=True, collection_iri=None):
         """Loads a new :class:`~oldman.resource.ClientResource` object from a sub-graph.
@@ -62,15 +66,28 @@ class ClientResource(Resource):
         """
         types = list({unicode(t) for t in subgraph.objects(URIRef(id), RDF.type)})
         instance = cls(mediator, model_manager, id=id, types=types, is_new=is_new, collection_iri=collection_iri)
-        instance.update_from_graph(subgraph, is_end_user=True, save=False, initial=True)
+        instance.update_from_graph(subgraph, initial=True)
         return instance
 
     def get_related_resource(self, iri):
-        """ Gets a related `ClientResource` through the resource manager. """
+        """ Gets a related `ClientResource` through its session. """
         resource = self._session.get(iri=iri)
         if resource is None:
             return iri
         return resource
+
+    def receive_deletion_notification(self):
+        """TODO: explain"""
+        self._types = None
+        # Clears former values
+        self._former_types = self._types
+        # Clears values
+        for attr in self._extract_attribute_list():
+            setattr(self, attr.name, None)
+            attr.receive_storage_ack(self)
+
+        self._is_new = False
+
 
     # def save(self, is_end_user=True):
     #     """Saves it into the `data_store` and its `resource_cache`.

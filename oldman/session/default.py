@@ -16,6 +16,7 @@ class DefaultSession(Session):
 
         # Naive
         self._resources = set()
+        self._resources_to_delete = set()
 
     def new(self, iri=None, types=None, hashless_iri=None, collection_iri=None, **kwargs):
         """
@@ -81,13 +82,26 @@ class DefaultSession(Session):
         self._resources.update(client_resources)
         return client_resources
 
+    def delete(self, client_resource):
+        """TODO: describe.
+
+            Wait for the next commit() to remove the resource
+            from the store.
+        """
+        self._resources_to_delete.add(client_resource)
+
     def commit(self, is_end_user=True):
         """TODO: describe.
 
            TODO: re-implement it, very naive
          """
-        for resource in self._resources:
+        for resource in self._resources_to_delete:
+            self._delete_resource(resource)
+
+        for resource in self._resources.difference(self._resources_to_delete):
             self._save_resource(resource, is_end_user)
+
+        self._resources_to_delete = set()
 
     def close(self):
         """TODO: implement it """
@@ -105,13 +119,14 @@ class DefaultSession(Session):
         # TODO: remove this!
         if previous_id != new_id:
             self._updated_iris[previous_id] = new_id
-        client_resource.receive_id(new_id)
+        client_resource.receive_storage_ack(new_id)
 
     def _delete_resource(self, client_resource):
         """TODO: refactor"""
         store = self._mediator.store_selector.select_store(client_resource, types=client_resource.types)
         store_resource = self._mediator.conversion_manager.convert_client_to_store_resource(client_resource, store)
         store_resource.delete()
+        client_resource.receive_deletion_notification()
 
     def get_updated_iri(self, tmp_iri):
         """TODO: remove it """

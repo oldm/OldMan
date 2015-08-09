@@ -57,28 +57,30 @@ class CacheTest(unittest.TestCase):
         self.assertEquals(set(bob1.mboxes), set(bob2.mboxes))
 
     def test_modification(self):
-        session = user_mediator.create_session()
+        session1 = user_mediator.create_session()
         req_name = """ASK { ?x foaf:name "%s"^^xsd:string }"""
         self.assertFalse(bool(data_graph.query(req_name % alice_name)))
 
-        alice1 = create_alice(session)
+        alice1 = create_alice(session1)
         self.assertTrue(bool(data_graph.query(req_name % alice_name)))
         #Not saved modification
         new_name = "New Alice"
         alice1.name = new_name
 
-        alice2 = session.get(iri=alice1.id.iri)
+        session2 = user_mediator.create_session()
+        alice2 = session2.get(iri=alice1.id.iri)
         self.assertFalse(alice1 is alice2)
         self.assertEquals(alice1.id.iri, alice2.id.iri)
         self.assertNotEquals(alice1.name, alice2.name)
         self.assertEquals(alice2.name, alice_name)
 
-        # Save the modification
-        session.commit()
+        # Save the modification of alice1
+        session1.commit()
         self.assertFalse(bool(data_graph.query(req_name % alice_name)))
         self.assertTrue(bool(data_graph.query(req_name % new_name)))
 
-        alice3 = session.get(session, iri=alice1.id.iri)
+        session3 = user_mediator.create_session()
+        alice3 = session3.get(iri=alice1.id.iri)
         self.assertFalse(alice1 is alice3)
         self.assertEquals(alice1.id.iri, alice3.id.iri)
         self.assertEquals(alice1.name, alice3.name)
@@ -86,33 +88,48 @@ class CacheTest(unittest.TestCase):
 
         name3 = "Third Alice"
         alice3.name = name3
-        session.commit()
+        session3.commit()
         self.assertFalse(bool(data_graph.query(req_name % new_name)))
         self.assertTrue(bool(data_graph.query(req_name % name3)))
 
-        alice4 = session.get(session, iri=alice1.id.iri)
+        session4 = user_mediator.create_session()
+        alice4 = session4.get(iri=alice1.id.iri)
         self.assertFalse(alice3 is alice4)
         self.assertEquals(alice3.id.iri, alice4.id.iri)
         self.assertEquals(alice3.name, alice4.name)
         self.assertEquals(alice4.name, name3)
+        session1.close()
+        session2.close()
+        session3.close()
+        session4.close()
 
     def test_basic_deletion(self):
-        session = user_mediator.create_session()
-        alice1 = create_alice(session)
+        session1 = user_mediator.create_session()
+        alice1 = create_alice(session1)
         alice_iri = alice1.id.iri
-        session.delete(alice1)
+        session1.delete(alice1)
+        session1.commit()
+        session1.close()
 
-        alice2 = session.get(session, iri=alice_iri)
+        session2 = user_mediator.create_session()
+        alice2 = session2.get(iri=alice_iri)
         self.assertEquals(alice2.types, [])
+        session2.close()
 
     def test_delete_from_cache(self):
-        session = user_mediator.create_session()
-        alice1 = create_alice(session)
+        session1 = user_mediator.create_session()
+        alice1 = create_alice(session1)
         alice_iri = alice1.id.iri
+        session1.close()
 
-        alice2 = session.get(iri=alice_iri)
-        session.delete(alice2)
+        session2 = user_mediator.create_session()
+        alice2 = session2.get(iri=alice_iri)
+        session2.delete(alice2)
+        session2.commit()
+        session2.close()
 
-        alice3 = session.get(iri=alice_iri)
+        session3 = user_mediator.create_session()
+        alice3 = session3.get(iri=alice_iri)
         self.assertEquals(alice3.types, [])
         self.assertFalse(bool(data_graph.query("ASK { <%s> ?p ?o }" % alice_iri)))
+        session3.close()

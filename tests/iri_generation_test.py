@@ -75,7 +75,7 @@ class HashlessIriTest(TestCase):
         crud_controller.update(hashless_iri, g.serialize(format="turtle"), "turtle")
 
         session1 = user_mediator.create_session()
-        resource = user_mediator.get(session1, hashless_iri=hashless_iri)
+        resource = session1.get(hashless_iri=hashless_iri)
         self.assertTrue(resource is not None)
         self.assertTrue(hashless_iri in resource.id.iri)
         self.assertTrue('#' in resource.id.iri)
@@ -94,6 +94,6 @@ class HashlessIriTest(TestCase):
         crud_controller.update(hashless_iri, ttl, "turtle", allow_new_type=True)
 
         session1 = user_mediator.create_session()
-        resource = user_mediator.get(session1, hashless_iri=hashless_iri)
+        resource = session1.get(hashless_iri=hashless_iri)
         self.assertEquals(resource.id.iri, hashless_iri + "#this")
         session1.close()

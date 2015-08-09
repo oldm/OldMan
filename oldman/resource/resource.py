@@ -305,7 +305,7 @@ class Resource(object):
             for attr in model.om_attributes.values():
                 attr.check_validity(self)
 
-    def receive_id(self, id):
+    def receive_storage_ack(self, id):
         """Receives the permanent ID assigned by the store.
         Useful when the permanent ID is given by an external server.
 
@@ -314,6 +314,12 @@ class Resource(object):
         # TODO: make sure the previous id was a temporary one
         self._id = id
         self._is_new = False
+
+        # Clears former values
+        self._former_types = self._types
+        for attr in self._extract_attribute_list():
+            attr.receive_storage_ack(self)
+
 
     def _extract_attribute_list(self):
         """:return: An ordered list of list of :class:`~oldman.attribute.OMAttribute` objects."""

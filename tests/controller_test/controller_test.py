@@ -69,7 +69,7 @@ class ControllerTest(unittest.TestCase):
             controller.post(collection1.id.iri, content_type, payloads[content_type])
             #TODO: retrieve the IRI of the newly created resource
 
-            items = list(item_model.filter(title=title))
+            items = list(item_model.filter(session, title=title))
             self.assertEquals(len(items), 1)
             retrieved_item = items[0]
             self.assertEquals(retrieved_item.title, title)
@@ -77,7 +77,8 @@ class ControllerTest(unittest.TestCase):
             print retrieved_item.id.iri
 
             #TODO: test the member part
-            retrieved_item.delete()
+            session.delete(retrieved_item)
+        session.commit()
 
     def forbid_putting_new_resource_test(self):
         #TODO: implement it

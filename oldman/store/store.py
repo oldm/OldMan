@@ -183,7 +183,7 @@ class Store(object):
             raise OMUniquenessError("Object %s already exist" % resource.id)
 
         id = self._save_resource_attributes(resource, attributes, former_types)
-        resource.receive_id(id)
+        resource.receive_storage_ack(id)
         # Cache
         self._resource_cache.set_resource(resource)
 

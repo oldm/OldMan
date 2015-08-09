@@ -107,7 +107,7 @@ class HTTPController(object):
             graph = Graph()
             try:
                 if content_type in JSON_TYPES:
-                    resource = self._user_mediator.get(hashless_iri=hashless_iri)
+                    resource = session.get(hashless_iri=hashless_iri)
                     graph.parse(data=payload, format="json-ld", publicID=hashless_iri,
                                 context=resource.context)
                 else:
