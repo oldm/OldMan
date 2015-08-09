@@ -43,20 +43,30 @@ class HashlessIriTest(TestCase):
         data_graph.update("CLEAR DEFAULT")
 
     def test_generation(self):
+        session1 = user_mediator.create_session()
         hashless_iri = "http://example.org/doc1"
-        obj1 = model.create(hashless_iri=hashless_iri)
+        obj1 = model.new(session1, hashless_iri=hashless_iri)
+        session1.commit()
         self.assertEquals(obj1.id.hashless_iri, hashless_iri)
         self.assertTrue(hashless_iri in obj1.id.iri)
 
-        obj2 = model.create(hashless_iri=hashless_iri)
+        obj2 = model.new(session1, hashless_iri=hashless_iri)
+        session1.commit()
         self.assertEquals(obj2.id.hashless_iri, hashless_iri)
         self.assertTrue(hashless_iri in obj2.id.iri)
         self.assertNotEquals(obj1.id.iri, obj2.id.iri)
+        session1.close()
 
+        session2 = user_mediator.create_session()
+        model.new(session2)
         with self.assertRaises(OMRequiredHashlessIRIError):
-            model.create()
+            session2.commit()
+        session2.close()
+        session3 = user_mediator.create_session()
+        model.new(session3, hashless_iri="http://localhost/not#a-base-iri")
         with self.assertRaises(OMRequiredHashlessIRIError):
-            model.create(hashless_iri="http://localhost/not#a-base-iri")
+            session3.commit()
+        session3.close()
 
     def test_controller_put(self):
         hashless_iri = "http://example.org/doc2"
@@ -64,10 +74,12 @@ class HashlessIriTest(TestCase):
         g.add((BNode(), RDF.type, URIRef(EXAMPLE + "MyClass")))
         crud_controller.update(hashless_iri, g.serialize(format="turtle"), "turtle")
 
-        resource = user_mediator.get(hashless_iri=hashless_iri)
+        session1 = user_mediator.create_session()
+        resource = user_mediator.get(session1, hashless_iri=hashless_iri)
         self.assertTrue(resource is not None)
         self.assertTrue(hashless_iri in resource.id.iri)
         self.assertTrue('#' in resource.id.iri)
+        session1.close()
 
     def test_relative_iri(self):
         """
@@ -80,5 +92,8 @@ class HashlessIriTest(TestCase):
         """
         hashless_iri = "http://example.org/doc3"
         crud_controller.update(hashless_iri, ttl, "turtle", allow_new_type=True)
-        resource = user_mediator.get(hashless_iri=hashless_iri)
+
+        session1 = user_mediator.create_session()
+        resource = user_mediator.get(session1, hashless_iri=hashless_iri)
         self.assertEquals(resource.id.iri, hashless_iri + "#this")
+        session1.close()

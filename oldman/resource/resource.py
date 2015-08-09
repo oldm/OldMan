@@ -83,7 +83,7 @@ class Resource(object):
     """
 
     _special_attribute_names = ["_models", "_id", "_types", "_is_blank_node", "_model_manager",
-                                "_store", "_former_types", "_logger", "_resource_mediator", "_is_new"]
+                                "_store", "_former_types", "_logger", "_session", "_is_new"]
     _pickle_attribute_names = ["_id", '_types', '_is_new']
 
     def __init__(self, id, model_manager, types=None, is_new=True, former_types=None, **kwargs):
@@ -315,26 +315,6 @@ class Resource(object):
         self._id = id
         self._is_new = False
 
-    def save(self, is_end_user=True):
-        """Saves it into the `data_store` and its `resource_cache`.
-
-        Raises an :class:`oldman.exception.OMEditError` exception if invalid.
-
-        :param is_end_user: `False` when an authorized user (not a regular end-user)
-                             wants to force some rights. Defaults to `True`.
-                             See :func:`~oldman.attribute.OMAttribute.check_validity` for further details.
-        :return: The :class:`~oldman.resource.resource.Resource` object itself.
-        """
-        raise NotImplementedError("Have to be implemented by sub-classes")
-
-    def delete(self):
-        """Removes the resource from the `data_store` and its `resource_cache`.
-
-        Cascade deletion is done for related resources satisfying the test
-        :func:`~oldman.resource.resource.should_delete_resource`.
-        """
-        raise NotImplementedError("Have to be implemented by sub-classes")
-
     def _extract_attribute_list(self):
         """:return: An ordered list of list of :class:`~oldman.attribute.OMAttribute` objects."""
         attributes = []
@@ -445,7 +425,7 @@ class Resource(object):
         # Literal
         return value
 
-    def update(self, full_dict, is_end_user=True, allow_new_type=False, allow_type_removal=False, save=True):
+    def update(self, full_dict, allow_new_type=False, allow_type_removal=False):
         """Updates the resource from a flat `dict`.
 
         By flat, we mean that sub-resources are only represented by their IRIs:
@@ -456,9 +436,6 @@ class Resource(object):
         deletion.
 
         :param full_dict: Flat `dict` containing the attribute values to update.
-        :param is_end_user: `False` when an authorized user (not a regular end-user)
-                             wants to force some rights. Defaults to `True`.
-                             See :func:`~oldman.attribute.OMAttribute.check_validity` for further details.
         :param allow_new_type: If `True`, new types can be added.
                                Please keep in mind that type change can:
                                    - Modify the behavior of the resource by changing its model list.
@@ -467,7 +444,6 @@ class Resource(object):
                                Defaults to `False`.
         :param allow_type_removal: If `True`, new types can be removed. Same security concerns than above.
                                    Defaults to `False`.
-        :param save: If `True` calls :func:`~oldman.resource.Resource.save` after updating. Defaults to `True`.
         :return: The :class:`~oldman.resource.Resource` object itself.
         """
         #if not self.is_blank_node() and "id" not in full_dict:
@@ -497,12 +473,9 @@ class Resource(object):
                 value = set(value)
             attr.set(self, value)
 
-        if save:
-            self.save(is_end_user)
         return self
 
-    def update_from_graph(self, subgraph, initial=False, is_end_user=True, allow_new_type=False,
-                          allow_type_removal=False, save=True):
+    def update_from_graph(self, subgraph, initial=False, allow_new_type=False, allow_type_removal=False):
         """Similar to :func:`~oldman.resource.Resource.full_update` but with
         a RDF graph instead of a Python `dict`.
 
@@ -510,15 +483,11 @@ class Resource(object):
         :param initial: `True` when the subgraph comes from the `data_graph` and is thus used
                         to load :class:`~oldman.resource.Resource` object from the triple store.
                         Defaults to `False`.
-        :param is_end_user: `False` when an authorized user (not a regular end-user)
-                             wants to force some rights. Defaults to `True`.
-                             See :func:`~oldman.attribute.OMAttribute.check_validity` for further details.
         :param allow_new_type: If `True`, new types can be added. Defaults to `False`. See
                                :func:`~oldman.resource.Resource.full_update` for explanations about the
                                security concerns.
         :param allow_type_removal: If `True`, new types can be removed. Same security concerns than above.
                                    Defaults to `False`.
-        :param save: If `True` calls :func:`~oldman.resource.Resource.save` after updating. Defaults to `True`.
         :return: The :class:`~oldman.resource.Resource` object itself.
         """
         for attr in self._extract_attribute_list():
@@ -527,9 +496,6 @@ class Resource(object):
         if not initial:
             new_types = {unicode(t) for t in subgraph.objects(URIRef(self._id.iri), RDF.type)}
             self._check_and_update_types(new_types, allow_new_type, allow_type_removal)
-
-        if save:
-            self.save(is_end_user)
         return self
 
     def get_related_resource(self, iri):

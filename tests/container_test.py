@@ -130,45 +130,58 @@ class ContainerTest(TestCase):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
 
-    def create_object(self):
-        return model.create(list_en=default_list_en)
+    def create_object(self, session):
+        obj = model.new(session, list_en=default_list_en)
+        session.commit()
+        return obj
 
     def test_basic_list(self):
-        obj = self.create_object()
+        session1 = user_mediator.create_session()
+        obj = self.create_object(session1)
         uri = obj.id.iri
         lst = ["Hello", "hi", "hi", "Hello"]
         backup_list = copy(lst)
         obj.primary_list = lst
-        obj.save()
+        session1.commit()
+        session1.close()
 
-        obj = model.get(iri=uri)
+        session2 = user_mediator.create_session()
+        obj2 = model.get(session2, iri=uri)
         self.assertEquals(lst, backup_list)
-        self.assertEquals(obj.primary_list, lst)
-        self.assertNotEquals(obj.primary_list, list(set(lst)))
+        self.assertEquals(obj2.primary_list, lst)
+        self.assertNotEquals(obj2.primary_list, list(set(lst)))
+        session2.close()
 
     def test_localized_lists(self):
-        obj = model.new()
+        session1 = user_mediator.create_session()
+        obj = model.new(session1)
         list_fr = ["Salut", "Bonjour"]
         list_en = ["Hi", "Hello"]
         obj.list_fr = copy(list_fr)
         obj.list_en = copy(list_en)
-        obj.save()
+        session1.commit()
         uri = obj.id.iri
+        session1.close()
 
-        obj = model.get(iri=uri)
-        self.assertEquals(obj.list_fr, list_fr)
-        self.assertEquals(obj.list_en, list_en)
+        session2 = user_mediator.create_session()
+        obj2 = model.get(session2, iri=uri)
+        self.assertEquals(obj2.list_fr, list_fr)
+        self.assertEquals(obj2.list_en, list_en)
+        session2.close()
 
     def test_required_list(self):
-        obj = model.new()
+        session = user_mediator.create_session()
+        obj = model.new(session)
         with self.assertRaises(OMRequiredPropertyError):
-            obj.save()
+            session.commit()
         obj.list_fr = []
         with self.assertRaises(OMRequiredPropertyError):
-            obj.save()
+            session.commit()
+        session.close()
 
     def test_undeclared_set(self):
-        obj = self.create_object()
+        session = user_mediator.create_session()
+        obj = self.create_object(session)
         uri = obj.id.iri
         lst = ["Hello", "hi", "hi", "Hello"]
         # No declaration -> implicit set or unique value
@@ -176,72 +189,85 @@ class ContainerTest(TestCase):
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.undeclared_set = lst
         obj.undeclared_set = set(lst)
-        obj.save()
+        session.commit()
         # Unique values are also supported
         obj.undeclared_set = "unique value"
-        obj.save()
+        session.commit()
+        session.close()
 
     def test_change_attribute_of_required_property(self):
-        obj = model.new()
+        session = user_mediator.create_session()
+        obj = model.new(session)
         list_fr = ["Salut", "Bonjour"]
         list_en = ["Hi", "Hello"]
         obj.list_en = list_en
-        obj.save()
+        session.commit()
         obj.list_en = None
         self.assertFalse(obj.is_valid())
         obj.list_fr = list_fr
-        obj.save()
+        session.commit()
+        session.close()
 
     def test_bool_list(self):
-        obj = self.create_object()
+        session1 = user_mediator.create_session()
+        obj = self.create_object(session1)
         uri = obj.id.iri
         lst = [True, False, True, False]
         obj.bool_list = lst
         self.assertEquals(obj.bool_list, lst)
-        obj.save()
-        obj = model.get(iri=uri)
-        self.assertEquals(obj.bool_list, lst)
-        obj.bool_list = [True]
-        obj.save()
+        session1.commit()
+        session1.close()
+
+        session2 = user_mediator.create_session()
+        obj2 = model.get(session2, iri=uri)
+        self.assertEquals(obj2.bool_list, lst)
+        obj2.bool_list = [True]
+        session2.commit()
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.bool_list = ["Wrong"]
+            obj2.bool_list = ["Wrong"]
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.bool_list = [True, None, False]
+            obj2.bool_list = [True, None, False]
+        session2.close()
 
     def test_bool_set(self):
-        obj = self.create_object()
-        uri = obj.id.iri
+        session1 = user_mediator.create_session()
+        obj1 = self.create_object(session1)
+        uri = obj1.id.iri
         bools = {False, True}
-        obj.bool_set = bools
-        obj.save()
-        obj = model.get(iri=uri)
-        self.assertEquals(obj.bool_set, bools)
+        obj1.bool_set = bools
+        session1.commit()
+
+        session2 = user_mediator.create_session()
+        obj2 = model.get(session2, iri=uri)
+        self.assertEquals(obj2.bool_set, bools)
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.bool_set = [True]
+            obj2.bool_set = [True]
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.bool_set = {True, "Should not be there"}
+            obj2.bool_set = {True, "Should not be there"}
 
     def test_lang_map(self):
-        obj = self.create_object()
-        uri = obj.id.iri
+        session1 = user_mediator.create_session()
+        obj1 = self.create_object(session1)
+        uri = obj1.id.iri
         values = {'fr': u"Hé, salut!",
                   'en': u"What's up?"}
-        obj.lang_map = values
-        obj.save()
-        obj = model.get(iri=uri)
-        self.assertEquals(obj.lang_map, values)
+        obj1.lang_map = values
+        session1.commit()
+        session2 = user_mediator.create_session()
+        obj2 = model.get(session2, iri=uri)
+        self.assertEquals(obj2.lang_map, values)
 
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.lang_map = ["Not a map"]
+            obj2.lang_map = ["Not a map"]
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.lang_map = {"Not a map"}
+            obj2.lang_map = {"Not a map"}
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.lang_map = "Not a map"
+            obj2.lang_map = "Not a map"
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.lang_map = {"en": {"key": "should not support level-2 map"}}
+            obj2.lang_map = {"en": {"key": "should not support level-2 map"}}
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.lang_map = {"en": 2}
-        obj.lang_map = {"en": "ok",
-                        "fr": "ok aussi"}
+            obj2.lang_map = {"en": 2}
+        obj2.lang_map = {"en": "ok",
+                         "fr": "ok aussi"}
 
 

@@ -44,7 +44,7 @@ class StoreResource(Resource):
         """
         types = list({unicode(t) for t in subgraph.objects(URIRef(iri), RDF.type)})
         instance = cls(PermanentId(iri), model_manager, store, types=types, is_new=is_new)
-        instance.update_from_graph(subgraph, is_end_user=True, save=False, initial=True)
+        instance.update_from_graph(subgraph, initial=True)
         return instance
 
     @property

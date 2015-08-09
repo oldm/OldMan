@@ -29,7 +29,8 @@ class RangeTest(TestCase):
         user_mediator.import_store_models()
         model = user_mediator.get_client_model("MyClass")
 
-        obj = model.new(test_hasX=2)
+        session = user_mediator.create_session()
+        obj = model.new(session, test_hasX=2)
 
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.test_hasX = "not a number"
@@ -42,7 +43,8 @@ class RangeTest(TestCase):
         user_mediator.import_store_models()
         model = user_mediator.get_client_model("MyClass")
 
-        obj = model.new(hasX=2)
+        session = user_mediator.create_session()
+        obj = model.new(session, hasX=2)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.hasX = "not a number"
 
@@ -67,7 +69,8 @@ class RangeTest(TestCase):
         user_mediator.import_store_models()
         model = user_mediator.get_client_model("MyClass")
 
-        obj = model.new(hasX=2)
+        session = user_mediator.create_session()
+        obj = model.new(session, hasX=2)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.hasX = "not a number"
 

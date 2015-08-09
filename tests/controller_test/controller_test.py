@@ -23,7 +23,9 @@ user_mediator.import_store_models()
 collection_model = user_mediator.get_client_model("Collection")
 item_model = user_mediator.get_client_model("Item")
 
-collection1 = collection_model.create()
+session = user_mediator.create_session()
+collection1 = collection_model.new(session)
+session.commit()
 
 controller = HTTPController(user_mediator)
 
@@ -36,7 +38,8 @@ class ControllerTest(unittest.TestCase):
         self.assertTrue(operation is not None)
 
         title = u"First item"
-        item = item_model.create(title=title)
+        item = item_model.new(session, title=title)
+        session.commit()
         #item_graph = Graph().parse(data=item.to_rdf(rdf_format="nt"), format="nt")
         #print item_graph.serialize(format="turtle")
         item_iri = item.id.iri
@@ -53,7 +56,7 @@ class ControllerTest(unittest.TestCase):
         #TODO: test mutiple formats
 
         title = u"Append test"
-        item = item_model.new(title=title)
+        item = item_model.new(session, title=title)
         self.assertTrue(item.id.is_blank_node)
 
         payloads = {}

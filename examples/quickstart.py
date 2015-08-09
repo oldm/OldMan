@@ -33,21 +33,23 @@ user_mediator.import_store_models()
 
 lp_model = user_mediator.get_client_model("LocalPerson")
 
-alice = lp_model.create(name="Alice", emails={"alice@example.org"},
-                        short_bio_en="I am ...")
-bob = lp_model.new(name="Bob",
+session = user_mediator.create_session()
+
+alice = lp_model.new(session, name="Alice", emails={"alice@example.org"},
+                     short_bio_en="I am ...")
+bob = lp_model.new(session, name="Bob",
                    #blog="http://blog.example.com/",
                    short_bio_fr=u"J'ai grandi en ... .")
 
 print bob.is_valid()
 bob.emails = {"bob@localhost", "bob@example.org"}
 print bob.is_valid()
-bob.save()
 
-alice.friends = {bob}
+session.commit()
+
+#alice.friends = {bob}
 bob.friends = {alice}
-alice.save()
-bob.save()
+session.commit()
 
 print alice.id.iri
 print bob.id.iri
@@ -59,21 +61,22 @@ print bob.short_bio_en
 print bob.short_bio_fr
 
 john_iri = "http://example.org/john#me"
-john = lp_model.create(iri=john_iri, name="John", emails={"john@example.org"})
+john = lp_model.new(session, iri=john_iri, name="John", emails={"john@example.org"})
+session.commit()
 print john.id.iri
 
 alice_iri = alice.id.iri
 # First person found named Bob
-bob = lp_model.get(name="Bob")
-alice = lp_model.get(iri=alice_iri)
+bob = lp_model.get(session, name="Bob")
+alice = lp_model.get(session, iri=alice_iri)
 print alice.name
 
 # Or retrieve her as the unique friend of Bob
 alice = list(bob.friends)[0]
 print alice.name
 
-print set(lp_model.all())
-print set(lp_model.filter())
+print set(lp_model.all(session))
+print set(lp_model.filter(session))
 
 print alice.to_json()
 print john.to_jsonld()

@@ -11,18 +11,17 @@ class ClientModel(Model):
      """
 
     @classmethod
-    def copy_store_model(cls, user_mediator, store_model):
+    def copy_store_model(cls, store_model):
         """TODO: describe """
-        return ClientModel(user_mediator, store_model.name, store_model.class_iri,
-                           store_model.ancestry_iris, store_model.context, store_model.om_attributes,
-                           operations=store_model._operations, local_context=store_model.local_context,
+        return ClientModel(store_model.name, store_model.class_iri, store_model.ancestry_iris,
+                           store_model.context, store_model.om_attributes, operations=store_model._operations,
+                           local_context=store_model.local_context,
                            accept_new_blank_nodes=store_model.accept_new_blank_nodes)
 
-    def __init__(self, user_mediator, name, class_iri, ancestry_iris, context, om_attributes, operations=None,
+    def __init__(self, name, class_iri, ancestry_iris, context, om_attributes, operations=None,
                  local_context=None, accept_new_blank_nodes=False):
         Model.__init__(self, name, class_iri, ancestry_iris, context, om_attributes,
                        accept_new_blank_nodes, operations=operations, local_context=local_context)
-        self._user_mediator = user_mediator
         # {method_name: ancestor_class_iri}
         self._method_inheritance = {}
         # {method_name: method}
@@ -53,7 +52,7 @@ class ClientModel(Model):
         self._method_inheritance[name] = ancestor_class_iri
         self._methods[name] = method
 
-    def new(self, iri=None, hashless_iri=None, collection_iri=None, **kwargs):
+    def new(self, session, iri=None, hashless_iri=None, collection_iri=None, **kwargs):
         """Creates a new :class:`~oldman.resource.Resource` object without saving it.
 
         The `class_iri` attribute is added to the `types`.
@@ -61,27 +60,20 @@ class ClientModel(Model):
         See :func:`~oldman.mediation.mediator.ResourceManager.new` for more details.
         """
         types, kwargs = self._update_kwargs_and_types(kwargs, include_ancestry=True)
-        return self._user_mediator.new(iri=iri, hashless_iri=hashless_iri, collection_iri=collection_iri,
-                                       types=types, **kwargs)
+        return session.new(iri=iri, hashless_iri=hashless_iri, collection_iri=collection_iri,
+                           types=types, **kwargs)
 
-    def create(self, iri=None, hashless_iri=None, collection_iri=None, **kwargs):
-        """ Creates a new resource and saves it.
-
-        See :func:`~oldman.model.Model.new` for more details.
-        """
-        return self.new(iri=iri, hashless_iri=hashless_iri, collection_iri=collection_iri, **kwargs).save()
-
-    def filter(self, hashless_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
+    def filter(self, session, hashless_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
         """Finds the :class:`~oldman.resource.Resource` objects matching the given criteria.
 
         The `class_iri` attribute is added to the `types`.
 
         See :func:`oldman.resource.finder.ResourceFinder.filter` for further details."""
         types, kwargs = self._update_kwargs_and_types(kwargs)
-        return self._user_mediator.filter(types=types, hashless_iri=hashless_iri, limit=limit, eager=eager,
-                                          pre_cache_properties=pre_cache_properties, **kwargs)
+        return session.filter(types=types, hashless_iri=hashless_iri, limit=limit, eager=eager,
+                              pre_cache_properties=pre_cache_properties, **kwargs)
 
-    def get(self, iri=None, hashless_iri=None, **kwargs):
+    def get(self, session, iri=None, hashless_iri=None, **kwargs):
         """Gets the first :class:`~oldman.resource.Resource` object matching the given criteria.
 
         The `class_iri` attribute is added to the `types`.
@@ -94,10 +86,10 @@ class ClientModel(Model):
         if eager_with_reversed_attributes is None:
             eager_with_reversed_attributes = self._has_reversed_attributes
 
-        return self._user_mediator.get(iri=iri, types=types, hashless_iri=hashless_iri,
-                                       eager_with_reversed_attributes=eager_with_reversed_attributes, **kwargs)
+        return session.get(iri=iri, types=types, hashless_iri=hashless_iri,
+                           eager_with_reversed_attributes=eager_with_reversed_attributes, **kwargs)
 
-    def all(self, limit=None, eager=False):
+    def all(self, session, limit=None, eager=False):
         """Finds every :class:`~oldman.resource.Resource` object that is instance
         of its RDFS class.
 
@@ -107,7 +99,7 @@ class ClientModel(Model):
                       Defaults to `False` (lazy).
         :return: A generator of :class:`~oldman.resource.Resource` objects.
         """
-        return self.filter(types=[self._class_iri], limit=limit, eager=eager)
+        return self.filter(session, types=[self._class_iri], limit=limit, eager=eager)
 
     def _update_kwargs_and_types(self, kwargs, include_ancestry=False):
         types = list(self._class_types) if include_ancestry else [self._class_iri]

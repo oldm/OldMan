@@ -106,7 +106,8 @@ class PropertyTest(TestCase):
             data_store.create_model("BadClass", context, data_graph)
 
     def test_write_only(self):
-        obj = lc_model.new()
+        session1 = user_mediator.create_session()
+        obj = lc_model.new(session1)
         secret = "My secret"
         obj.secret = secret
         for obj_dump in [obj.to_json(), obj.to_jsonld()]:
@@ -115,28 +116,40 @@ class PropertyTest(TestCase):
             self.assertFalse("secret" in dct)
 
         self.assertFalse(secret in obj.to_rdf("turtle"))
+        session1.close()
 
     def test_read_only(self):
-        obj = lc_model.new()
+        session1 = user_mediator.create_session()
+        obj = lc_model.new(session1)
         # End-user
         end_user_str = "A user is not allowed to write this"
         obj.ro_property = end_user_str
         with self.assertRaises(OMReadOnlyAttributeError):
-            obj.save()
+            session1.commit()
         #Admin
         admin_str = "An admin is allowed to write it"
         obj.ro_property = admin_str
-        obj.save(is_end_user=False)
-        self.assertEquals(admin_str, obj.ro_property)
+        session1.commit(is_end_user=False)
+        iri = obj.id.iri
+        session1.close()
 
+        session2 = user_mediator.create_session()
+        obj2 = session2.get(iri=iri)
+        self.assertEquals(admin_str, obj2.ro_property)
+        session2.close()
+
+        session3 = user_mediator.create_session()
+        lc_model.new(session3, ro_property=end_user_str)
         with self.assertRaises(OMReadOnlyAttributeError):
-            lc_model.create(ro_property=end_user_str)
+            session3.commit()
+        session3.close()
 
     def test_read_only_update(self):
-        obj = lc_model.new()
+        session1 = user_mediator.create_session()
+        obj = lc_model.new(session1)
         admin_str = "An admin is allowed to write it"
         obj.ro_property = admin_str
-        obj.save(is_end_user=False)
+        session1.commit(is_end_user=False)
 
         obj_dict = obj.to_dict()
         obj_dict["secret"] = "My secret again"
@@ -144,15 +157,18 @@ class PropertyTest(TestCase):
         obj.update(obj_dict)
 
         obj_dict["ro_property"] = "Writing a read-only property"
+        obj.update(obj_dict)
         with self.assertRaises(OMReadOnlyAttributeError):
-            obj.update(obj_dict)
-        obj.update(obj_dict, is_end_user=False)
+            session1.commit()
+        session1.commit(is_end_user=False)
+        session1.close()
 
     def test_read_only_graph_update(self):
-        obj = lc_model.new()
+        session1 = user_mediator.create_session()
+        obj = lc_model.new(session1)
         admin_str = "An admin is allowed to write it"
         obj.ro_property = admin_str
-        obj.save(is_end_user=False)
+        session1.commit(is_end_user=False)
         obj_iri = URIRef(obj.id.iri)
 
         graph = Graph()
@@ -165,11 +181,14 @@ class PropertyTest(TestCase):
         str2 = "Writing a read-only property"
         graph.add((obj_iri, ro_prop, Literal(str2, datatype=XSD.string)))
         #print graph.serialize(format="turtle")
+        obj.update_from_graph(graph)
         with self.assertRaises(OMReadOnlyAttributeError):
-            obj.update_from_graph(graph)
-        obj.update_from_graph(graph, is_end_user=False)
+            session1.commit()
+        session1.commit(is_end_user=False)
 
         graph.remove((obj_iri, ro_prop, Literal(str2, datatype=XSD.string)))
-        obj.update_from_graph(graph, is_end_user=False)
+        obj.update_from_graph(graph)
+        session1.commit(is_end_user=False)
         self.assertEquals(obj.ro_property, None)
+        session1.close()
 

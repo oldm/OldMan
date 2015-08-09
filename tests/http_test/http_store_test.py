@@ -21,7 +21,10 @@ doc_model = user_mediator.get_client_model('ApiDocumentation')
 class HttpStoreTest(TestCase):
     def test_get(self):
         iri = u"http://www.markus-lanthaler.com/hydra/api-demo/vocab"
-        doc = doc_model.get(iri=iri)
+
+        session = user_mediator.create_session()
+
+        doc = doc_model.get(session, iri=iri)
         self.assertTrue(doc is not None)
         self.assertEquals(doc.id.iri, iri)
         expected_classes = {u'http://www.markus-lanthaler.com/hydra/api-demo/vocab#User',

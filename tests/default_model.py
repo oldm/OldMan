@@ -312,22 +312,30 @@ def set_up(use_default_cache_region=True):
         data_store.resource_cache.change_cache_region(cache_region)
 
 
-def create_bob():
-    return lp_model.create(name=bob_name, blog=bob_blog, mboxes=bob_emails,
-                           short_bio_en=bob_bio_en, short_bio_fr=bob_bio_fr)
+def create_bob(session):
+    bob = lp_model.new(session, name=bob_name, blog=bob_blog, mboxes=bob_emails,
+                       short_bio_en=bob_bio_en, short_bio_fr=bob_bio_fr)
+    session.commit()
+    return bob
 
 
-def create_alice():
-    return lp_model.create(name=alice_name, mboxes={alice_mail}, short_bio_en=alice_bio_en)
+def create_alice(session):
+    alice = lp_model.new(session, name=alice_name, mboxes={alice_mail}, short_bio_en=alice_bio_en)
+    session.commit()
+    return alice
 
 
-def create_john(iri=None):
-    return lp_model.create(iri=iri, name=john_name, mboxes={john_mail}, short_bio_en=john_bio_en)
+def create_john(session, iri=None):
+    john = lp_model.new(session, iri=iri, name=john_name, mboxes={john_mail}, short_bio_en=john_bio_en)
+    session.commit()
+    return john
 
 
-def new_rsa_key():
-    return rsa_model.new(exponent=key_exponent, modulus=key_modulus, label=key_label)
+def new_rsa_key(session):
+    key = rsa_model.new(session, exponent=key_exponent, modulus=key_modulus, label=key_label)
+    return key
 
 
-def new_gpg_key():
-    return gpg_model.new(fingerprint=gpg_fingerprint, hex_id=gpg_hex_id)
+def new_gpg_key(session):
+    key = gpg_model.new(session, fingerprint=gpg_fingerprint, hex_id=gpg_hex_id)
+    return key

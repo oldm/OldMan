@@ -162,146 +162,202 @@ class DatatypeTest(TestCase):
         """ Clears the data graph """
         data_graph.update("CLEAR DEFAULT")
 
-    def create_object(self):
-        return lc_model.create()
+    def create_object(self, session):
+        obj = lc_model.new(session)
+        session.commit()
+        return obj
 
     def test_single_bool(self):
-        obj = self.create_object()
-        uri = obj.id.iri
-        obj.single_bool = True
-        obj.save()
-        obj = lc_model.get(iri=uri)
-        self.assertEquals(obj.single_bool, True)
+        session1 = user_mediator.create_session()
+        obj1 = self.create_object(session1)
+        uri = obj1.id.iri
+        obj1.single_bool = True
+        session1.commit()
+        session1.close()
 
-        obj.single_bool = None
-        obj.save()
-        obj = lc_model.get(iri=uri)
-        self.assertEquals(obj.single_bool, None)
+        session2 = user_mediator.create_session()
+        obj2 = lc_model.get(session2, iri=uri)
+        self.assertEquals(obj2.single_bool, True)
+        obj2.single_bool = None
+        session2.commit()
+        session2.close()
 
-        obj.single_bool = False
-        obj.save()
-        obj = lc_model.get(iri=uri)
-        self.assertEquals(obj.single_bool, False)
+        session3 = user_mediator.create_session()
+        obj3 = lc_model.get(session3, iri=uri)
+        self.assertEquals(obj3.single_bool, None)
+
+        obj3.single_bool = False
+        session3.commit()
+        session3.close()
+
+        session4 = user_mediator.create_session()
+        obj4 = lc_model.get(session4, iri=uri)
+        self.assertEquals(obj4.single_bool, False)
+        session4.close()
 
     def test_single_date(self):
-        obj = self.create_object()
-        uri = obj.id.iri
+        session1 = user_mediator.create_session()
+        obj1 = self.create_object(session1)
+        uri = obj1.id.iri
         d = date(2009, 11, 2)
-        obj.date = copy(d)
-        obj.save()
-        obj = lc_model.get(iri=uri)
-        self.assertEquals(obj.date, d)
+        obj1.date = copy(d)
+        session1.commit()
+        session1.close()
+
+        session2 = user_mediator.create_session()
+        obj2 = lc_model.get(session2, iri=uri)
+        self.assertEquals(obj2.date, d)
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.date = "not a date object"
+            obj2.date = "not a date object"
+        session2.close()
 
     def test_single_datetime(self):
-        obj = self.create_object()
-        uri = obj.id.iri
+        session1 = user_mediator.create_session()
+        obj1 = self.create_object(session1)
+        uri = obj1.id.iri
         d = datetime.now()
-        obj.datetime = copy(d)
-        obj.save()
-        obj = lc_model.get(iri=uri)
-        self.assertEquals(obj.datetime, d)
+        obj1.datetime = copy(d)
+        session1.commit()
+        session1.close()
+
+        session2 = user_mediator.create_session()
+        obj2 = lc_model.get(session2, iri=uri)
+        self.assertEquals(obj2.datetime, d)
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.datetime = "not a date time object"
+            obj2.datetime = "not a date time object"
+        session2.close()
 
     def test_single_time(self):
-        obj = self.create_object()
-        uri = obj.id.iri
+        session1 = user_mediator.create_session()
+        obj1 = self.create_object(session1)
+        uri = obj1.id.iri
         t = time(12, 55, 30)
-        obj.time = copy(t)
-        obj.save()
-        obj = lc_model.get(iri=uri)
-        self.assertEquals(obj.time, t)
+        obj1.time = copy(t)
+        session1.commit()
+        session1.close()
+
+        session2 = user_mediator.create_session()
+        obj2 = lc_model.get(session2, iri=uri)
+        self.assertEquals(obj2.time, t)
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.time = "not a time object"
+            obj2.time = "not a time object"
+        session2.close()
 
     def test_int(self):
-        obj = self.create_object()
-        uri = obj.id.iri
+        session1 = user_mediator.create_session()
+        obj1 = self.create_object(session1)
+        uri = obj1.id.iri
         value = -5
-        obj.int = value
-        obj.save()
-        obj = lc_model.get(iri=uri)
-        self.assertEquals(obj.int, value)
-        obj.int = 0
-        obj.int = 5
+        obj1.int = value
+        session1.commit()
+        session1.close()
+
+        session2 = user_mediator.create_session()
+        obj2 = lc_model.get(session2, iri=uri)
+        self.assertEquals(obj2.int, value)
+        obj2.int = 0
+        obj2.int = 5
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.int = "not a number"
+            obj2.int = "not a number"
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.int = 5.5
+            obj2.int = 5.5
+        session2.close()
 
     def test_integer(self):
-        obj = self.create_object()
-        uri = obj.id.iri
+        session1 = user_mediator.create_session()
+        obj1 = self.create_object(session1)
+        uri = obj1.id.iri
         value = 5
-        obj.integer = value
-        obj.save()
-        obj = lc_model.get(iri=uri)
-        self.assertEquals(obj.integer, value)
-        obj.integer = 0
-        obj.integer = -5
+        obj1.integer = value
+        session1.commit()
+        session1.close()
+
+        session2 = user_mediator.create_session()
+        obj2 = lc_model.get(session2, iri=uri)
+        self.assertEquals(obj2.integer, value)
+        obj2.integer = 0
+        obj2.integer = -5
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.integer = "not a number"
+            obj2.integer = "not a number"
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.integer = 5.5
+            obj2.integer = 5.5
+        session2.close()
 
     def test_short(self):
-        obj = self.create_object()
-        uri = obj.id.iri
+        session1 = user_mediator.create_session()
+        obj1 = self.create_object(session1)
+        uri = obj1.id.iri
         value = -5
-        obj.short = value
-        obj.save()
-        obj = lc_model.get(iri=uri)
-        self.assertEquals(obj.short, value)
-        obj.short = 0
-        obj.short = 5
+        obj1.short = value
+        session1.commit()
+        session1.close()
+
+        session2 = user_mediator.create_session()
+        obj2 = lc_model.get(session2, iri=uri)
+        self.assertEquals(obj2.short, value)
+        obj2.short = 0
+        obj2.short = 5
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.short = "not a number"
+            obj2.short = "not a number"
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.short = 5.5
+            obj2.short = 5.5
+        session2.close()
 
     def test_positive_int(self):
-        obj = self.create_object()
-        uri = obj.id.iri
+        session1 = user_mediator.create_session()
+        obj1 = self.create_object(session1)
+        uri = obj1.id.iri
         value = 5
-        obj.positiveInt = value
-        obj.save()
-        obj = lc_model.get(iri=uri)
-        self.assertEquals(obj.positiveInt, value)
+        obj1.positiveInt = value
+        session1.commit()
+        session1.close()
+
+        session2 = user_mediator.create_session()
+        obj2 = lc_model.get(session2, iri=uri)
+        self.assertEquals(obj2.positiveInt, value)
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.positiveInt = -1
+            obj2.positiveInt = -1
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.positiveInt = "not a number"
+            obj2.positiveInt = "not a number"
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.positiveInt = 5.5
+            obj2.positiveInt = 5.5
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.positiveInt = 0
+            obj2.positiveInt = 0
+        session2.close()
 
     def test_negative_int(self):
-        obj = self.create_object()
-        uri = obj.id.iri
+        session1 = user_mediator.create_session()
+        obj1 = self.create_object(session1)
+        uri = obj1.id.iri
         value = -5
-        obj.negativeInt = value
-        obj.save()
-        obj = lc_model.get(iri=uri)
-        self.assertEquals(obj.negativeInt, value)
+        obj1.negativeInt = value
+        session1.commit()
+        session1.close()
+
+        session2 = user_mediator.create_session()
+        obj2 = lc_model.get(session2, iri=uri)
+        self.assertEquals(obj2.negativeInt, value)
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.negativeInt = 1
+            obj2.negativeInt = 1
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.negativeInt = "not a number"
+            obj2.negativeInt = "not a number"
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.negativeInt = - 5.5
+            obj2.negativeInt = - 5.5
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.negativeInt = 0
+            obj2.negativeInt = 0
+        session2.close()
 
     def test_non_positive_int(self):
-        obj = self.create_object()
+        session1 = user_mediator.create_session()
+        obj = self.create_object(session1)
         uri = obj.id.iri
         value = -5
         obj.nonPositiveInt = value
-        obj.save()
-        obj = lc_model.get(iri=uri)
+        session1.commit()
+        session1.close()
+
+        session2 = user_mediator.create_session()
+        obj = lc_model.get(session2, iri=uri)
         self.assertEquals(obj.nonPositiveInt, value)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.nonPositiveInt = 1
@@ -310,90 +366,121 @@ class DatatypeTest(TestCase):
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.nonPositiveInt = - 5.5
         obj.nonPositiveInt = 0
+        session2.close()
 
     def test_non_negative_int(self):
-        obj = self.create_object()
-        uri = obj.id.iri
+        session1 = user_mediator.create_session()
+        obj1 = self.create_object(session1)
+        uri = obj1.id.iri
         value = 5
-        obj.nonNegativeInt = value
-        obj.save()
-        obj = lc_model.get(iri=uri)
-        self.assertEquals(obj.nonNegativeInt, value)
+        obj1.nonNegativeInt = value
+        session1.commit()
+        session1.close()
+
+        session2 = user_mediator.create_session()
+        obj2 = lc_model.get(session2, iri=uri)
+        self.assertEquals(obj2.nonNegativeInt, value)
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.nonNegativeInt = -1
+            obj2.nonNegativeInt = -1
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.nonNegativeInt = "not a number"
+            obj2.nonNegativeInt = "not a number"
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.nonNegativeInt = 5.5
-        obj.nonNegativeInt = 0
+            obj2.nonNegativeInt = 5.5
+        obj2.nonNegativeInt = 0
+        session2.close()
     
     def test_decimal(self):
-        obj = self.create_object()
-        uri = obj.id.iri
+        session1 = user_mediator.create_session()
+        obj1 = self.create_object(session1)
+        uri = obj1.id.iri
         value = Decimal(23.05)
-        obj.decimal = value
-        obj.save()
-        obj = lc_model.get(iri=uri)
-        self.assertEquals(obj.decimal, value)
+        obj1.decimal = value
+        session1.commit()
+        session1.close()
+
+        session2 = user_mediator.create_session()
+        obj2 = lc_model.get(session2, iri=uri)
+        self.assertEquals(obj2.decimal, value)
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.decimal = "not a number"
-        obj.decimal = -2.433
-        obj.decimal = 0
+            obj2.decimal = "not a number"
+        obj2.decimal = -2.433
+        obj2.decimal = 0
+        session2.close()
 
     def test_double(self):
-        obj = self.create_object()
-        uri = obj.id.iri
+        session1 = user_mediator.create_session()
+        obj1 = self.create_object(session1)
+        uri = obj1.id.iri
         value = Decimal(23.05)
-        obj.double = value
-        obj.save()
-        obj = lc_model.get(iri=uri)
-        self.assertEquals(obj.double, value)
+        obj1.double = value
+        session1.commit()
+        session1.close()
+
+        session2 = user_mediator.create_session()
+        obj2 = lc_model.get(session2, iri=uri)
+        self.assertEquals(obj2.double, value)
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.double = "not a number"
-        obj.double = -2.433
-        obj.double = 0
+            obj2.double = "not a number"
+        obj2.double = -2.433
+        obj2.double = 0
+        session2.close()
         
     def test_float(self):
-        obj = self.create_object()
-        uri = obj.id.iri
+        session1 = user_mediator.create_session()
+        obj1 = self.create_object(session1)
+        uri = obj1.id.iri
         value = Decimal(23.05)
-        obj.float = value
-        obj.save()
-        obj = lc_model.get(iri=uri)
+        obj1.float = value
+        session1.commit()
+        session1.close()
+
+        session2 = user_mediator.create_session()
+        obj = lc_model.get(session2, iri=uri)
         self.assertEquals(obj.float, value)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.float = "not a number"
         obj.float = -2.433
         obj.float = 0
+        session2.close()
 
     def test_mbox(self):
-        obj = self.create_object()
-        uri = obj.id.iri
+        session1 = user_mediator.create_session()
+        obj1 = self.create_object(session1)
+        uri = obj1.id.iri
         mail = "john.doe@example.org"
-        obj.mbox = mail
-        obj.save()
-        obj = lc_model.get(iri=uri)
-        self.assertEquals(obj.mbox, mail)
+        obj1.mbox = mail
+        session1.commit()
+        session1.close()
+
+        session2 = user_mediator.create_session()
+        obj2 = lc_model.get(session2, iri=uri)
+        self.assertEquals(obj2.mbox, mail)
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.mbox = "john@somewhere@nowhereindeed.org"
+            obj2.mbox = "john@somewhere@nowhereindeed.org"
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.mbox = "john"
+            obj2.mbox = "john"
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.mbox = 5
-        obj.mbox = "john+spam@example.org"
+            obj2.mbox = 5
+        obj2.mbox = "john+spam@example.org"
+        session2.close()
 
     def test_email(self):
-        obj = self.create_object()
-        uri = obj.id.iri
+        session1 = user_mediator.create_session()
+        obj1 = self.create_object(session1)
+        uri = obj1.id.iri
         mail = "john.doe@example.org"
-        obj.email = mail
-        obj.save()
-        obj = lc_model.get(iri=uri)
-        self.assertEquals(obj.email, mail)
+        obj1.email = mail
+        session1.commit()
+        session1.close()
+
+        session2 = user_mediator.create_session()
+        obj2 = lc_model.get(session2, iri=uri)
+        self.assertEquals(obj2.email, mail)
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.email = "john@somewhere@nowhereindeed.org"
+            obj2.email = "john@somewhere@nowhereindeed.org"
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.email = "john"
+            obj2.email = "john"
         with self.assertRaises(OMAttributeTypeCheckError):
-            obj.email = 5
-        obj.email = "john+spam@example.org"
+            obj2.email = 5
+        obj2.email = "john+spam@example.org"
+        session2.close()

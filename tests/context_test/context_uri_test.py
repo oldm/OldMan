@@ -34,7 +34,8 @@ model = user_mediator.get_client_model("MyClass")
 class ContextUriTest(TestCase):
 
     def test_context_uri(self):
-        obj = model.new(is_working=True)
+        session = user_mediator.create_session()
+        obj = model.new(session, is_working=True)
         self.assertEquals(obj.context, context_iri)
         self.assertTrue(obj.is_working)
         print obj.to_rdf()
