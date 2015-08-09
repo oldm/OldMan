@@ -42,8 +42,9 @@ class CrudTest(unittest.TestCase):
         doc = json.loads(crud_controller.get(doc_iri, "json")[0])
         self.assertEquals(doc["id"], doc_iri)
 
-        resources = user_mediator.filter(hashless_iri=doc_iri)
+        resources = session.filter(hashless_iri=doc_iri)
         self.assertEquals({bob_iri, doc_iri}, {r.id.iri for r in resources})
+        session.close()
 
     def test_bob_controller_delete(self):
         session = user_mediator.create_session()
@@ -179,12 +180,12 @@ class CrudTest(unittest.TestCase):
 
         bob = create_bob(session)
         bob_graph = Graph().parse(data=bob.to_rdf("xml"), format="xml")
-        crud_controller.update(bob.hashless_iri, bob_graph.serialize(format="turtle"), "turtle")
+        crud_controller.update(bob.id.hashless_iri, bob_graph.serialize(format="turtle"), "turtle")
 
         wot_fingerprint = URIRef(WOT + "fingerprint")
         bob_graph.add((gpg_skolem_ref, wot_fingerprint, Literal("DEADBEEF", datatype=XSD.hexBinary)))
         with self.assertRaises(OMForbiddenSkolemizedIRIError):
-            crud_controller.update(bob.hashless_iri, bob_graph.serialize(format="turtle"), "turtle")
+            crud_controller.update(bob.id.hashless_iri, bob_graph.serialize(format="turtle"), "turtle")
 
         # No modification
         self.assertEquals({unicode(r) for r in data_graph.objects(gpg_skolem_ref, wot_fingerprint)},

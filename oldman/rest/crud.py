@@ -28,8 +28,8 @@ class HashLessCRUDer(object):
         - Add a PATCH method.
     """
 
-    def __init__(self, manager):
-        self._manager = manager
+    def __init__(self, user_mediator):
+        self._user_mediator = user_mediator
 
     def get(self, hashless_iri, content_type="text/turtle"):
         """Gets the main :class:`~oldman.resource.Resource` object having its hash-less IRI.
@@ -47,8 +47,9 @@ class HashLessCRUDer(object):
         :param content_type: Content type of its representation.
         :return: The representation of selected :class:`~oldman.resource.Resource` object and its content type
         """
+        session = self._user_mediator.create_session()
         #TODO: stop this practice
-        resource = self._manager.get(hashless_iri=hashless_iri)
+        resource = session.get(hashless_iri=hashless_iri)
 
         if content_type in JSON_TYPES:
             payload = resource.to_json()
@@ -60,6 +61,8 @@ class HashLessCRUDer(object):
                 payload = resource.to_rdf(content_type)
             except PluginException:
                 raise OMNotAcceptableException()
+            finally:
+                session.close()
         return payload, content_type
 
     def delete(self, hashless_iri):
@@ -67,9 +70,11 @@ class HashLessCRUDer(object):
 
         :param hashless_iri: Hash-less IRI.
         """
-        for resource in self._manager.filter(hashless_iri=hashless_iri):
+        session = self._user_mediator.create_session()
+        for resource in session.filter(hashless_iri=hashless_iri):
             if resource is not None:
-                resource.delete()
+                session.delete(resource)
+        session.close()
 
     def update(self, hashless_iri, document_content, content_type, allow_new_type=False, allow_type_removal=False):
         """Updates every :class:`~oldman.resource.Resource` object having this hash-less IRI.
@@ -91,9 +96,10 @@ class HashLessCRUDer(object):
                                    Defaults to `False`.
         """
         graph = Graph()
+        session = self._user_mediator.create_session()
         #TODO: manage parsing exceptions
         if content_type in JSON_TYPES:
-            resource = self._manager.get(hashless_iri=hashless_iri)
+            resource = session.get(hashless_iri=hashless_iri)
             graph.parse(data=document_content, format="json-ld", publicID=hashless_iri,
                         context=resource.context)
         #RDF graph
@@ -103,20 +109,23 @@ class HashLessCRUDer(object):
         self._update_graph(hashless_iri, graph, allow_new_type, allow_type_removal)
 
     def _update_graph(self, hashless_iri, graph, allow_new_type, allow_type_removal):
+
+        session = self._user_mediator.create_session()
+
         # Extracts and classifies subjects
         bnode_subjects, other_subjects = extract_subjects(graph)
 
         #Blank nodes (may obtain a regular IRI)
-        resources = create_blank_nodes(self._manager, graph, bnode_subjects, hashless_iri=hashless_iri)
+        resources = create_blank_nodes(session, graph, bnode_subjects, hashless_iri=hashless_iri)
 
         #Objects with an existing IRI
-        reg_resources, resources_to_update = create_regular_resources(self._manager, graph, other_subjects,
+        reg_resources, resources_to_update = create_regular_resources(session, graph, other_subjects,
                                                                       hashless_iri=hashless_iri)
         resources += reg_resources
 
         # Subset of regular resources to update
         for resource in resources_to_update:
-            resource.update_from_graph(graph, save=False, allow_new_type=allow_new_type,
+            resource.update_from_graph(graph, allow_new_type=allow_new_type,
                                        allow_type_removal=allow_type_removal)
 
         #Check validity before saving
@@ -124,15 +133,14 @@ class HashLessCRUDer(object):
             if not r.is_valid():
                 raise OMBadRequestException()
 
-        #TODO: improve it as a transaction (really necessary?)
-        for r in resources:
-            r.save()
+        session.commit()
 
         #Delete omitted resources
-        all_resource_iris = {r.id.iri for r in self._manager.filter(hashless_iri=hashless_iri)}
+        all_resource_iris = {r.id.iri for r in session.filter(hashless_iri=hashless_iri)}
         resource_iris_to_remove = all_resource_iris.difference({r.id.iri for r in resources})
         for iri in resource_iris_to_remove:
             # Cheap because already in the resource cache
-            r = self._manager.get(iri=iri)
+            r = session.get(iri=iri)
             if r is not None:
-                r.delete()
+                session.delete(r)
+        session.commit()

@@ -15,7 +15,7 @@ def extract_subjects(graph):
     return bnode_subjects, other_subjects
 
 
-def create_blank_nodes(manager, graph, bnode_subjects, hashless_iri=None, collection_iri=None):
+def create_blank_nodes(session, graph, bnode_subjects, hashless_iri=None, collection_iri=None):
     """TODO: comment """
     resources = []
     # Only former b-nodes
@@ -25,9 +25,9 @@ def create_blank_nodes(manager, graph, bnode_subjects, hashless_iri=None, collec
 
     for bnode in bnode_subjects:
         types = {unicode(t) for t in graph.objects(bnode, RDF.type)}
-        resource = manager.new(hashless_iri=hashless_iri, collection_iri=collection_iri, types=types)
+        resource = session.new(hashless_iri=hashless_iri, collection_iri=collection_iri, types=types)
         _alter_bnode_triples(graph, bnode, URIRef(resource.id.iri))
-        resource.update_from_graph(graph, save=False)
+        resource.update_from_graph(graph)
         resources.append(resource)
 
         deps = {o for _, p, o in graph.triples((bnode, None, None))
@@ -41,7 +41,7 @@ def create_blank_nodes(manager, graph, bnode_subjects, hashless_iri=None, collec
     # When some Bnodes are interconnected
     for resource in dependent_resources:
         # Update again
-        resource.update_from_graph(graph, save=False)
+        resource.update_from_graph(graph)
 
     return resources
 

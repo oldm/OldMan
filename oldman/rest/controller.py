@@ -22,12 +22,12 @@ class HTTPController(object):
                       'allow_put_new_resource': True
                       }
 
-    def __init__(self, manager, config={}):
+    def __init__(self, user_mediator, config={}):
         self._logger = getLogger(__name__)
-        self._manager = manager
+        self._user_mediator = user_mediator
 
         # For operations except POST
-        self._cruder = HashLessCRUDer(manager)
+        self._cruder = HashLessCRUDer(user_mediator)
 
         self._config = self.DEFAULT_CONFIG.copy()
         self._config.update(config)
@@ -96,7 +96,8 @@ class HTTPController(object):
         #    raise BadRequestException("No payload given.")
 
         # Must be its ID (we do not consider resources with hash IRIs)
-        resource = self._manager.get(iri=hashless_iri)
+        session = self._user_mediator.create_session()
+        resource = session.get(iri=hashless_iri)
         if resource is None:
             raise OMResourceNotFoundException()
 
@@ -106,7 +107,7 @@ class HTTPController(object):
             graph = Graph()
             try:
                 if content_type in JSON_TYPES:
-                    resource = self._manager.get(hashless_iri=hashless_iri)
+                    resource = self._user_mediator.get(hashless_iri=hashless_iri)
                     graph.parse(data=payload, format="json-ld", publicID=hashless_iri,
                                 context=resource.context)
                 else:
@@ -115,7 +116,9 @@ class HTTPController(object):
                 raise OMNotAcceptableException()
 
             #TODO: add arguments
-            return operation(resource, graph=graph, content_type=content_type)
+            result = operation(resource, graph=graph, content_type=content_type)
+            session.close()
+            return result
 
         #TODO: When error code is 405, alternatives must be given.
         raise OMMethodNotAllowedException()
