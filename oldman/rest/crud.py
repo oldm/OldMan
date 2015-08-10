@@ -74,6 +74,7 @@ class HashLessCRUDer(object):
         for resource in session.filter(hashless_iri=hashless_iri):
             if resource is not None:
                 session.delete(resource)
+        session.commit()
         session.close()
 
     def update(self, hashless_iri, document_content, content_type, allow_new_type=False, allow_type_removal=False):
@@ -144,3 +145,4 @@ class HashLessCRUDer(object):
             if r is not None:
                 session.delete(r)
         session.commit()
+        session.close()

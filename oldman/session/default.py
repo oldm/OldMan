@@ -34,6 +34,14 @@ class DefaultSession(Session):
 
     def get(self, iri=None, types=None, hashless_iri=None, eager_with_reversed_attributes=True, **kwargs):
         """See :func:`oldman.store.datastore.DataStore.get`."""
+        # Looks first to the local resources
+        # TODO: extend it to other criteria than iri
+        if iri is not None:
+            # TODO: use an index
+            for resource in self._resources:
+                if resource.id.iri == iri:
+                    return resource
+
         #TODO: consider parallelism
         store_resources = [store.get(iri=iri, types=types, hashless_iri=hashless_iri,
                                      eager_with_reversed_attributes=eager_with_reversed_attributes, **kwargs)

@@ -137,6 +137,8 @@ class SerializationTest(unittest.TestCase):
 
         session2 = user_mediator.create_session()
         bob2 = lp_model.get(session2, iri=bob_iri)
+        rsa_key2 = list(bob2.keys)[0]
+        # output = data_graph.serialize(format="turtle")
         bob_jsonld = json.loads(bob2.to_jsonld())
         session2.close()
         self.assertEquals(bob_jsonld["name"], bob_name)

@@ -30,14 +30,18 @@ class CacheTest(unittest.TestCase):
         self.assertFalse(data_store.resource_cache.get_resource(alice1.id.iri))
 
     def test_simple_get(self):
-        session = user_mediator.create_session()
-        alice1 = create_alice(session)
-        alice2 = session.get(iri=alice1.id.iri)
+        session1 = user_mediator.create_session()
+        alice1 = create_alice(session1)
+
+        session2 = user_mediator.create_session()
+        alice2 = session2.get(iri=alice1.id.iri)
         self.assertFalse(alice1 is alice2)
         self.assertEquals(alice1.name, alice2.name)
         self.assertEquals(alice1.id.iri, alice2.id.iri)
         self.assertEquals(alice1.short_bio_en, alice2.short_bio_en)
         self.assertEquals(set(alice1.mboxes), set(alice2.mboxes))
+        session1.close()
+        session2.close()
 
     def test_get_friend(self):
         session = user_mediator.create_session()
@@ -50,7 +54,7 @@ class CacheTest(unittest.TestCase):
         self.assertEquals(alice1.id.iri, alice2.id.iri)
 
         bob2 = list(alice2.friends)[0]
-        self.assertFalse(bob1 is bob2)
+        #self.assertFalse(bob1 is bob2)
         self.assertEquals(bob1.name, bob2.name)
         self.assertEquals(bob1.id.iri, bob2.id.iri)
         self.assertEquals(bob1.short_bio_en, bob2.short_bio_en)

@@ -180,7 +180,7 @@ class UpdateDeleteTest(TestCase):
             bob.update(bob_dict)
 
         # Replace the dict by an IRI
-        bob_dict["gpg_key"] = bob.gpg_key.id
+        bob_dict["gpg_key"] = bob.gpg_key.id.iri
         bob.update(bob_dict)
         bob.gpg_key.fingerprint = gpg_fingerprint
 

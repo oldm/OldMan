@@ -265,17 +265,16 @@ class InstanceTest(TestCase):
     def test_gets(self):
         session1 = user_mediator.create_session()
         john = grand_parent_model.new(session1)
-        john_uri = john.id.iri
         jack = parent_model.new(session1)
-        jack_uri = jack.id.iri
         jack_mid_values = {"jack"}
         jack.mid_values = jack_mid_values
-        #session1.commit()
         tom = child_model.new(session1)
-        tom_uri = tom.id.iri
         tom_new_value = "Tom new value"
         tom.new_value = tom_new_value
         session1.commit()
+        john_uri = john.id.iri
+        jack_uri = jack.id.iri
+        tom_uri = tom.id.iri
 
         session2 = user_mediator.create_session()
         tom2 = session2.get(iri=tom_uri)
