@@ -34,21 +34,3 @@ class UserMediator(object):
 
     def get_client_model(self, class_name_or_iri):
         raise NotImplementedError("Should be implemented by a concrete implementation.")
-
-
-class SessionMediator(object):
-    """TODO: refactor"""
-
-    @property
-    def model_manager(self):
-        raise NotImplementedError("Should be implemented by a concrete implementation.")
-
-    @property
-    def store_selector(self):
-        """TODO: hide it"""
-        raise NotImplementedError("Should be implemented by a concrete implementation.")
-
-    @property
-    def conversion_manager(self):
-        """TODO: hide it"""
-        raise NotImplementedError("Should be implemented by a concrete implementation.")

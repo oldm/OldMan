@@ -4,13 +4,13 @@ from oldman.model.conversion.converter import EquivalentModelConverter
 from oldman.model.conversion.manager import ModelConversionManager
 from oldman.mediation.store_selector import StoreSelector
 from oldman.model.manager.client import ClientModelManager
-from oldman.mediation.mediator import UserMediator, SessionMediator
+from oldman.mediation.mediator import UserMediator
 from oldman.session.default import DefaultSession
 
 DEFAULT_MODEL_NAME = "Default_Client"
 
 
-class DefaultCoreMediator(UserMediator, SessionMediator):
+class DefaultCoreMediator(UserMediator):
 
     def __init__(self, data_stores, schema_graph=None, attr_extractor=None, oper_extractor=None,
                  declare_default_operation_functions=True):
@@ -26,18 +26,6 @@ class DefaultCoreMediator(UserMediator, SessionMediator):
                                          accept_new_blank_nodes=True)
 
         self._conversion_manager = ModelConversionManager()
-
-    @property
-    def model_manager(self):
-        return self._model_manager
-
-    @property
-    def store_selector(self):
-        return self._store_selector
-
-    @property
-    def conversion_manager(self):
-        return self._conversion_manager
 
     def declare_method(self, method, name, class_iri):
         """
@@ -68,4 +56,4 @@ class DefaultCoreMediator(UserMediator, SessionMediator):
 
     def create_session(self):
         """TODO: explain it """
-        return DefaultSession(self)
+        return DefaultSession(self._model_manager, self._store_selector, self._conversion_manager)
