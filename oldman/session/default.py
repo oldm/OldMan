@@ -1,5 +1,6 @@
 from logging import getLogger
 from oldman.resource.client import ClientResource
+from oldman.session.tracker import BasicSessionResourceTracker
 from oldman.session.session import Session
 
 
@@ -13,12 +14,10 @@ class DefaultSession(Session):
         self._store_selector = store_selector
         self._conversion_manager = conversion_manager
 
+        self._tracker = BasicSessionResourceTracker()
+
         #TODO: consider using an external cache, like for store resources.
         self._updated_iris = {}
-
-        # Naive
-        self._resources = set()
-        self._resources_to_delete = set()
 
     def new(self, iri=None, types=None, hashless_iri=None, collection_iri=None, **kwargs):
         """
@@ -31,32 +30,30 @@ class DefaultSession(Session):
 
         resource = ClientResource(self._model_manager, self, iri=iri, types=types, hashless_iri=hashless_iri,
                                   collection_iri=collection_iri, **kwargs)
-        self._resources.add(resource)
+        self._tracker.add(resource)
         return resource
 
     def get(self, iri=None, types=None, hashless_iri=None, eager_with_reversed_attributes=True, **kwargs):
         """See :func:`oldman.store.datastore.DataStore.get`."""
         # Looks first to the local resources
-        # TODO: extend it to other criteria than iri
+        # TODO: extend it to other criteria than iri?
         if iri is not None:
-            # TODO: use an index
-            for resource in self._resources:
-                if resource.id.iri == iri:
-                    return resource
+            local_resource = self._tracker.find(iri)
+            if local_resource is not None:
+                return local_resource
 
         #TODO: consider parallelism
         store_resources = [store.get(iri=iri, types=types, hashless_iri=hashless_iri,
                                      eager_with_reversed_attributes=eager_with_reversed_attributes, **kwargs)
                            for store in self._store_selector.select_stores(iri=iri, types=types,
-                                                                                    hashless_iri=hashless_iri,
-                                                                                    **kwargs)]
+                                                                           hashless_iri=hashless_iri, **kwargs)]
         returned_store_resources = filter(lambda x: x, store_resources)
         resources = self._conversion_manager.convert_store_to_client_resources(returned_store_resources,
                                                                                self._model_manager, self)
         resource_count = len(resources)
         if resource_count == 1:
             resource = resources[0]
-            self._resources.add(resource)
+            self._tracker.add(resource)
             return resource
 
         elif resource_count == 0:
@@ -75,7 +72,7 @@ class DefaultSession(Session):
                                                  pre_cache_properties=pre_cache_properties, **kwargs)]
         client_resources = self._conversion_manager.convert_store_to_client_resources(store_resources,
                                                                                       self._model_manager, self)
-        self._resources.update(client_resources)
+        self._tracker.add_all(client_resources)
         return client_resources
 
     def sparql_filter(self, query):
@@ -84,9 +81,8 @@ class DefaultSession(Session):
         store_resources = [r for store in self._store_selector.select_sparql_stores(query)
                            for r in store.sparql_filter(query)]
         client_resources = self._conversion_manager.convert_store_to_client_resources(store_resources,
-                                                                                               self._model_manager,
-                                                                                               self)
-        self._resources.update(client_resources)
+                                                                                      self._model_manager, self)
+        self._tracker.add_all(client_resources)
         return client_resources
 
     def delete(self, client_resource):
@@ -95,20 +91,20 @@ class DefaultSession(Session):
             Wait for the next commit() to remove the resource
             from the store.
         """
-        self._resources_to_delete.add(client_resource)
+        self._tracker.mark_to_delete(client_resource)
 
     def commit(self, is_end_user=True):
         """TODO: describe.
 
            TODO: re-implement it, very naive
          """
-        for resource in self._resources_to_delete:
+        for resource in self._tracker.resources_to_delete:
             self._delete_resource(resource)
 
-        for resource in self._resources.difference(self._resources_to_delete):
+        for resource in self._tracker.modified_resources:
             self._save_resource(resource, is_end_user)
 
-        self._resources_to_delete = set()
+        self._tracker.forget_resources_to_delete()
 
     def close(self):
         """TODO: implement it """
