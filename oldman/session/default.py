@@ -1,5 +1,6 @@
 from logging import getLogger
 from oldman.resource.client import ClientResource
+from oldman.resource.factory import DefaultClientResourceFactory
 from oldman.session.tracker import BasicSessionResourceTracker
 from oldman.session.session import Session
 
@@ -15,6 +16,7 @@ class DefaultSession(Session):
         self._conversion_manager = conversion_manager
 
         self._tracker = BasicSessionResourceTracker()
+        self._resource_factory = DefaultClientResourceFactory(model_manager, self)
 
         #TODO: consider using an external cache, like for store resources.
         self._updated_iris = {}
@@ -28,8 +30,8 @@ class DefaultSession(Session):
             self._logger.info(u"""New resource %s has no type nor attribute.
             As such, nothing is stored in the data graph.""" % name)
 
-        resource = ClientResource(self._model_manager, self, iri=iri, types=types, hashless_iri=hashless_iri,
-                                  collection_iri=collection_iri, **kwargs)
+        resource = self._resource_factory.create_resource(iri=iri, types=types, hashless_iri=hashless_iri,
+                                                          collection_iri=collection_iri, **kwargs)
         self._tracker.add(resource)
         return resource
 
