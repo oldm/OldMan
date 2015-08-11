@@ -29,7 +29,7 @@ class Session(object):
               pre_cache_properties=None, **kwargs):
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
-    def filter(self, types=None, hashless_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
+    def filter(self, types=None, hashless_iri=None, limit=None, eager=True, pre_cache_properties=None, **kwargs):
         """See :func:`oldman.store.store.Store.filter`."""
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 

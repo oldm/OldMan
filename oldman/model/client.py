@@ -64,7 +64,7 @@ class ClientModel(Model):
         return session.new(iri=iri, hashless_iri=hashless_iri, collection_iri=collection_iri,
                            types=types, **kwargs)
 
-    def filter(self, session, hashless_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
+    def filter(self, session, hashless_iri=None, limit=None, eager=True, pre_cache_properties=None, **kwargs):
         """Finds the :class:`~oldman.resource.Resource` objects matching the given criteria.
 
         The `class_iri` attribute is added to the `types`.

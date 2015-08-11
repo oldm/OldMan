@@ -62,7 +62,7 @@ class DefaultStoreProxy(StoreProxy):
         # TODO: see if relevant
         raise Exception("Non unique object")
 
-    def filter(self, resource_factory, types=None, hashless_iri=None, limit=None, eager=False,
+    def filter(self, resource_factory, types=None, hashless_iri=None, limit=None, eager=True,
                pre_cache_properties=None, **kwargs):
         """TODO: explain
 

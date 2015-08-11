@@ -144,7 +144,7 @@ class Store(object):
 
         return None
 
-    def filter(self, types=None, hashless_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
+    def filter(self, types=None, hashless_iri=None, limit=None, eager=True, pre_cache_properties=None, **kwargs):
         """Finds the :class:`~oldman.resource.Resource` objects matching the given criteria.
 
         The `kwargs` dict can contains:
@@ -159,7 +159,7 @@ class Store(object):
         :param limit: Upper bound on the number of solutions returned (e.g. SPARQL LIMIT). Positive integer.
                       Defaults to `None`.
         :param eager: If `True` loads all the Resource objects within the minimum number of queries
-                      (e.g. one single SPARQL query). Defaults to `False` (lazy).
+                      (e.g. one single SPARQL query). Defaults to `True`.
         :param pre_cache_properties: List of RDF ObjectProperties to pre-cache eagerly.
                       Their values (:class:`~oldman.resource.Resource` objects) are loaded and
                       added to the cache. Defaults to `[]`. If given, `eager` must be `True`.
