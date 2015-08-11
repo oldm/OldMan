@@ -5,10 +5,10 @@ from weakref import WeakKeyDictionary
 from rdflib import Literal
 from oldman.common import is_blank_node
 
-from oldman.exception import OMAttributeTypeCheckError, OMRequiredPropertyError, OMReadOnlyAttributeError, OMEditError, \
-    OMTemporaryIriError, OMInternalError
+from oldman.exception import OMAttributeTypeCheckError, OMRequiredPropertyError, OMReadOnlyAttributeError, OMEditError
 from oldman.iri.id import generate_uuid_iri
 from oldman.parsing.value import AttributeValueExtractor
+from oldman.resource.resource import Resource
 from oldman.validation.value_format import ValueFormatError
 
 
@@ -420,13 +420,12 @@ class ObjectOMAttribute(OMAttribute):
         values = OMAttribute.get(self, resource)
         if isinstance(values, (list, set)):
             # Returns a generator
-            # TODO: do not call get_related_resource() if the object is already available
-            return (resource.get_related_resource(iri=get_iri(v)) for v in values)
+            return (get_object(v, resource) for v in values)
         elif isinstance(values, dict):
             raise NotImplementedError(u"Should we implement it?")
         elif values is not None:
             v = values
-            return resource.get_related_resource(iri=get_iri(v))
+            return get_object(v, resource)
         else:
             return None
 
@@ -529,4 +528,12 @@ def get_iris(values):
         return get_iri(v)
     else:
         return None
+
+
+def get_object(value, resource):
+    if isinstance(value, Resource):
+        return value
+    return resource.get_related_resource(value)
+
+
 
