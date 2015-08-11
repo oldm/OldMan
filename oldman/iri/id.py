@@ -1,6 +1,6 @@
 from urlparse import urlparse
 from uuid import uuid1
-from oldman.common import is_blank_node
+from oldman.common import is_blank_node, TEMPORARY_BNODE_PREFIX
 from oldman.exception import OMRequiredHashlessIRIError, OMIriError, OMUnsupportedUserIRIError
 
 
@@ -73,7 +73,7 @@ class TemporaryId(OMId):
         elif hashless_iri is not None:
             iri = generate_iri_with_uuid_fragment(hashless_iri)
         else:
-            iri = generate_uuid_iri(fragment=suggested_iri_fragment)
+            iri = generate_uuid_iri(prefix=TEMPORARY_BNODE_PREFIX, fragment=suggested_iri_fragment)
 
         try:
             OMId.__init__(self, iri, False)

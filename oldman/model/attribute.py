@@ -3,7 +3,7 @@ from collections import namedtuple
 from weakref import WeakKeyDictionary
 
 from rdflib import Literal
-from oldman.common import is_blank_node
+from oldman.common import is_temporary_blank_node
 
 from oldman.exception import OMAttributeTypeCheckError, OMRequiredPropertyError, OMReadOnlyAttributeError, OMEditError
 from oldman.iri.id import generate_uuid_iri
@@ -452,8 +452,8 @@ class ObjectOMAttribute(OMAttribute):
                 raise OMAttributeTypeCheckError(u"Index maps must be declared. Other dict structures "
                                                 u"are not supported for objects.")
 
-        if isinstance(value, (str, unicode)) and is_blank_node(value):
-            raise OMAttributeTypeCheckError(u"Cannot assign directly a skolemized blank node IRI.")
+        if isinstance(value, (str, unicode)) and is_temporary_blank_node(value):
+            raise OMAttributeTypeCheckError(u"Cannot assign directly a temporary skolemized blank node IRI.")
 
         OMAttribute.set(self, resource, value)
 
