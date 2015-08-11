@@ -52,7 +52,7 @@ class DefaultSession(Session):
     def filter(self, types=None, hashless_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
         """See :func:`oldman.store.datastore.DataStore.filter`."""
         client_resources = self._store_proxy.filter(self._resource_factory, types=types, hashless_iri=hashless_iri,
-                                                    pre_cache_properties=pre_cache_properties, **kwargs)
+                                                    pre_cache_properties=pre_cache_properties, limit=limit, **kwargs)
         self._tracker.add_all(client_resources)
         return client_resources
 
