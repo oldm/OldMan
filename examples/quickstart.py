@@ -47,7 +47,7 @@ print bob.is_valid()
 
 session.commit()
 
-#alice.friends = {bob}
+# alice.friends = {bob}
 bob.friends = {alice}
 session.commit()
 
@@ -67,8 +67,8 @@ print john.id.iri
 
 alice_iri = alice.id.iri
 # First person found named Bob
-bob = lp_model.get(session, name="Bob")
-alice = lp_model.get(session, iri=alice_iri)
+bob = lp_model.first(session, name="Bob")
+alice = lp_model.get(session, alice_iri)
 print alice.name
 
 # Or retrieve her as the unique friend of Bob

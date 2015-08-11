@@ -1,8 +1,7 @@
 class StoreProxy(object):
     """TODO: find a better name """
 
-    def get(self, resource_factory, id=None, types=None, hashless_iri=None, eager_with_reversed_attributes=True,
-            **kwargs):
+    def get(self, resource_factory, iri, types=None, eager_with_reversed_attributes=True):
         """TODO: explain
 
             :return a ClientResource
@@ -15,6 +14,10 @@ class StoreProxy(object):
 
             :return list of ClientResource ?
         """
+        raise NotImplementedError("Should be implemented by a concrete implementation.")
+
+    def first(self, resource_factory, types=None, hashless_iri=None, pre_cache_properties=None,
+              eager_with_reversed_attributes=True, **kwargs):
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
     def sparql_filter(self, resource_factory, query):
@@ -38,17 +41,14 @@ class DefaultStoreProxy(StoreProxy):
         self._store_selector = store_selector
         self._conversion_manager = conversion_manager
 
-    def get(self, resource_factory, iri=None, types=None, hashless_iri=None, eager_with_reversed_attributes=True,
-            **kwargs):
+    def get(self, resource_factory, iri, types=None, eager_with_reversed_attributes=True):
         """TODO: explain
 
             :return a ClientResource
         """
         # TODO: consider parallelism
-        store_resources = [store.get(iri=iri, types=types, hashless_iri=hashless_iri,
-                                     eager_with_reversed_attributes=eager_with_reversed_attributes, **kwargs)
-                           for store in self._store_selector.select_stores(iri=iri, types=types,
-                                                                           hashless_iri=hashless_iri, **kwargs)]
+        store_resources = [store.get(iri, types=types, eager_with_reversed_attributes=eager_with_reversed_attributes)
+                           for store in self._store_selector.select_stores(iri=iri, types=types)]
         returned_store_resources = filter(lambda x: x, store_resources)
         client_resources = self._conversion_manager.convert_store_to_client_resources(returned_store_resources,
                                                                                       resource_factory)
@@ -75,6 +75,18 @@ class DefaultStoreProxy(StoreProxy):
                                                  pre_cache_properties=pre_cache_properties, **kwargs)]
         client_resources = self._conversion_manager.convert_store_to_client_resources(store_resources, resource_factory)
         return client_resources
+
+    def first(self, resource_factory, types=None, hashless_iri=None, pre_cache_properties=None,
+              eager_with_reversed_attributes=True, **kwargs):
+        for store in self._store_selector.select_stores(types=types, hashless_iri=hashless_iri,
+                                                        pre_cache_properties=pre_cache_properties, **kwargs):
+
+            store_resource = store.first(types=types, hashless_iri=hashless_iri,
+                                         pre_cache_properties=pre_cache_properties,
+                                         eager_with_reversed_attributes=eager_with_reversed_attributes, **kwargs)
+            if store_resource is not None:
+                return self._conversion_manager.convert_store_to_client_resource(store_resource, resource_factory)
+        return None
 
     def sparql_filter(self, resource_factory, query):
         """TODO: explain

@@ -21,8 +21,12 @@ class Session(object):
         """
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
-    def get(self, id=None, types=None, hashless_iri=None, eager_with_reversed_attributes=True, **kwargs):
+    def get(self, iri, types=None, eager_with_reversed_attributes=True):
         """See :func:`oldman.store.datastore.DataStore.get`."""
+        raise NotImplementedError("Should be implemented by a concrete implementation.")
+
+    def first(self, types=None, hashless_iri=None, eager_with_reversed_attributes=True,
+              pre_cache_properties=None, **kwargs):
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
     def filter(self, types=None, hashless_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):

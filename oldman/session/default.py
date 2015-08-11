@@ -33,28 +33,38 @@ class DefaultSession(Session):
         self._tracker.add(resource)
         return resource
 
-    def get(self, iri=None, types=None, hashless_iri=None, eager_with_reversed_attributes=True, **kwargs):
+    def get(self, iri, types=None, eager_with_reversed_attributes=True):
         """See :func:`oldman.store.datastore.DataStore.get`."""
+        if iri is None:
+            raise ValueError("iri is required")
+
         # Looks first to the local resources
-        # TODO: extend it to other criteria than iri?
-        if iri is not None:
-            local_resource = self._tracker.find(iri)
-            if local_resource is not None:
-                return local_resource
+        local_resource = self._tracker.find(iri)
+        if local_resource is not None:
+            return local_resource
 
         # If not found locally, queries the stores
-        resource = self._store_proxy.get(self._resource_factory, iri=iri, types=types, hashless_iri=hashless_iri,
-                                         eager_with_reversed_attributes=eager_with_reversed_attributes, **kwargs)
+        resource = self._store_proxy.get(self._resource_factory, iri, types=types)
         if resource is not None:
             self._tracker.add(resource)
         return resource
 
     def filter(self, types=None, hashless_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
-        """See :func:`oldman.store.datastore.DataStore.filter`."""
         client_resources = self._store_proxy.filter(self._resource_factory, types=types, hashless_iri=hashless_iri,
-                                                    pre_cache_properties=pre_cache_properties, limit=limit, **kwargs)
+                                                    pre_cache_properties=pre_cache_properties, limit=limit, eager=eager,
+                                                    **kwargs)
         self._tracker.add_all(client_resources)
         return client_resources
+
+    def first(self, types=None, hashless_iri=None, eager_with_reversed_attributes=True,
+              pre_cache_properties=None, **kwargs):
+        client_resource = self._store_proxy.first(self._resource_factory, types=types, hashless_iri=hashless_iri,
+                                                  pre_cache_properties=pre_cache_properties,
+                                                  eager_with_reversed_attributes=eager_with_reversed_attributes,
+                                                  **kwargs)
+        if client_resource is not None:
+            self._tracker.add(client_resource)
+        return client_resource
 
     def sparql_filter(self, query):
         """See :func:`oldman.store.datastore.DataStore.sparql_filter`."""

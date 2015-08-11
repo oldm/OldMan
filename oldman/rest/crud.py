@@ -49,7 +49,7 @@ class HashLessCRUDer(object):
         """
         session = self._user_mediator.create_session()
         #TODO: stop this practice
-        resource = session.get(hashless_iri=hashless_iri)
+        resource = session.first(hashless_iri=hashless_iri)
 
         if content_type in JSON_TYPES:
             payload = resource.to_json()
@@ -100,7 +100,7 @@ class HashLessCRUDer(object):
         session = self._user_mediator.create_session()
         #TODO: manage parsing exceptions
         if content_type in JSON_TYPES:
-            resource = session.get(hashless_iri=hashless_iri)
+            resource = session.first(hashless_iri=hashless_iri)
             graph.parse(data=document_content, format="json-ld", publicID=hashless_iri,
                         context=resource.context)
         #RDF graph

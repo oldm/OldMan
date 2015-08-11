@@ -1,3 +1,4 @@
+from oldman.exception import OMClassInstanceError
 from oldman.model.model import Model
 
 
@@ -73,21 +74,31 @@ class ClientModel(Model):
         return session.filter(types=types, hashless_iri=hashless_iri, limit=limit, eager=eager,
                               pre_cache_properties=pre_cache_properties, **kwargs)
 
-    def get(self, session, iri=None, hashless_iri=None, **kwargs):
+    def get(self, session, iri, eager_with_reversed_attributes=None):
         """Gets the first :class:`~oldman.resource.Resource` object matching the given criteria.
 
         The `class_iri` attribute is added to the `types`.
         Also looks if reversed attributes should be considered eagerly.
 
         See :func:`oldman.store.datastore.DataStore.get` for further details."""
-        types, kwargs = self._update_kwargs_and_types(kwargs)
+        types, _ = self._update_kwargs_and_types({})
 
-        eager_with_reversed_attributes = kwargs.get("eager_with_reversed_attributes")
         if eager_with_reversed_attributes is None:
             eager_with_reversed_attributes = self._has_reversed_attributes
 
-        return session.get(iri=iri, types=types, hashless_iri=hashless_iri,
-                           eager_with_reversed_attributes=eager_with_reversed_attributes, **kwargs)
+        return session.get(iri=iri, types=types, eager_with_reversed_attributes=eager_with_reversed_attributes)
+
+    def first(self, session, hashless_iri=None, eager_with_reversed_attributes=True, pre_cache_properties=None,
+              **kwargs):
+        """Finds the :class:`~oldman.resource.Resource` objects matching the given criteria.
+
+        The `class_iri` attribute is added to the `types`.
+
+        See :func:`oldman.resource.finder.ResourceFinder.filter` for further details."""
+        types, kwargs = self._update_kwargs_and_types(kwargs)
+        return session.first(types=types, hashless_iri=hashless_iri,
+                             eager_with_reversed_attributes=eager_with_reversed_attributes,
+                             pre_cache_properties=pre_cache_properties, **kwargs)
 
     def all(self, session, limit=None, eager=False):
         """Finds every :class:`~oldman.resource.Resource` object that is instance

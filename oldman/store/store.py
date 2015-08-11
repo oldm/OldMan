@@ -82,45 +82,65 @@ class Store(object):
         """
         return self._support_sparql
 
-    def get(self, iri=None, types=None, hashless_iri=None, eager_with_reversed_attributes=True, **kwargs):
+    def get(self, iri, types=None, eager_with_reversed_attributes=True):
+        """Gets the :class:`~oldman.resource.Resource` object having the given IRI.
+
+        The `kwargs` dict can contains regular attribute key-values.
+
+        When `types` are given, they are then checked. An :exc:`~oldman.exception.OMClassInstanceError`
+        is raised if the resource is not instance of these classes.
+
+        :param iri: IRI of the resource. Defaults to `None`.
+        :param types: IRIs of the RDFS classes filtered resources must be instance of. Defaults to `None`.
+        :return: A :class:`~oldman.resource.store.StoreResource` object or `None` if no resource has been found.
+        """
+
+        if iri is None:
+            raise ValueError("iri is required")
+
+        types = set(types) if types is not None else set()
+
+        resource = self._get_by_iri(iri)
+        if not types.issubset(resource.types):
+            missing_types = types.difference(resource.types)
+            raise OMClassInstanceError(u"%s found, but is not instance of %s" % (id, missing_types))
+        return resource
+
+    def first(self, types=None, hashless_iri=None, eager_with_reversed_attributes=True, pre_cache_properties=None,
+              **kwargs):
         """Gets the first :class:`~oldman.resource.Resource` object matching the given criteria.
 
         The `kwargs` dict can contains regular attribute key-values.
 
-        When `id` is given, types are then checked. An :exc:`~oldman.exception.OMClassInstanceError`
-        is raised if the resource is not instance of these classes.
-        **Other criteria are not checked**.
+        TODO: UPDATE THE COMMENT!
 
-        :param iri: IRI of the resource. Defaults to `None`.
         :param types: IRIs of the RDFS classes filtered resources must be instance of. Defaults to `None`.
         :param hashless_iri: Hash-less IRI of filtered resources. Defaults to `None`.
         :param eager_with_reversed_attributes: Allow to Look eagerly for reversed RDF properties.
                May cause some overhead for some :class:`~oldman.resource.Resource` objects
                that do not have reversed attributes. Defaults to `True`.
+        :param pre_cache_properties: List of RDF ObjectProperties to pre-cache eagerly.
+                      Their values (:class:`~oldman.resource.Resource` objects) are loaded and
+                      added to the cache. Defaults to `[]`. If given, `eager` must be `True`.
+                      Disabled if there is no cache.
         :return: A :class:`~oldman.resource.Resource` object or `None` if no resource has been found.
         """
-        types = set(types) if types is not None else set()
+        eager = pre_cache_properties is not None and len(pre_cache_properties) > 0
 
-        if iri is not None:
-            resource = self._get_by_iri(iri)
-            if not types.issubset(resource.types):
-                missing_types = types.difference(resource.types)
-                raise OMClassInstanceError(u"%s found, but is not instance of %s" % (id, missing_types))
-            if len(kwargs) > 0:
-                self._logger.warn(u"get(): id given so attributes %s are just ignored" % kwargs.keys())
-            return resource
-
-        elif hashless_iri is None and len(kwargs) == 0:
+        if hashless_iri is None and types is None and len(kwargs) == 0:
             return self._get_first_resource_found()
 
         elif hashless_iri is not None:
-            resources = self.filter(types=types, hashless_iri=hashless_iri, **kwargs)
+            resources = self.filter(types=types, hashless_iri=hashless_iri, eager=eager,
+                                    pre_cache_properties=pre_cache_properties, **kwargs)
             return self._select_resource_from_hashless_iri(hashless_iri, list(resources))
 
-        # First found
-        resources = self.filter(types=types, hashless_iri=hashless_iri, limit=1, **kwargs)
-        for resource in resources:
-            return resource
+        else:
+            # First found
+            resources = self.filter(types=types, hashless_iri=hashless_iri, limit=1, eager=eager,
+                                    pre_cache_properties=pre_cache_properties, **kwargs)
+            for resource in resources:
+                return resource
 
         return None
 
@@ -130,7 +150,9 @@ class Store(object):
         The `kwargs` dict can contains:
 
            1. regular attribute key-values ;
-           2. the special attribute `id`. If given, :func:`~oldman.store.datastore.DataStore.get` is called.
+           2. the special attribute `iri`. If given, :func:`~oldman.store.datastore.DataStore.get` is called.
+
+        TODO: UPDATE THE COMMENT!
 
         :param types: IRIs of the RDFS classes filtered resources must be instance of. Defaults to `None`.
         :param hashless_iri: Hash-less IRI of filtered resources. Defaults to `None`.
@@ -150,7 +172,7 @@ class Store(object):
         iri = kwargs.pop("iri") if "iri" in kwargs else None
         type_iris = types if types is not None else []
         if iri is not None:
-            return self.get(iri=iri, types=types, hashless_iri=hashless_iri, **kwargs)
+            return self.get(iri, types=types)
 
         if len(type_iris) == 0 and len(kwargs) > 0:
             raise OMAttributeAccessError(u"No type given in filter() so attributes %s are ambiguous."

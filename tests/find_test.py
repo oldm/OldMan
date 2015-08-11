@@ -89,12 +89,12 @@ class FindTest(unittest.TestCase):
 
     def test_no_filter_get(self):
         session1 = user_mediator.create_session()
-        self.assertEquals(session1.get(), None)
+        self.assertEquals(session1.first(), None)
         alice = create_alice(session1)
 
         session2 = user_mediator.create_session()
         # Unique object
-        self.assertEquals(session2.get().id.iri, alice.id.iri)
+        self.assertEquals(session2.first().id.iri, alice.id.iri)
         session1.close()
         session2.close()
 
@@ -155,13 +155,13 @@ class FindTest(unittest.TestCase):
         session1.commit()
 
         session2 = user_mediator.create_session()
-        self.assertEquals(document.id.iri, session2.get(hashless_iri=doc_iri).id.iri)
+        self.assertEquals(document.id.iri, session2.first(hashless_iri=doc_iri).id.iri)
         session2.close()
         session3 = user_mediator.create_session()
-        self.assertEquals(bob.id.iri, session3.get(hashless_iri=doc_iri, types=[MY_VOC + "LocalPerson"]).id.iri)
+        self.assertEquals(bob.id.iri, session3.first(hashless_iri=doc_iri, types=[MY_VOC + "LocalPerson"]).id.iri)
         session3.close()
         session4 = user_mediator.create_session()
-        self.assertEquals(key.id.iri, session4.get(hashless_iri=doc_iri, types=[MY_VOC + "LocalGPGPublicKey"]).id.iri)
+        self.assertEquals(key.id.iri, session4.first(hashless_iri=doc_iri, types=[MY_VOC + "LocalGPGPublicKey"]).id.iri)
         session4.close()
 
         session1.close()

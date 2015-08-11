@@ -128,6 +128,7 @@ class SerializationTest(unittest.TestCase):
         bob = create_bob(session1)
         bob_iri = bob.id.iri
         rsa_key = new_rsa_key(session1)
+        #session1.commit()
         bob.keys = {rsa_key}
         self.assertTrue(bob.is_valid)
         session1.commit()
@@ -138,6 +139,7 @@ class SerializationTest(unittest.TestCase):
         session2 = user_mediator.create_session()
         bob2 = lp_model.get(session2, iri=bob_iri)
         rsa_key2 = list(bob2.keys)[0]
+        print rsa_key2.modulus
         # output = data_graph.serialize(format="turtle")
         bob_jsonld = json.loads(bob2.to_jsonld())
         session2.close()
