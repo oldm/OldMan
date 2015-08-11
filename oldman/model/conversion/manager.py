@@ -19,21 +19,22 @@ class ModelConversionManager(object):
         self._store_to_client_models[store_model] = client_model
         self._converters[(client_model, store_model)] = model_converter
 
-    def convert_store_to_client_resources(self, store_resources, model_manager, session):
+    def convert_store_to_client_resources(self, store_resources, resource_factory):
         """TODO: describe """
         if isinstance(store_resources, types.GeneratorType):
-            return (self.convert_store_to_client_resource(r, model_manager, session)
+            return (self.convert_store_to_client_resource(r, resource_factory)
                     for r in store_resources)
         # Otherwise, returns a list
-        return [self.convert_store_to_client_resource(r, model_manager, session)
+        return [self.convert_store_to_client_resource(r, resource_factory)
                 for r in store_resources]
 
-    def convert_store_to_client_resource(self, store_resource, model_manager, session):
+    def convert_store_to_client_resource(self, store_resource, resource_factory):
         client_former_types, client_new_types = self._extract_types_from_store_resource(store_resource)
 
         # Mutable
-        client_resource = ClientResource(model_manager, session, iri=store_resource.id.iri, types=client_new_types,
-                                         is_new=store_resource.is_new, former_types=client_former_types)
+        client_resource = resource_factory.new_resource(iri=store_resource.id.iri, types=client_new_types,
+                                                        is_new=store_resource.is_new, former_types=client_former_types)
+
         store = store_resource.store
 
         # Client models from the most general to the more specific
