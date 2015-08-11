@@ -45,7 +45,8 @@ class DefaultSession(Session):
         # If not found locally, queries the stores
         resource = self._store_proxy.get(self._resource_factory, iri=iri, types=types, hashless_iri=hashless_iri,
                                          eager_with_reversed_attributes=eager_with_reversed_attributes, **kwargs)
-        self._tracker.add(resource)
+        if resource is not None:
+            self._tracker.add(resource)
         return resource
 
     def filter(self, types=None, hashless_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
