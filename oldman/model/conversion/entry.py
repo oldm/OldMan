@@ -9,9 +9,10 @@ class EntryCloner(object):
         if attribute.om_property.type == OBJECT_PROPERTY:
             return self._clone_object_entry(entry)
         else:
-            return self._clone_litteral_entry(entry)
+            return self._clone_literal_entry(entry)
 
-    def _clone_litteral_entry(self, entry):
+    @staticmethod
+    def _clone_literal_entry(entry):
         return entry.clone()
 
     def _clone_object_entry(self, source_entry):

@@ -1,4 +1,16 @@
-class SessionResourceTracker(object):
+class SessionResourceFinder(object):
+    """
+        Interface without side-effect method.
+    """
+    def find(self, iri):
+        raise NotImplementedError("Should be implemented by a concrete implementation.")
+
+
+class SessionResourceTracker(SessionResourceFinder):
+
+    def find(self, iri):
+        """ Inherited. See YYYY """
+        raise NotImplementedError("Should be implemented by a concrete implementation.")
 
     def add(self, client_resource):
         raise NotImplementedError("Should be implemented by a concrete implementation.")
@@ -7,9 +19,6 @@ class SessionResourceTracker(object):
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
     def mark_to_delete(self, client_resource):
-        raise NotImplementedError("Should be implemented by a concrete implementation.")
-
-    def find(self, iri):
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
     def forget_resources_to_delete(self):

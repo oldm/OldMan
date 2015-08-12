@@ -19,21 +19,44 @@ class ModelConversionManager(object):
         self._store_to_client_models[store_model] = client_model
         self._converters[(client_model, store_model)] = model_converter
 
-    def convert_store_to_client_resources(self, store_resources, resource_factory):
+    def convert_store_to_client_resources(self, store_resources, resource_finder, resource_factory):
         """TODO: describe """
         if isinstance(store_resources, types.GeneratorType):
-            return (self.convert_store_to_client_resource(r, resource_factory)
+            return (self.convert_store_to_client_resource(r, resource_factory, resource_finder=resource_finder)
                     for r in store_resources)
         # Otherwise, returns a list
-        return [self.convert_store_to_client_resource(r, resource_factory)
+        return [self.convert_store_to_client_resource(r, resource_factory, resource_finder=resource_finder)
                 for r in store_resources]
 
-    def convert_store_to_client_resource(self, store_resource, resource_factory):
+    def convert_store_to_client_resource(self, store_resource, resource_factory, resource_finder=None,
+                                         update_local_client_resource=False):
+        """
+        :param store_resource:
+        :param resource_factory:
+        :param resource_finder:
+        :param update_local_client_resource: FOR OTHER updates than the IRI!
+        :return:
+        """
         client_former_types, client_new_types = self._extract_types_from_store_resource(store_resource)
 
-        # Mutable
-        client_resource = resource_factory.new_resource(iri=store_resource.id.iri, types=client_new_types,
-                                                        is_new=store_resource.is_new, former_types=client_former_types)
+        iri = store_resource.id.iri
+        client_resource = None
+        # Looks first for a local client resource
+        if resource_finder is not None:
+            client_resource = resource_finder.find(iri)
+            if client_resource is not None:
+                if not update_local_client_resource:
+                    return client_resource
+                else:
+                    raise NotImplementedError("TODO: analyze what we should update local client resources after"
+                                              "calling a filter")
+
+        # If no local client resource
+        if client_resource is None:
+            # Mutable
+            client_resource = resource_factory.new_resource(iri=iri, types=client_new_types,
+                                                            is_new=store_resource.is_new,
+                                                            former_types=client_former_types)
 
         store = store_resource.store
 
@@ -44,7 +67,7 @@ class ModelConversionManager(object):
             # Corresponding store model
             store_model = self._client_to_store_models.get((client_model, store))
             if store_model is None:
-                #TODO: find a better exception
+                # TODO: find a better exception
                 raise Exception("No store model associate to %s" % client_model.name)
 
             converter = self._converters[(client_model, store_model)]
@@ -70,7 +93,7 @@ class ModelConversionManager(object):
         for store_model in store_models:
             client_model = self._store_to_client_models.get(store_model)
             if client_model is None:
-                #TODO: find a better exception
+                # TODO: find a better exception
                 raise Exception("No client model associate to %s" % store_model.name)
 
             converter = self._converters[(client_model, store_model)]
@@ -88,7 +111,7 @@ class ModelConversionManager(object):
         for store_model in store_resource.models:
             client_model = self._store_to_client_models.get(store_model)
             if client_model is None:
-                #TODO: See if relevant and find a better name
+                # TODO: See if relevant and find a better name
                 raise Exception("No client model corresponding to %s" % store_model.name)
 
             client_model_type = client_model.class_iri
@@ -108,7 +131,7 @@ class ModelConversionManager(object):
         for client_model in client_resource.models:
             store_model = self._client_to_store_models.get((client_model, store))
             if store_model is None:
-                #TODO: See if relevant and find a better name
+                # TODO: See if relevant and find a better name
                 raise Exception("No store model corresponding to %s" % client_model.name)
 
             store_model_type = store_model.class_iri

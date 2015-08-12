@@ -8,7 +8,7 @@ class StoreProxy(object):
         """
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
-    def filter(self, resource_factory, types=None, hashless_iri=None, limit=None, eager=False,
+    def filter(self, resource_tracker, resource_factory, types=None, hashless_iri=None, limit=None, eager=False,
                pre_cache_properties=None, **kwargs):
         """TODO: explain
 
@@ -16,11 +16,11 @@ class StoreProxy(object):
         """
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
-    def first(self, resource_factory, types=None, hashless_iri=None, pre_cache_properties=None,
+    def first(self, resource_finder, resource_factory, types=None, hashless_iri=None, pre_cache_properties=None,
               eager_with_reversed_attributes=True, **kwargs):
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
-    def sparql_filter(self, resource_factory, query):
+    def sparql_filter(self, resource_finder, resource_factory, query):
         """TODO: explain
 
             :return list of ClientResource ?
@@ -53,7 +53,7 @@ class DefaultStoreProxy(StoreProxy):
                 return self._conversion_manager.convert_store_to_client_resource(store_resource, resource_factory)
         return None
 
-    def filter(self, resource_factory, types=None, hashless_iri=None, limit=None, eager=True,
+    def filter(self, resource_finder, resource_factory, types=None, hashless_iri=None, limit=None, eager=True,
                pre_cache_properties=None, **kwargs):
         """TODO: explain
 
@@ -64,10 +64,11 @@ class DefaultStoreProxy(StoreProxy):
                                                                              **kwargs)
                            for r in store.filter(types=types, hashless_iri=hashless_iri, limit=limit, eager=eager,
                                                  pre_cache_properties=pre_cache_properties, **kwargs)]
-        client_resources = self._conversion_manager.convert_store_to_client_resources(store_resources, resource_factory)
+        client_resources = self._conversion_manager.convert_store_to_client_resources(store_resources, resource_finder,
+                                                                                      resource_factory)
         return client_resources
 
-    def first(self, resource_factory, types=None, hashless_iri=None, pre_cache_properties=None,
+    def first(self, resource_finder, resource_factory, types=None, hashless_iri=None, pre_cache_properties=None,
               eager_with_reversed_attributes=True, **kwargs):
         for store in self._store_selector.select_stores(types=types, hashless_iri=hashless_iri,
                                                         pre_cache_properties=pre_cache_properties, **kwargs):
@@ -76,17 +77,19 @@ class DefaultStoreProxy(StoreProxy):
                                          pre_cache_properties=pre_cache_properties,
                                          eager_with_reversed_attributes=eager_with_reversed_attributes, **kwargs)
             if store_resource is not None:
-                return self._conversion_manager.convert_store_to_client_resource(store_resource, resource_factory)
+                return self._conversion_manager.convert_store_to_client_resource(store_resource, resource_factory,
+                                                                                 resource_finder=resource_finder)
         return None
 
-    def sparql_filter(self, resource_factory, query):
+    def sparql_filter(self, resource_finder, resource_factory, query):
         """TODO: explain
 
             :return list of ClientResource ?
         """
         store_resources = [r for store in self._store_selector.select_sparql_stores(query)
                            for r in store.sparql_filter(query)]
-        client_resources = self._conversion_manager.convert_store_to_client_resources(store_resources, resource_factory)
+        client_resources = self._conversion_manager.convert_store_to_client_resources(store_resources, resource_finder,
+                                                                                      resource_factory)
         return client_resources
 
     def flush(self, resource_factory, client_resources_to_update, client_resources_to_delete, is_end_user):

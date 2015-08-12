@@ -50,16 +50,16 @@ class DefaultSession(Session):
         return resource
 
     def filter(self, types=None, hashless_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
-        client_resources = self._store_proxy.filter(self._resource_factory, types=types, hashless_iri=hashless_iri,
-                                                    pre_cache_properties=pre_cache_properties, limit=limit, eager=eager,
-                                                    **kwargs)
+        client_resources = self._store_proxy.filter(self._tracker, self._resource_factory, types=types,
+                                                    hashless_iri=hashless_iri, limit=limit, eager=eager,
+                                                    pre_cache_properties=pre_cache_properties, **kwargs)
         self._tracker.add_all(client_resources)
         return client_resources
 
     def first(self, types=None, hashless_iri=None, eager_with_reversed_attributes=True,
               pre_cache_properties=None, **kwargs):
-        client_resource = self._store_proxy.first(self._resource_factory, types=types, hashless_iri=hashless_iri,
-                                                  pre_cache_properties=pre_cache_properties,
+        client_resource = self._store_proxy.first(self._tracker, self._resource_factory, types=types,
+                                                  hashless_iri=hashless_iri, pre_cache_properties=pre_cache_properties,
                                                   eager_with_reversed_attributes=eager_with_reversed_attributes,
                                                   **kwargs)
         if client_resource is not None:
@@ -67,8 +67,8 @@ class DefaultSession(Session):
         return client_resource
 
     def sparql_filter(self, query):
-        """See :func:`oldman.store.datastore.DataStore.sparql_filter`."""
-        client_resources = self._store_proxy.sparql_filter(self._resource_factory, query)
+        """See :func:`oldman.store.store.Store.sparql_filter`."""
+        client_resources = self._store_proxy.sparql_filter(self._tracker, self._resource_factory, query)
         self._tracker.add_all(client_resources)
         return client_resources
 
