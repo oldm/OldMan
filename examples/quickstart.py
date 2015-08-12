@@ -45,11 +45,11 @@ print bob.is_valid()
 bob.emails = {"bob@localhost", "bob@example.org"}
 print bob.is_valid()
 
-session.commit()
+session.flush()
 
 # alice.friends = {bob}
 bob.friends = {alice}
-session.commit()
+session.flush()
 
 print alice.id.iri
 print bob.id.iri
@@ -62,7 +62,7 @@ print bob.short_bio_fr
 
 john_iri = "http://example.org/john#me"
 john = lp_model.new(session, iri=john_iri, name="John", emails={"john@example.org"})
-session.commit()
+session.flush()
 print john.id.iri
 
 alice_iri = alice.id.iri

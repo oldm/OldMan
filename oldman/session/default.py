@@ -80,13 +80,13 @@ class DefaultSession(Session):
         """
         self._tracker.mark_to_delete(client_resource)
 
-    def commit(self, is_end_user=True):
+    def flush(self, is_end_user=True):
         """TODO: describe.
 
            TODO: re-implement it, very naive
          """
-        new_resources = self._store_proxy.submit(self._resource_factory, self._tracker.modified_resources,
-                                                 self._tracker.resources_to_delete, is_end_user)
+        new_resources = self._store_proxy.flush(self._resource_factory, self._tracker.modified_resources,
+                                                self._tracker.resources_to_delete, is_end_user)
         self._tracker.add_all(new_resources)
         self._tracker.forget_resources_to_delete()
 

@@ -27,7 +27,7 @@ class StoreProxy(object):
         """
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
-    def submit(self, resource_factory, client_resources_to_update, client_resources_to_delete, is_end_user):
+    def flush(self, resource_factory, client_resources_to_update, client_resources_to_delete, is_end_user):
         """TODO: explain
 
             :return list of the updated ClientResource ?
@@ -98,7 +98,7 @@ class DefaultStoreProxy(StoreProxy):
         client_resources = self._conversion_manager.convert_store_to_client_resources(store_resources, resource_factory)
         return client_resources
 
-    def submit(self, resource_factory, client_resources_to_update, client_resources_to_delete, is_end_user):
+    def flush(self, resource_factory, client_resources_to_update, client_resources_to_delete, is_end_user):
         """TODO: explain
 
             :return list of the new ClientResource ?

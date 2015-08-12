@@ -125,11 +125,11 @@ class PropertyTest(TestCase):
         end_user_str = "A user is not allowed to write this"
         obj.ro_property = end_user_str
         with self.assertRaises(OMReadOnlyAttributeError):
-            session1.commit()
+            session1.flush()
         #Admin
         admin_str = "An admin is allowed to write it"
         obj.ro_property = admin_str
-        session1.commit(is_end_user=False)
+        session1.flush(is_end_user=False)
         iri = obj.id.iri
         session1.close()
 
@@ -141,7 +141,7 @@ class PropertyTest(TestCase):
         session3 = user_mediator.create_session()
         lc_model.new(session3, ro_property=end_user_str)
         with self.assertRaises(OMReadOnlyAttributeError):
-            session3.commit()
+            session3.flush()
         session3.close()
 
     def test_read_only_update(self):
@@ -149,7 +149,7 @@ class PropertyTest(TestCase):
         obj = lc_model.new(session1)
         admin_str = "An admin is allowed to write it"
         obj.ro_property = admin_str
-        session1.commit(is_end_user=False)
+        session1.flush(is_end_user=False)
 
         obj_dict = obj.to_dict()
         obj_dict["secret"] = "My secret again"
@@ -159,8 +159,8 @@ class PropertyTest(TestCase):
         obj_dict["ro_property"] = "Writing a read-only property"
         obj.update(obj_dict)
         with self.assertRaises(OMReadOnlyAttributeError):
-            session1.commit()
-        session1.commit(is_end_user=False)
+            session1.flush()
+        session1.flush(is_end_user=False)
         session1.close()
 
     def test_read_only_graph_update(self):
@@ -168,7 +168,7 @@ class PropertyTest(TestCase):
         obj = lc_model.new(session1)
         admin_str = "An admin is allowed to write it"
         obj.ro_property = admin_str
-        session1.commit(is_end_user=False)
+        session1.flush(is_end_user=False)
         obj_iri = URIRef(obj.id.iri)
 
         graph = Graph()
@@ -183,12 +183,12 @@ class PropertyTest(TestCase):
         #print graph.serialize(format="turtle")
         obj.update_from_graph(graph)
         with self.assertRaises(OMReadOnlyAttributeError):
-            session1.commit()
-        session1.commit(is_end_user=False)
+            session1.flush()
+        session1.flush(is_end_user=False)
 
         graph.remove((obj_iri, ro_prop, Literal(str2, datatype=XSD.string)))
         obj.update_from_graph(graph)
-        session1.commit(is_end_user=False)
+        session1.flush(is_end_user=False)
         self.assertEquals(obj.ro_property, None)
         session1.close()
 

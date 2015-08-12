@@ -164,7 +164,7 @@ class DatatypeTest(TestCase):
 
     def create_object(self, session):
         obj = lc_model.new(session)
-        session.commit()
+        session.flush()
         return obj
 
     def test_single_bool(self):
@@ -172,14 +172,14 @@ class DatatypeTest(TestCase):
         obj1 = self.create_object(session1)
         uri = obj1.id.iri
         obj1.single_bool = True
-        session1.commit()
+        session1.flush()
         session1.close()
 
         session2 = user_mediator.create_session()
         obj2 = lc_model.get(session2, iri=uri)
         self.assertEquals(obj2.single_bool, True)
         obj2.single_bool = None
-        session2.commit()
+        session2.flush()
         session2.close()
 
         session3 = user_mediator.create_session()
@@ -187,7 +187,7 @@ class DatatypeTest(TestCase):
         self.assertEquals(obj3.single_bool, None)
 
         obj3.single_bool = False
-        session3.commit()
+        session3.flush()
         session3.close()
 
         session4 = user_mediator.create_session()
@@ -201,7 +201,7 @@ class DatatypeTest(TestCase):
         uri = obj1.id.iri
         d = date(2009, 11, 2)
         obj1.date = copy(d)
-        session1.commit()
+        session1.flush()
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -217,7 +217,7 @@ class DatatypeTest(TestCase):
         uri = obj1.id.iri
         d = datetime.now()
         obj1.datetime = copy(d)
-        session1.commit()
+        session1.flush()
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -233,7 +233,7 @@ class DatatypeTest(TestCase):
         uri = obj1.id.iri
         t = time(12, 55, 30)
         obj1.time = copy(t)
-        session1.commit()
+        session1.flush()
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -249,7 +249,7 @@ class DatatypeTest(TestCase):
         uri = obj1.id.iri
         value = -5
         obj1.int = value
-        session1.commit()
+        session1.flush()
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -269,7 +269,7 @@ class DatatypeTest(TestCase):
         uri = obj1.id.iri
         value = 5
         obj1.integer = value
-        session1.commit()
+        session1.flush()
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -289,7 +289,7 @@ class DatatypeTest(TestCase):
         uri = obj1.id.iri
         value = -5
         obj1.short = value
-        session1.commit()
+        session1.flush()
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -309,7 +309,7 @@ class DatatypeTest(TestCase):
         uri = obj1.id.iri
         value = 5
         obj1.positiveInt = value
-        session1.commit()
+        session1.flush()
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -331,7 +331,7 @@ class DatatypeTest(TestCase):
         uri = obj1.id.iri
         value = -5
         obj1.negativeInt = value
-        session1.commit()
+        session1.flush()
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -353,7 +353,7 @@ class DatatypeTest(TestCase):
         uri = obj.id.iri
         value = -5
         obj.nonPositiveInt = value
-        session1.commit()
+        session1.flush()
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -374,7 +374,7 @@ class DatatypeTest(TestCase):
         uri = obj1.id.iri
         value = 5
         obj1.nonNegativeInt = value
-        session1.commit()
+        session1.flush()
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -395,7 +395,7 @@ class DatatypeTest(TestCase):
         uri = obj1.id.iri
         value = Decimal(23.05)
         obj1.decimal = value
-        session1.commit()
+        session1.flush()
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -413,7 +413,7 @@ class DatatypeTest(TestCase):
         uri = obj1.id.iri
         value = Decimal(23.05)
         obj1.double = value
-        session1.commit()
+        session1.flush()
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -431,7 +431,7 @@ class DatatypeTest(TestCase):
         uri = obj1.id.iri
         value = Decimal(23.05)
         obj1.float = value
-        session1.commit()
+        session1.flush()
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -449,7 +449,7 @@ class DatatypeTest(TestCase):
         uri = obj1.id.iri
         mail = "john.doe@example.org"
         obj1.mbox = mail
-        session1.commit()
+        session1.flush()
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -470,7 +470,7 @@ class DatatypeTest(TestCase):
         uri = obj1.id.iri
         mail = "john.doe@example.org"
         obj1.email = mail
-        session1.commit()
+        session1.flush()
         session1.close()
 
         session2 = user_mediator.create_session()

@@ -19,12 +19,12 @@ class BasicEditingTest(unittest.TestCase):
         bob.mboxes = {bob_email1}
 
         self.assertFalse(bob.is_valid())
-        self.assertRaises(OMRequiredPropertyError, session.commit)
+        self.assertRaises(OMRequiredPropertyError, session.flush)
 
         # Bio is required
         bob.short_bio_en = bob_bio_en
         self.assertTrue(bob.is_valid())
-        session.commit()
+        session.flush()
         session.close()
 
     def test_string_validation(self):
@@ -100,7 +100,7 @@ class BasicEditingTest(unittest.TestCase):
         bob = create_bob(session)
         email3 = "bob-fake@bob.example.org"
         bob.mboxes = {bob_email2, email3}
-        session.commit()
+        session.flush()
         session.close()
 
         mbox_query = """ASK {?x foaf:mbox "%s"^^xsd:string }"""
@@ -124,7 +124,7 @@ class BasicEditingTest(unittest.TestCase):
         session1 = user_mediator.create_session()
         bob1 = create_bob(session1)
         bob1.short_bio_en = None
-        session1.commit()
+        session1.flush()
         bob_iri = bob1.id.iri
         # If any cache
         data_store.resource_cache.remove_resource(bob1)
@@ -150,7 +150,7 @@ class BasicEditingTest(unittest.TestCase):
         session1 = user_mediator.create_session()
         bob1 = create_bob(session1)
         bob1.short_bio_en = None
-        session1.commit()
+        session1.flush()
         bob_iri = bob1.id.iri
 
         # To make sure this object won't be retrieved in the cache
@@ -168,7 +168,7 @@ class BasicEditingTest(unittest.TestCase):
 
         bob_bio_en_2 = "Test-driven developer."
         bob2.short_bio_en = bob_bio_en_2
-        session2.commit()
+        session2.flush()
         bob2.short_bio_en = "You should not retrieve this string (again)"
         data_store.resource_cache.remove_resource(bob2)
         session2.close()
@@ -182,7 +182,7 @@ class BasicEditingTest(unittest.TestCase):
     def test_rsa_key(self):
         session1 = user_mediator.create_session()
         rsa_key1 = new_rsa_key(session1)
-        session1.commit()
+        session1.flush()
         rsa_skolemized_iri = rsa_key1.id.iri
         # If any cache
         data_store.resource_cache.remove_resource(rsa_key1)
@@ -203,7 +203,7 @@ class BasicEditingTest(unittest.TestCase):
         rsa_key2.modulus = format(235, "x")
         rsa_model.new(session2, exponent=key_exponent)
         with self.assertRaises(OMRequiredPropertyError):
-            session2.commit()
+            session2.flush()
 
         session2.close()
 
@@ -218,7 +218,7 @@ class BasicEditingTest(unittest.TestCase):
         bob_children_ids = [c.id.iri for c in bob_children]
         bob.children = bob_children
         bob_uri = bob.id.iri
-        session1.commit()
+        session1.flush()
 
         # Force reload from the triplestore
         # If any cache
@@ -241,7 +241,7 @@ class BasicEditingTest(unittest.TestCase):
         bob_uri = bob.id.iri
         bob_children_uris = [alice.id.iri, john.id.iri]
         bob.children = bob_children_uris
-        session1.commit()
+        session1.flush()
 
         # Force reload from the triplestore
         # If any cache
@@ -278,7 +278,7 @@ class BasicEditingTest(unittest.TestCase):
         # Children
         bob_children = [alice, john]
         bob.children = bob_children
-        session1.commit()
+        session1.flush()
 
         children_request = """SELECT ?child
                               WHERE
@@ -320,7 +320,7 @@ class BasicEditingTest(unittest.TestCase):
         self.assertEquals(bob.gpg_key.fingerprint, gpg_fingerprint)
         self.assertEquals(bob.gpg_key.hex_id, gpg_hex_id)
 
-        session1.commit()
+        session1.flush()
         self.assertEquals(bob.gpg_key.fingerprint, gpg_fingerprint)
         self.assertEquals(bob.gpg_key.hex_id, gpg_hex_id)
 
@@ -341,7 +341,7 @@ class BasicEditingTest(unittest.TestCase):
         bob = create_bob(session1)
         john = create_john(session1)
         john.parents = {bob}
-        session1.commit()
+        session1.flush()
 
         john_parent_bob_query = u"ASK { <%s> rel:parentOf <%s> . }" % (john.id, bob.id)
         bob_parent_john_query = u"ASK { <%s> rel:parentOf <%s> . }" % (bob.id, john.id)
@@ -350,7 +350,7 @@ class BasicEditingTest(unittest.TestCase):
         self.assertTrue(data_graph.query(bob_parent_john_query))
 
         john.parents = {alice}
-        session1.commit()
+        session1.flush()
         john_parent_alice_query = u"ASK { <%s> rel:parentOf <%s> . }" % (john.id, alice.id)
         alice_parent_john_query = u"ASK { <%s> rel:parentOf <%s> . }" % (alice.id, john.id)
 
@@ -360,7 +360,7 @@ class BasicEditingTest(unittest.TestCase):
         self.assertTrue(data_graph.query(alice_parent_john_query))
 
         john.parents = {bob.id.iri, alice.id.iri}
-        session1.commit()
+        session1.flush()
         self.assertFalse(data_graph.query(john_parent_bob_query))
         self.assertTrue(data_graph.query(bob_parent_john_query))
         self.assertFalse(data_graph.query(john_parent_alice_query))
@@ -373,7 +373,7 @@ class BasicEditingTest(unittest.TestCase):
         bob = create_bob(session1)
         john = create_john(session1)
         john.parents = {alice, bob}
-        session1.commit()
+        session1.flush()
         self.assertEquals({alice.id.iri, bob.id.iri}, {p.id.iri for p in john.parents})
 
         # Loads John from the datastore (not from its cache)
@@ -391,7 +391,7 @@ class BasicEditingTest(unittest.TestCase):
         alice = create_alice(session)
         bob = create_bob(session)
         bob.employer = alice
-        session.commit()
+        session.flush()
 
         alice_employer_bob_query = u"ASK { <%s> schema:employee <%s> . }" % (bob.id.iri, alice.id.iri)
         bob_employer_alice_query = u"ASK { <%s> schema:employee <%s> . }" % (alice.id.iri, bob.id.iri)
@@ -401,7 +401,7 @@ class BasicEditingTest(unittest.TestCase):
 
         john = create_john(session)
         bob.employer = john
-        session.commit()
+        session.flush()
         bob_employer_john_query = u"ASK { <%s> schema:employee <%s> . }" % (bob.id.iri, john.id.iri)
         john_employer_bob_query = u"ASK { <%s> schema:employee <%s> . }" % (john.id.iri, bob.id.iri)
 
@@ -416,7 +416,7 @@ class BasicEditingTest(unittest.TestCase):
         alice = create_alice(session1)
         bob = create_bob(session1)
         bob.employer = alice
-        session1.commit()
+        session1.flush()
         self.assertEquals(alice.id.iri, bob.employer.id.iri)
 
         # Loads Bob from the datastore (not from its cache)
@@ -443,7 +443,7 @@ class BasicEditingTest(unittest.TestCase):
         alice1 = create_alice(session1)
         bob1 = create_bob(session1)
         bob1.employer = alice1
-        session1.commit()
+        session1.flush()
 
         alice_iri = alice1.id.iri
 
@@ -453,7 +453,7 @@ class BasicEditingTest(unittest.TestCase):
         self.assertEquals(alice2.employee.id.iri, bob1.id.iri)
 
         alice2.employee = None
-        session2.commit()
+        session2.flush()
 
         bob_iri = bob1.id.iri
         session3 = user_mediator.create_session()
@@ -469,7 +469,7 @@ class BasicEditingTest(unittest.TestCase):
         alice = create_alice(session1)
         bob = create_bob(session1)
         bob.employer = alice
-        session1.commit()
+        session1.flush()
         alice_iri = alice.id.iri
 
         session2 = user_mediator.create_session()
@@ -478,7 +478,7 @@ class BasicEditingTest(unittest.TestCase):
         self.assertEquals(alice2.employee.id.iri, bob.id.iri)
 
         session1.delete(bob)
-        session1.commit()
+        session1.flush()
 
         session3 = user_mediator.create_session()
         alice3 = lp_model.get(session3, alice_iri)

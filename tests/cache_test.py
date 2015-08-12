@@ -48,7 +48,7 @@ class CacheTest(unittest.TestCase):
         alice1 = create_alice(session)
         bob1 = create_bob(session)
         alice1.friends = {bob1}
-        session.commit()
+        session.flush()
 
         alice2 = session.get(iri=alice1.id.iri)
         self.assertEquals(alice1.id.iri, alice2.id.iri)
@@ -79,7 +79,7 @@ class CacheTest(unittest.TestCase):
         self.assertEquals(alice2.name, alice_name)
 
         # Save the modification of alice1
-        session1.commit()
+        session1.flush()
         self.assertFalse(bool(data_graph.query(req_name % alice_name)))
         self.assertTrue(bool(data_graph.query(req_name % new_name)))
 
@@ -92,7 +92,7 @@ class CacheTest(unittest.TestCase):
 
         name3 = "Third Alice"
         alice3.name = name3
-        session3.commit()
+        session3.flush()
         self.assertFalse(bool(data_graph.query(req_name % new_name)))
         self.assertTrue(bool(data_graph.query(req_name % name3)))
 
@@ -112,7 +112,7 @@ class CacheTest(unittest.TestCase):
         alice1 = create_alice(session1)
         alice_iri = alice1.id.iri
         session1.delete(alice1)
-        session1.commit()
+        session1.flush()
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -129,7 +129,7 @@ class CacheTest(unittest.TestCase):
         session2 = user_mediator.create_session()
         alice2 = session2.get(iri=alice_iri)
         session2.delete(alice2)
-        session2.commit()
+        session2.flush()
         session2.close()
 
         session3 = user_mediator.create_session()

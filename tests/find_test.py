@@ -19,7 +19,7 @@ class FindTest(unittest.TestCase):
         bob2_bio_en = "I am a double."
         # Bob 2
         lp_model.new(session1, name=bob_name, mboxes={bob2_mail}, short_bio_en=bob2_bio_en)
-        session1.commit()
+        session1.flush()
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -126,7 +126,7 @@ class FindTest(unittest.TestCase):
         alice = lp_model.new(session1, iri=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
                              short_bio_en=alice_bio_en)
         key = gpg_model.new(session1, iri=(doc_iri + "#key"), fingerprint=gpg_fingerprint, hex_id=gpg_hex_id)
-        session1.commit()
+        session1.flush()
         create_john(session1, iri=u"http://localhost/john#me")
 
         session2 = user_mediator.create_session()
@@ -152,7 +152,7 @@ class FindTest(unittest.TestCase):
         doc_iri = bob.id.hashless_iri
         key = gpg_model.new(session1, iri=(doc_iri + "#key"), fingerprint=gpg_fingerprint, hex_id=gpg_hex_id)
         document = session1.new(iri=doc_iri, types=[str(FOAF + "Document")])
-        session1.commit()
+        session1.flush()
 
         session2 = user_mediator.create_session()
         self.assertEquals(document.id.iri, session2.first(hashless_iri=doc_iri).id.iri)

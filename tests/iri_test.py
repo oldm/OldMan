@@ -17,11 +17,11 @@ class IriTest(unittest.TestCase):
         # Temporary IRI: a bnode
         self.assertTrue(alice.is_blank_node())
         # Permanent IRI: not a bnode with the ID generator used by this model.
-        session1.commit()
+        session1.flush()
         self.assertFalse(alice.is_blank_node())
 
         key = gpg_model.new(session1, fingerprint="deadbeef", hex_id="deadbeef")
-        session1.commit()
+        session1.flush()
         # Permanent IRI: still a bnode because of the ID generator used by this model.
         self.assertTrue(key.is_blank_node())
 
@@ -44,7 +44,7 @@ class IriTest(unittest.TestCase):
         alice_uri = partial_uri + "#alice"
         alice2 = lp_model.new(session1, iri=alice_uri, name=alice_name, mboxes={alice_mail}, short_bio_en=alice_bio_en)
         self.assertTrue(bob2.in_same_document(alice2))
-        session1.commit()
+        session1.flush()
         self.assertTrue(bob2.in_same_document(alice2))
         session1.close()
 
@@ -57,7 +57,7 @@ class IriTest(unittest.TestCase):
         session2 = user_mediator.create_session()
         lp_model.new(session2, iri=bob_iri, name=bob_name, mboxes=bob_emails, short_bio_en=u"Will not exist")
         with self.assertRaises(OMUniquenessError):
-            session2.commit()
+            session2.flush()
         session2.close()
 
         # Forces the creation (by claiming your are not)
@@ -66,7 +66,7 @@ class IriTest(unittest.TestCase):
         short_bio_en = u"Is forced to exist"
         bob2 = lp_model.new(session3, iri=bob_iri, name=bob_name, mboxes=bob_emails, short_bio_en=short_bio_en,
                             is_new=False)
-        session3.commit()
+        session3.flush()
         self.assertEquals(bob2.short_bio_en, short_bio_en)
         session3.close()
 

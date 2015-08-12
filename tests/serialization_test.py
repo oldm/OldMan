@@ -68,7 +68,7 @@ class SerializationTest(unittest.TestCase):
         john = create_john(session1)
         bob_children = [alice, john]
         bob.children = bob_children
-        session1.commit()
+        session1.flush()
 
         bob_jsonld = json.loads(bob.to_jsonld())
         self.assertEquals(bob_jsonld["name"], bob_name)
@@ -92,7 +92,7 @@ class SerializationTest(unittest.TestCase):
         bob.friends = bob_friends
         alice_friends = {bob}
         alice.friends = alice_friends
-        session1.commit()
+        session1.flush()
 
         bob_jsonld = json.loads(bob.to_jsonld())
         self.assertEquals([c["id"] for c in bob_jsonld["friends"]],
@@ -114,7 +114,7 @@ class SerializationTest(unittest.TestCase):
         bob.friends = bob_friends
         alice_friends = {bob}
         alice.friends = alice_friends
-        session1.commit()
+        session1.flush()
         session1.close()
 
         g = Graph()
@@ -131,7 +131,7 @@ class SerializationTest(unittest.TestCase):
         #session1.commit()
         bob.keys = {rsa_key}
         self.assertTrue(bob.is_valid)
-        session1.commit()
+        session1.flush()
         # If any cache
         data_store.resource_cache.remove_resource(bob)
         session1.close()

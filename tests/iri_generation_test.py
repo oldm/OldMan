@@ -46,12 +46,12 @@ class HashlessIriTest(TestCase):
         session1 = user_mediator.create_session()
         hashless_iri = "http://example.org/doc1"
         obj1 = model.new(session1, hashless_iri=hashless_iri)
-        session1.commit()
+        session1.flush()
         self.assertEquals(obj1.id.hashless_iri, hashless_iri)
         self.assertTrue(hashless_iri in obj1.id.iri)
 
         obj2 = model.new(session1, hashless_iri=hashless_iri)
-        session1.commit()
+        session1.flush()
         self.assertEquals(obj2.id.hashless_iri, hashless_iri)
         self.assertTrue(hashless_iri in obj2.id.iri)
         self.assertNotEquals(obj1.id.iri, obj2.id.iri)
@@ -60,12 +60,12 @@ class HashlessIriTest(TestCase):
         session2 = user_mediator.create_session()
         model.new(session2)
         with self.assertRaises(OMRequiredHashlessIRIError):
-            session2.commit()
+            session2.flush()
         session2.close()
         session3 = user_mediator.create_session()
         model.new(session3, hashless_iri="http://localhost/not#a-base-iri")
         with self.assertRaises(OMRequiredHashlessIRIError):
-            session3.commit()
+            session3.flush()
         session3.close()
 
     def test_controller_put(self):

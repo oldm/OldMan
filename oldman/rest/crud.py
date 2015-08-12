@@ -74,7 +74,7 @@ class HashLessCRUDer(object):
         for resource in session.filter(hashless_iri=hashless_iri):
             if resource is not None:
                 session.delete(resource)
-        session.commit()
+        session.flush()
         session.close()
 
     def update(self, hashless_iri, document_content, content_type, allow_new_type=False, allow_type_removal=False):
@@ -134,7 +134,7 @@ class HashLessCRUDer(object):
             if not r.is_valid():
                 raise OMBadRequestException()
 
-        session.commit()
+        session.flush()
 
         #Delete omitted resources
         all_resource_iris = {r.id.iri for r in session.filter(hashless_iri=hashless_iri)}
@@ -144,5 +144,5 @@ class HashLessCRUDer(object):
             r = session.get(iri=iri)
             if r is not None:
                 session.delete(r)
-        session.commit()
+        session.flush()
         session.close()

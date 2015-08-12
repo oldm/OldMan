@@ -65,7 +65,7 @@ class UpdateDeleteTest(TestCase):
         self.assertTrue(bool(data_graph.query(req_type)))
 
         session1.delete(bob)
-        session1.commit()
+        session1.flush()
         self.assertFalse(bool(data_graph.query(req_name)))
         self.assertFalse(bool(data_graph.query(req_type)))
         session1.close()
@@ -81,12 +81,12 @@ class UpdateDeleteTest(TestCase):
         rsa_key = new_rsa_key(session1)
         bob.keys = {rsa_key}
         bob.children = [alice]
-        session1.commit()
+        session1.flush()
         self.assertTrue(bool(data_graph.query(ask_modulus)))
         self.assertTrue(bool(data_graph.query(ask_alice)))
 
         session1.delete(bob)
-        session1.commit()
+        session1.flush()
         session1.close()
         # Blank node is deleted
         self.assertFalse(bool(data_graph.query(ask_modulus)))
@@ -100,11 +100,11 @@ class UpdateDeleteTest(TestCase):
         bob = create_bob(session1)
         rsa_key = new_rsa_key(session1)
         bob.keys = {rsa_key}
-        session1.commit()
+        session1.flush()
         self.assertTrue(bool(data_graph.query(ask_modulus)))
 
         bob.keys = None
-        session1.commit()
+        session1.flush()
         session1.close()
         self.assertFalse(bool(data_graph.query(ask_modulus)))
 
@@ -113,11 +113,11 @@ class UpdateDeleteTest(TestCase):
         bob = create_bob(session1)
         self.assertFalse(bool(data_graph.query(ask_fingerprint)))
         bob.gpg_key = new_gpg_key(session1)
-        session1.commit()
+        session1.flush()
         self.assertTrue(bool(data_graph.query(ask_fingerprint)))
 
         bob.gpg_key = None
-        session1.commit()
+        session1.flush()
         self.assertFalse(bool(data_graph.query(ask_fingerprint)))
         session1.close()
 
@@ -129,11 +129,11 @@ class UpdateDeleteTest(TestCase):
         gpg_key = new_gpg_key(session1)
         self.assertEquals(gpg_key.fingerprint, gpg_fingerprint)
         bob.gpg_key = gpg_key
-        session1.commit()
+        session1.flush()
         self.assertTrue(bool(data_graph.query(ask_fingerprint)))
 
         session1.delete(bob)
-        session1.commit()
+        session1.flush()
         session1.close()
         # Blank node is deleted
         self.assertFalse(bool(data_graph.query(ask_fingerprint)))
@@ -143,7 +143,7 @@ class UpdateDeleteTest(TestCase):
         session1 = user_mediator.create_session()
         bob = lp_model.new(session1, name=bob_name, blog=bob_blog, mboxes=bob_emails, short_bio_en=bob_bio_en,
                            short_bio_fr=bob_bio_fr, types=additional_types)
-        session1.commit()
+        session1.flush()
         self.assertEquals(set(bob.types), set(lp_model.ancestry_iris + additional_types))
         self.assertTrue(prof_type not in lp_model.ancestry_iris)
 
@@ -171,7 +171,7 @@ class UpdateDeleteTest(TestCase):
         bob = create_bob(session1)
         self.assertFalse(bool(data_graph.query(ask_fingerprint)))
         bob.gpg_key = new_gpg_key(session1)
-        session1.commit()
+        session1.flush()
         self.assertTrue(bool(data_graph.query(ask_fingerprint)))
         bob_dict = bob.to_dict()
 
@@ -186,7 +186,7 @@ class UpdateDeleteTest(TestCase):
 
         bob_dict["gpg_key"] = None
         bob.update(bob_dict)
-        session1.commit()
+        session1.flush()
         self.assertFalse(bool(data_graph.query(ask_fingerprint)))
         session1.close()
 
@@ -275,7 +275,7 @@ class UpdateDeleteTest(TestCase):
         with self.assertRaises(OMUnauthorizedTypeChangeError):
             alice.update_from_graph(g2)
         alice.update_from_graph(g2, allow_new_type=True)
-        session1.commit()
+        session1.flush()
 
         # If any cache
         data_store.resource_cache.remove_resource(alice)

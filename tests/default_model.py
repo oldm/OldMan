@@ -315,19 +315,19 @@ def set_up(use_default_cache_region=True):
 def create_bob(session):
     bob = lp_model.new(session, name=bob_name, blog=bob_blog, mboxes=bob_emails,
                        short_bio_en=bob_bio_en, short_bio_fr=bob_bio_fr)
-    session.commit()
+    session.flush()
     return bob
 
 
 def create_alice(session):
     alice = lp_model.new(session, name=alice_name, mboxes={alice_mail}, short_bio_en=alice_bio_en)
-    session.commit()
+    session.flush()
     return alice
 
 
 def create_john(session, iri=None):
     john = lp_model.new(session, iri=iri, name=john_name, mboxes={john_mail}, short_bio_en=john_bio_en)
-    session.commit()
+    session.flush()
     return john
 
 

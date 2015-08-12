@@ -25,7 +25,7 @@ item_model = user_mediator.get_client_model("Item")
 
 session = user_mediator.create_session()
 collection1 = collection_model.new(session)
-session.commit()
+session.flush()
 
 controller = HTTPController(user_mediator)
 
@@ -39,7 +39,7 @@ class ControllerTest(unittest.TestCase):
 
         title = u"First item"
         item = item_model.new(session, title=title)
-        session.commit()
+        session.flush()
         #item_graph = Graph().parse(data=item.to_rdf(rdf_format="nt"), format="nt")
         #print item_graph.serialize(format="turtle")
         item_iri = item.id.iri
@@ -78,7 +78,7 @@ class ControllerTest(unittest.TestCase):
 
             #TODO: test the member part
             session.delete(retrieved_item)
-        session.commit()
+        session.flush()
 
     def forbid_putting_new_resource_test(self):
         #TODO: implement it

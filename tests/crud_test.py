@@ -58,14 +58,14 @@ class CrudTest(unittest.TestCase):
         ask_alice = """ASK {?x foaf:name "%s"^^xsd:string }""" % alice_name
         self.assertFalse(bool(data_graph.query(ask_alice)))
         lp_model.new(session, iri=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail}, short_bio_en=alice_bio_en)
-        session.commit()
+        session.flush()
         self.assertTrue(bool(data_graph.query(ask_alice)))
 
         #John is the base uri (bad practise, only for test convenience)
         ask_john = """ASK {?x foaf:name "%s"^^xsd:string }""" % john_name
         self.assertFalse(bool(data_graph.query(ask_john)))
         lp_model.new(session, iri=doc_iri, name=john_name, mboxes={john_mail}, short_bio_en=john_bio_en)
-        session.commit()
+        session.flush()
         self.assertTrue(bool(data_graph.query(ask_john)))
 
         crud_controller.delete(doc_iri)
@@ -91,7 +91,7 @@ class CrudTest(unittest.TestCase):
         ask_alice = """ASK {?x foaf:name "%s"^^xsd:string }""" % alice_name
         self.assertFalse(bool(data_graph.query(ask_alice)))
         lp_model.new(session, iri=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail}, short_bio_en=alice_bio_en)
-        session.commit()
+        session.flush()
         self.assertTrue(bool(data_graph.query(ask_alice)))
 
         g = Graph()
@@ -175,7 +175,7 @@ class CrudTest(unittest.TestCase):
         session = user_mediator.create_session()
         alice = create_alice(session)
         alice.gpg_key = new_gpg_key(session)
-        session.commit()
+        session.flush()
         gpg_skolem_ref = URIRef(alice.gpg_key.id.iri)
         self.assertTrue(alice.gpg_key.is_blank_node())
 

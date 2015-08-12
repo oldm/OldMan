@@ -41,7 +41,7 @@ class Session(object):
         """TODO: describe"""
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
-    def commit(self, is_end_user=True):
+    def flush(self, is_end_user=True):
         """TODO: describe """
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 

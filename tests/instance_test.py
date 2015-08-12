@@ -134,7 +134,7 @@ class InstanceTest(TestCase):
         john = grand_parent_model.new(session1)
         old_value = 5
         john.old_number_value = old_value
-        session1.commit()
+        session1.flush()
         iri = john.id.iri
         with self.assertRaises(AttributeError):
             john.mid_values = {"not saved"}
@@ -160,7 +160,7 @@ class InstanceTest(TestCase):
         jack.old_number_value = old_value
         with self.assertRaises(AttributeError):
             jack.new_value = "not saved"
-        session1.commit()
+        session1.flush()
         uri = jack.id.iri
         session1.close()
 
@@ -181,7 +181,7 @@ class InstanceTest(TestCase):
         tom.old_number_value = old_value
         new_value = u"ok!"
         tom.new_value = new_value
-        session1.commit()
+        session1.flush()
         uri = tom.id.iri
         session1.close()
 
@@ -195,19 +195,19 @@ class InstanceTest(TestCase):
     def test_isinstance(self):
         session1 = user_mediator.create_session()
         john = grand_parent_model.new(session1)
-        session1.commit()
+        session1.flush()
         self.assertTrue(john.is_instance_of(grand_parent_model))
         self.assertFalse(john.is_instance_of(parent_model))
         self.assertFalse(john.is_instance_of(child_model))
 
         jack = parent_model.new(session1)
-        session1.commit()
+        session1.flush()
         self.assertTrue(jack.is_instance_of(parent_model))
         self.assertTrue(jack.is_instance_of(grand_parent_model))
         self.assertFalse(jack.is_instance_of(child_model))
 
         tom = child_model.new(session1)
-        session1.commit()
+        session1.flush()
         self.assertTrue(tom.is_instance_of(child_model))
         self.assertTrue(tom.is_instance_of(parent_model))
         self.assertTrue(tom.is_instance_of(grand_parent_model))
@@ -271,7 +271,7 @@ class InstanceTest(TestCase):
         tom = child_model.new(session1)
         tom_new_value = "Tom new value"
         tom.new_value = tom_new_value
-        session1.commit()
+        session1.flush()
         john_uri = john.id.iri
         jack_uri = jack.id.iri
         tom_uri = tom.id.iri
@@ -302,7 +302,7 @@ class InstanceTest(TestCase):
         for i in range(1, 6):
             session = user_mediator.create_session()
             child = child_model.new(session)
-            session.commit()
+            session.flush()
             self.assertEquals(child.id.iri, "%s%d#%s" % (child_prefix, i, uri_fragment))
             print child.id.iri
             session.close()

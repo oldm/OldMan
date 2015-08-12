@@ -132,7 +132,7 @@ class ContainerTest(TestCase):
 
     def create_object(self, session):
         obj = model.new(session, list_en=default_list_en)
-        session.commit()
+        session.flush()
         return obj
 
     def test_basic_list(self):
@@ -142,7 +142,7 @@ class ContainerTest(TestCase):
         lst = ["Hello", "hi", "hi", "Hello"]
         backup_list = copy(lst)
         obj.primary_list = lst
-        session1.commit()
+        session1.flush()
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -159,7 +159,7 @@ class ContainerTest(TestCase):
         list_en = ["Hi", "Hello"]
         obj.list_fr = copy(list_fr)
         obj.list_en = copy(list_en)
-        session1.commit()
+        session1.flush()
         uri = obj.id.iri
         session1.close()
 
@@ -173,10 +173,10 @@ class ContainerTest(TestCase):
         session = user_mediator.create_session()
         obj = model.new(session)
         with self.assertRaises(OMRequiredPropertyError):
-            session.commit()
+            session.flush()
         obj.list_fr = []
         with self.assertRaises(OMRequiredPropertyError):
-            session.commit()
+            session.flush()
         session.close()
 
     def test_undeclared_set(self):
@@ -189,10 +189,10 @@ class ContainerTest(TestCase):
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.undeclared_set = lst
         obj.undeclared_set = set(lst)
-        session.commit()
+        session.flush()
         # Unique values are also supported
         obj.undeclared_set = "unique value"
-        session.commit()
+        session.flush()
         session.close()
 
     def test_change_attribute_of_required_property(self):
@@ -201,11 +201,11 @@ class ContainerTest(TestCase):
         list_fr = ["Salut", "Bonjour"]
         list_en = ["Hi", "Hello"]
         obj.list_en = list_en
-        session.commit()
+        session.flush()
         obj.list_en = None
         self.assertFalse(obj.is_valid())
         obj.list_fr = list_fr
-        session.commit()
+        session.flush()
         session.close()
 
     def test_bool_list(self):
@@ -215,14 +215,14 @@ class ContainerTest(TestCase):
         lst = [True, False, True, False]
         obj.bool_list = lst
         self.assertEquals(obj.bool_list, lst)
-        session1.commit()
+        session1.flush()
         session1.close()
 
         session2 = user_mediator.create_session()
         obj2 = model.get(session2, iri=uri)
         self.assertEquals(obj2.bool_list, lst)
         obj2.bool_list = [True]
-        session2.commit()
+        session2.flush()
         with self.assertRaises(OMAttributeTypeCheckError):
             obj2.bool_list = ["Wrong"]
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -235,7 +235,7 @@ class ContainerTest(TestCase):
         uri = obj1.id.iri
         bools = {False, True}
         obj1.bool_set = bools
-        session1.commit()
+        session1.flush()
 
         session2 = user_mediator.create_session()
         obj2 = model.get(session2, iri=uri)
@@ -252,7 +252,7 @@ class ContainerTest(TestCase):
         values = {'fr': u"Hé, salut!",
                   'en': u"What's up?"}
         obj1.lang_map = values
-        session1.commit()
+        session1.flush()
         session2 = user_mediator.create_session()
         obj2 = model.get(session2, iri=uri)
         self.assertEquals(obj2.lang_map, values)
