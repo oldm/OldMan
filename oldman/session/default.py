@@ -75,7 +75,7 @@ class DefaultSession(Session):
     def delete(self, client_resource):
         """TODO: describe.
 
-            Wait for the next commit() to remove the resource
+            Wait for the next flush() to remove the resource
             from the store.
         """
         self._tracker.mark_to_delete(client_resource)

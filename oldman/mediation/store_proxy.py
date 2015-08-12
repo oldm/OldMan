@@ -46,21 +46,12 @@ class DefaultStoreProxy(StoreProxy):
 
             :return a ClientResource
         """
-        # TODO: consider parallelism
-        store_resources = [store.get(iri, types=types, eager_with_reversed_attributes=eager_with_reversed_attributes)
-                           for store in self._store_selector.select_stores(iri=iri, types=types)]
-        returned_store_resources = filter(lambda x: x, store_resources)
-        client_resources = self._conversion_manager.convert_store_to_client_resources(returned_store_resources,
-                                                                                      resource_factory)
-        resource_count = len(client_resources)
-        if resource_count == 1:
-            return client_resources[0]
-        elif resource_count == 0:
-            return None
+        for store in self._store_selector.select_stores(iri=iri, types=types):
+            store_resource = store.get(iri, types=types, eager_with_reversed_attributes=eager_with_reversed_attributes)
 
-        # TODO: find a better exception and explain better
-        # TODO: see if relevant
-        raise Exception("Non unique object")
+            if store_resource is not None:
+                return self._conversion_manager.convert_store_to_client_resource(store_resource, resource_factory)
+        return None
 
     def filter(self, resource_factory, types=None, hashless_iri=None, limit=None, eager=True,
                pre_cache_properties=None, **kwargs):

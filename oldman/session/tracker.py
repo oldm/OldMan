@@ -42,6 +42,7 @@ class BasicSessionResourceTracker(SessionResourceTracker):
 
     def mark_to_delete(self, client_resource):
         self._resources_to_delete.add(client_resource)
+        # TODO: UPDATE the objects that refer to this resource.
 
     def find(self, iri):
         """TODO: re-implement """
