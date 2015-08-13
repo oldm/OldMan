@@ -305,6 +305,14 @@ class Resource(object):
             for attr in model.om_attributes.values():
                 attr.check_validity(self)
 
+    def notify_reference(self, reference, object_resource=None, object_iri=None):
+        """ Not for end-users!
+
+            TODO: describe
+        """
+        # By default, does nothing
+        pass
+
     def receive_storage_ack(self, id):
         """Receives the permanent ID assigned by the store.
         Useful when the permanent ID is given by an external server.

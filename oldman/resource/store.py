@@ -135,21 +135,21 @@ class StoreResource(Resource):
 
             # Some former objects may be deleted
             if attr.om_property.type == OBJECT_PROPERTY:
-                former_value, value = attr.diff(self)
+                former_refs, new_refs = attr.diff(self)
 
-                if isinstance(former_value, dict):
+                if isinstance(former_refs, dict):
                     raise NotImplementedError("Object dicts are not yet supported.")
-                former_value = former_value if isinstance(former_value, (set, list)) else [former_value]
+                former_refs = former_refs if isinstance(former_refs, (set, list)) else [former_refs]
 
                 # Cache invalidation (because of possible reverse properties)
-                resources_to_invalidate = set(value) if isinstance(value, (set, list)) else {value}
-                resources_to_invalidate.update(former_value)
+                resources_to_invalidate = set(new_refs) if isinstance(new_refs, (set, list)) else {new_refs}
+                resources_to_invalidate.update(former_refs)
                 for r in resources_to_invalidate:
                     if r is not None:
                         iri = r.id.iri if isinstance(r, Resource) else r
                         self._store.resource_cache.remove_resource_from_iri(iri)
 
-                objects_to_delete += self._filter_objects_to_delete(former_value)
+                objects_to_delete += self._filter_objects_to_delete(former_refs)
 
         # Update literal values and receives the definitive id
         self.store.save(self, attributes, self._former_types, self._is_new)
@@ -198,6 +198,6 @@ class StoreResource(Resource):
             attr.receive_storage_ack(self)
         self._is_new = False
 
-    def _filter_objects_to_delete(self, ids):
-        return [self.store.get(iri=iri) for iri in ids
-                if iri is not None and is_blank_node(iri)]
+    def _filter_objects_to_delete(self, refs):
+        return [ref.get() for ref in refs
+                if ref is not None and is_blank_node(ref.object_iri)]

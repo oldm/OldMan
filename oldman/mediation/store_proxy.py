@@ -1,3 +1,6 @@
+from oldman.session.tracker import BasicResourceTracker
+
+
 class StoreProxy(object):
     """TODO: find a better name """
 
@@ -41,8 +44,10 @@ class DefaultStoreProxy(StoreProxy):
         self._store_selector = store_selector
         self._conversion_manager = conversion_manager
 
-    def get(self, resource_factory, iri, types=None, eager_with_reversed_attributes=True):
+    def get(self, client_tracker, resource_factory, iri, types=None, eager_with_reversed_attributes=True):
         """TODO: explain
+
+            TODO: also consider the client resource tracker.
 
             :return a ClientResource
         """
@@ -50,7 +55,8 @@ class DefaultStoreProxy(StoreProxy):
             store_resource = store.get(iri, types=types, eager_with_reversed_attributes=eager_with_reversed_attributes)
 
             if store_resource is not None:
-                return self._conversion_manager.convert_store_to_client_resource(store_resource, resource_factory)
+                return self._conversion_manager.convert_store_to_client_resource(store_resource, resource_factory,
+                                                                                 client_tracker)
         return None
 
     def filter(self, resource_finder, resource_factory, types=None, hashless_iri=None, limit=None, eager=True,
@@ -68,7 +74,7 @@ class DefaultStoreProxy(StoreProxy):
                                                                                       resource_factory)
         return client_resources
 
-    def first(self, resource_finder, resource_factory, types=None, hashless_iri=None, pre_cache_properties=None,
+    def first(self, client_tracker, resource_factory, types=None, hashless_iri=None, pre_cache_properties=None,
               eager_with_reversed_attributes=True, **kwargs):
         for store in self._store_selector.select_stores(types=types, hashless_iri=hashless_iri,
                                                         pre_cache_properties=pre_cache_properties, **kwargs):
@@ -78,17 +84,17 @@ class DefaultStoreProxy(StoreProxy):
                                          eager_with_reversed_attributes=eager_with_reversed_attributes, **kwargs)
             if store_resource is not None:
                 return self._conversion_manager.convert_store_to_client_resource(store_resource, resource_factory,
-                                                                                 resource_finder=resource_finder)
+                                                                                 client_tracker=client_tracker)
         return None
 
-    def sparql_filter(self, resource_finder, resource_factory, query):
+    def sparql_filter(self, client_tracker, resource_factory, query):
         """TODO: explain
 
             :return list of ClientResource ?
         """
         store_resources = [r for store in self._store_selector.select_sparql_stores(query)
                            for r in store.sparql_filter(query)]
-        client_resources = self._conversion_manager.convert_store_to_client_resources(store_resources, resource_finder,
+        client_resources = self._conversion_manager.convert_store_to_client_resources(store_resources, client_tracker,
                                                                                       resource_factory)
         return client_resources
 
@@ -97,19 +103,22 @@ class DefaultStoreProxy(StoreProxy):
 
             :return list of the new ClientResource ?
         """
+        store_tracker = BasicResourceTracker()
+
         for resource in client_resources_to_delete:
-            self._delete_resource(resource)
+            self._delete_resource(resource, store_tracker)
 
         for resource in client_resources_to_update:
-            self._save_resource(resource, is_end_user)
+            self._save_resource(resource, is_end_user, store_tracker)
 
         # TODO: return the new resources
         return []
 
-    def _save_resource(self, client_resource, is_end_user):
+    def _save_resource(self, client_resource, is_end_user, store_tracker):
         """TODO: refactor"""
         store = self._store_selector.select_store(client_resource, types=client_resource.types)
-        store_resource = self._conversion_manager.convert_client_to_store_resource(client_resource, store)
+        store_resource = self._conversion_manager.convert_client_to_store_resource(client_resource, store,
+                                                                                   store_tracker)
         store_resource.save(is_end_user)
         # previous_id = client_resource.id
         new_id = store_resource.id
@@ -119,9 +128,10 @@ class DefaultStoreProxy(StoreProxy):
         #    self._updated_iris[previous_id] = new_id
         client_resource.receive_storage_ack(new_id)
 
-    def _delete_resource(self, client_resource):
+    def _delete_resource(self, client_resource, store_tracker):
         """TODO: refactor"""
         store = self._store_selector.select_store(client_resource, types=client_resource.types)
-        store_resource = self._conversion_manager.convert_client_to_store_resource(client_resource, store)
+        store_resource = self._conversion_manager.convert_client_to_store_resource(client_resource, store,
+                                                                                   store_tracker)
         store_resource.delete()
-        client_resource.receive_deletion_notification()
+        client_resource.receive_deletion_notification_from_store()

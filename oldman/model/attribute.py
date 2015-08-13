@@ -8,6 +8,7 @@ from oldman.common import is_temporary_blank_node
 from oldman.exception import OMAttributeTypeCheckError, OMRequiredPropertyError, OMReadOnlyAttributeError, OMEditError
 from oldman.iri.id import generate_uuid_iri
 from oldman.parsing.value import AttributeValueExtractor
+from oldman.resource.reference import ResourceReference
 from oldman.resource.resource import Resource
 from oldman.validation.value_format import ValueFormatError
 
@@ -287,7 +288,7 @@ class OMAttribute(object):
         if language is None:
             language = self.language
         if jsonld_type == "@id":
-            return u"<%s>" % value
+            return u"<%s>" % value.object_iri
         elif language:
             return u'"%s"@%s' % (Literal(value), language)
         elif jsonld_type:
@@ -365,6 +366,10 @@ class OMAttribute(object):
         """TODO: describe. Clearly not for end-users!!! """
         return self._entries.get(resource)
 
+    def has_entry(self, resource):
+        """TODO: describe. Clearly not for end-users!!! """
+        return resource in self._entries
+
     def set_entry(self, resource, entry):
         """TODO: describe. Clearly not for end-users!!! """
         # Validation
@@ -417,15 +422,15 @@ class ObjectOMAttribute(OMAttribute):
         :return: :class:`~oldman.resource.Resource` object
                  or a generator of :class:`~oldman.resource.Resource` objects.
         """
-        values = OMAttribute.get(self, resource)
-        if isinstance(values, (list, set)):
+        references = OMAttribute.get(self, resource)
+        if isinstance(references, (list, set)):
             # Returns a generator
-            return (get_object(v, resource) for v in values)
-        elif isinstance(values, dict):
+            return (ref.get() for ref in references)
+        elif isinstance(references, dict):
             raise NotImplementedError(u"Should we implement it?")
-        elif values is not None:
-            v = values
-            return get_object(v, resource)
+        elif references is not None:
+            ref = references
+            return ref.get()
         else:
             return None
 
@@ -437,25 +442,34 @@ class ObjectOMAttribute(OMAttribute):
 
         :return: An IRI, a list or a set of IRIs or `None`.
         """
-        values = OMAttribute.get(self, resource)
-        return get_iris(values)
+        references = OMAttribute.get(self, resource)
+        return get_iris(references)
 
-    def set(self, resource, value):
+    def set(self, resource, original_value):
         """See :func:`~oldman.attribute.OMAttribute.set`.
 
             Accepts :class:`~oldman.resource.Resource` object(s) or IRI(s).
         """
-        if isinstance(value, dict):
+        if isinstance(original_value, dict):
             if self.container == "@index":
                 raise NotImplementedError(u"Index maps are not yet supported")
             else:
                 raise OMAttributeTypeCheckError(u"Index maps must be declared. Other dict structures "
                                                 u"are not supported for objects.")
+        elif isinstance(original_value, list):
+            value_to_store = [ResourceReference(resource, self, v) for v in original_value]
+        elif isinstance(original_value, set):
+            value_to_store = {ResourceReference(resource, self, v) for v in original_value}
+        elif isinstance(original_value, (str, unicode)):
+            value_to_store = ResourceReference(resource, self, original_value)
+        elif isinstance(original_value, Resource):
+            value_to_store = ResourceReference(resource, self, original_value)
+        elif original_value is None:
+            value_to_store = None
+        else:
+            raise ValueError("Unexpected assigned object value: %s" % original_value)
 
-        if isinstance(value, (str, unicode)) and is_temporary_blank_node(value):
-            raise OMAttributeTypeCheckError(u"Cannot assign directly a temporary skolemized blank node IRI.")
-
-        OMAttribute.set(self, resource, value)
+        OMAttribute.set(self, resource, value_to_store)
 
 
 class Entry(object):
@@ -528,12 +542,6 @@ def get_iris(values):
         return get_iri(v)
     else:
         return None
-
-
-def get_object(value, resource):
-    if isinstance(value, Resource):
-        return value
-    return resource.get_related_resource(value)
 
 
 

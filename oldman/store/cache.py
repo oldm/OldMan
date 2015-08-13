@@ -67,7 +67,7 @@ class ResourceCache(object):
         :param resource: :class:`~oldman.resource.Resource` object to add to the cache (or update).
         """
         if self._region is not None:
-            self._region.set(unicode(resource.id), resource)
+            self._region.set(unicode(resource.id.iri), resource)
             self._logger.debug(u"%s cached." % resource.id)
 
     def remove_resource(self, resource):

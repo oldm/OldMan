@@ -1,6 +1,6 @@
 from logging import getLogger
 from oldman.resource.factory import DefaultClientResourceFactory
-from oldman.session.tracker import BasicSessionResourceTracker
+from oldman.session.tracker import BasicResourceTracker
 from oldman.session.session import Session
 
 
@@ -13,7 +13,7 @@ class DefaultSession(Session):
         self._model_manager = model_manager
         self._store_proxy = store_proxy
 
-        self._tracker = BasicSessionResourceTracker()
+        self._tracker = BasicResourceTracker()
         self._resource_factory = DefaultClientResourceFactory(model_manager, self)
 
         # TODO: remove it
@@ -44,7 +44,7 @@ class DefaultSession(Session):
             return local_resource
 
         # If not found locally, queries the stores
-        resource = self._store_proxy.get(self._resource_factory, iri, types=types)
+        resource = self._store_proxy.get(self._tracker, self._resource_factory, iri, types=types)
         if resource is not None:
             self._tracker.add(resource)
         return resource
@@ -93,6 +93,10 @@ class DefaultSession(Session):
     def close(self):
         """TODO: implement it """
         pass
+
+    def receive_reference(self, reference, object_resource=None, object_iri=None):
+        """ Not for end-users!"""
+        self._tracker.receive_reference(reference, object_resource=object_resource, object_iri=object_iri)
 
     def get_updated_iri(self, tmp_iri):
         """TODO: remove it """

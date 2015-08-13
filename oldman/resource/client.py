@@ -8,7 +8,7 @@ from oldman.resource.resource import Resource
 class ClientResource(Resource):
     """ClientResource: resource manipulated by the end-user.
 
-    Has access to the `resource_mediator`.
+    Has access to the `session`.
 
     TODO: complete the description.
 
@@ -44,8 +44,8 @@ class ClientResource(Resource):
             resource_id = TemporaryId(suggested_hashless_iri=hashless_iri, collection_iri=collection_iri,
                                       suggested_iri_fragment=iri_fragment)
 
-        Resource.__init__(self, resource_id, model_manager, is_new=is_new, **kwargs)
         self._session = session
+        Resource.__init__(self, resource_id, model_manager, is_new=is_new, **kwargs)
 
     @property
     def session(self):
@@ -76,7 +76,22 @@ class ClientResource(Resource):
             return iri
         return resource
 
-    def receive_deletion_notification(self):
+    def notify_reference(self, reference, object_resource=None, object_iri=None):
+        """ Not for end-users!
+
+            TODO: describe
+        """
+        self._session.receive_reference(reference, object_resource=object_resource, object_iri=object_iri)
+
+    def receive_local_deletion_notification(self):
+        """TODO: explain and find a better name.
+
+            "Pre"-deletion.
+        """
+        # TODO: implement it
+        raise NotImplementedError("TODO: implement it")
+
+    def receive_deletion_notification_from_store(self):
         """TODO: explain"""
         self._types = None
         # Clears former values

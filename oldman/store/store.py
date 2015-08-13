@@ -196,7 +196,7 @@ class Store(object):
     def save(self, resource, attributes, former_types, is_new):
         """End-users should not call it directly. Call :func:`oldman.Resource.save()` instead.
 
-        :param resource: :class:`~oldman.resource.Resource` object.
+        :param resources: Collection of :class:`~oldman.resource.Resource` objects.
         :param attributes: Ordered list of :class:`~oldman.attribute.OMAttribute` objects.
         :param former_types: List of RDFS class IRIs previously saved.
         """
@@ -287,11 +287,12 @@ class Store(object):
         raise UnsupportedDataStorageFeatureException("This datastore %s does not support filtering queries."
                                                      % self.__class__.__name__)
 
-    def _save_resource_attributes(self, resource, attributes):
+    def _save_resource_attributes(self, resource, attributes, former_types):
         """
         TODO: describe
         :param resource:
         :param attributes:
+        :param former_types:
         :return: the ID of resource (useful when the IRI was a temporary one (e.g. a skolemized IRI).
         """
         raise UnsupportedDataStorageFeatureException("This datastore %s cannot update resources (read-only)."

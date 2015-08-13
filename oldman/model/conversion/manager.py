@@ -22,18 +22,18 @@ class ModelConversionManager(object):
     def convert_store_to_client_resources(self, store_resources, resource_finder, resource_factory):
         """TODO: describe """
         if isinstance(store_resources, types.GeneratorType):
-            return (self.convert_store_to_client_resource(r, resource_factory, resource_finder=resource_finder)
+            return (self.convert_store_to_client_resource(r, resource_factory, client_tracker=resource_finder)
                     for r in store_resources)
         # Otherwise, returns a list
-        return [self.convert_store_to_client_resource(r, resource_factory, resource_finder=resource_finder)
+        return [self.convert_store_to_client_resource(r, resource_factory, client_tracker=resource_finder)
                 for r in store_resources]
 
-    def convert_store_to_client_resource(self, store_resource, resource_factory, resource_finder=None,
+    def convert_store_to_client_resource(self, store_resource, client_factory, client_tracker,
                                          update_local_client_resource=False):
         """
         :param store_resource:
-        :param resource_factory:
-        :param resource_finder:
+        :param client_factory:
+        :param client_tracker:
         :param update_local_client_resource: FOR OTHER updates than the IRI!
         :return:
         """
@@ -42,8 +42,8 @@ class ModelConversionManager(object):
         iri = store_resource.id.iri
         client_resource = None
         # Looks first for a local client resource
-        if resource_finder is not None:
-            client_resource = resource_finder.find(iri)
+        if client_tracker is not None:
+            client_resource = client_tracker.find(iri)
             if client_resource is not None:
                 if not update_local_client_resource:
                     return client_resource
@@ -54,7 +54,7 @@ class ModelConversionManager(object):
         # If no local client resource
         if client_resource is None:
             # Mutable
-            client_resource = resource_factory.new_resource(iri=iri, types=client_new_types,
+            client_resource = client_factory.new_resource(iri=iri, types=client_new_types,
                                                             is_new=store_resource.is_new,
                                                             former_types=client_former_types)
 
@@ -73,11 +73,11 @@ class ModelConversionManager(object):
             converter = self._converters[(client_model, store_model)]
 
             # Update the client resource according to the model properties
-            converter.from_store_to_client(store_resource, client_resource, self)
+            converter.from_store_to_client(store_resource, client_resource, self, client_tracker, client_factory)
 
         return client_resource
 
-    def convert_client_to_store_resource(self, client_resource, store):
+    def convert_client_to_store_resource(self, client_resource, store, store_tracker):
         """TODO: explain """
         store_former_types, store_new_types = self._extract_types_from_client_resource(client_resource, store)
 
@@ -99,7 +99,7 @@ class ModelConversionManager(object):
             converter = self._converters[(client_model, store_model)]
 
             # Update the client resource according to the model properties
-            converter.from_client_to_store(client_resource, store_resource, self)
+            converter.from_client_to_store(client_resource, store_resource, self, store_tracker)
 
         return store_resource
 

@@ -1,88 +1,147 @@
 from oldman.common import OBJECT_PROPERTY
 from oldman.model.attribute import get_iris, Entry
+from oldman.resource.reference import ResourceReference
 
 
-class EntryCloner(object):
+class EntryExchanger(object):
     """TODO: explain"""
 
-    def clone(self, attribute, entry):
-        if attribute.om_property.type == OBJECT_PROPERTY:
-            return self._clone_object_entry(entry)
+    def __init__(self, client_resource, store_resource):
+        self._client_subject_resource = client_resource
+        self._store_subject_resource = store_resource
+
+    @property
+    def target_tracker(self):
+        raise NotImplementedError("Must be implemented by a sub-class")
+
+    @property
+    def target_subject_resource(self):
+        raise NotImplementedError("Must be implemented by a sub-class")
+
+    def exchange(self, source_attribute, target_attribute):
+        if source_attribute.om_property.type == OBJECT_PROPERTY:
+            return self._convert_object_entry(source_attribute, target_attribute)
         else:
-            return self._clone_literal_entry(entry)
+            return self._convert_literal_entry(source_attribute)
 
-    @staticmethod
-    def _clone_literal_entry(entry):
-        return entry.clone()
+    def _convert_literal_entry(self, source_attribute):
+        source_entry = self._extract_source_entry(source_attribute)
+        return source_entry.clone()
 
-    def _clone_object_entry(self, source_entry):
+    def _convert_object_entry(self, source_attribute, target_attribute):
         """Creates target objects for some source objects found.
 
             TODO: further explain.
         """
+        source_entry = self._extract_source_entry(source_attribute)
+
         # Converts the source resources into target resources
-        target_current_values = self._convert_object_values(source_entry.current_value)
+        target_current_references = self._convert_references(source_entry.current_value, target_attribute)
 
         # If has changed, retrieves at the previous values
         if source_entry.has_changed():
-            source_previous_values, _ = source_entry.diff()
+            source_previous_references, _ = source_entry.diff()
 
-            # Previous values: only IRIs
-            target_previous_values = get_iris(source_previous_values)
+            # TODO: maybe we could optimize it
+            target_previous_references = self._convert_references(source_previous_references, target_attribute)
 
-            target_entry = Entry(target_previous_values)
-            target_entry.current_value = target_current_values
+            target_entry = Entry(target_previous_references)
+            target_entry.current_value = target_current_references
             return target_entry
         else:
-            return Entry(target_current_values)
+            return Entry(target_current_references)
 
-    def _convert_object_values(self, values):
+    def _convert_references(self, references, target_attribute):
         """For object entries only"""
-        if isinstance(values, list):
-            return [self._convert_object_value(v) for v in values]
-        elif isinstance(values, set):
-            return {self._convert_object_value(v) for v in values}
-        elif isinstance(values, dict):
+        if isinstance(references, list):
+            return [self._convert_reference(r, target_attribute) for r in references]
+        elif isinstance(references, set):
+            return {self._convert_reference(r, target_attribute) for r in references}
+        elif isinstance(references, dict):
             raise NotImplementedError(u"Should we implement it?")
-        elif values is not None:
+        elif references is not None:
             # A Resource object or an IRI
-            v = values
-            return self._convert_object_value(v)
+            r = references
+            return self._convert_reference(r, target_attribute)
         else:
             return None
 
-    def _convert_object_value(self, value):
-        raise NotImplementedError("To be implemented by a sub-class")
+    def _convert_reference(self, source_reference, target_attribute):
+        """
+
+        Terminology:
+        source and target attributes
+        and subject and object resources of a given attributes
+
+        """
+        object_iri = source_reference.object_iri
+
+        # First, try to fetch the store_resource in the store tracker
+        target_object_resource = self.target_tracker.find(object_iri)
+        if target_object_resource is not None:
+            target_object_resource_or_iri = target_object_resource
+
+        # If the client target resource is immediately available, convert it
+        elif source_reference.is_bound_to_object_resource:
+            source_object_resource = source_reference.get()
+            target_object_resource = self._convert_object_resource(source_object_resource)
+            target_object_resource_or_iri = target_object_resource
+        else:
+            target_object_resource_or_iri = object_iri
+
+        return ResourceReference(self.target_subject_resource, target_attribute, target_object_resource_or_iri)
+
+    def _extract_source_entry(self, source_attribute):
+        raise NotImplementedError("Must be implemented by sub-classes")
+
+    def _convert_object_resource(self, source_object_resource):
+        raise NotImplementedError("Must be implemented by sub-classes")
 
 
-class ClientToStoreEntryCloner(EntryCloner):
+class ClientToStoreEntryExchanger(EntryExchanger):
 
-    def __init__(self, conversion_manager, store):
+    def __init__(self, conversion_manager, store, client_resource, store_resource, store_tracker):
+        EntryExchanger.__init__(self, client_resource, store_resource)
         self._conversion_manager = conversion_manager
         self._store = store
+        self._store_tracker = store_tracker
 
-    def _convert_object_value(self, value):
-        if isinstance(value, basestring):
-            return value
+    @property
+    def target_tracker(self):
+        return self._store_tracker
 
-        # Otherwise, presumed to be a Resource
-        client_resource = value
-        store_resource = self._conversion_manager.convert_client_to_store_resource(client_resource, self._store)
-        return store_resource
+    @property
+    def target_subject_resource(self):
+        return self._store_subject_resource
+
+    def _convert_object_resource(self, client_object_resource):
+        return self._conversion_manager.convert_client_to_store_resource(client_object_resource, self._store,
+                                                                         self._store_tracker)
+
+    def _extract_source_entry(self, client_attribute):
+        return client_attribute.get_entry(self._client_subject_resource)
 
 
-class StoreToClientEntryCloner(EntryCloner):
+class StoreToClientEntryExchanger(EntryExchanger):
 
-    def __init__(self, conversion_manager, resource_mediator):
+    def __init__(self, conversion_manager, client_resource, store_resource, client_tracker, client_factory):
+        EntryExchanger.__init__(self, client_resource, store_resource)
         self._conversion_manager = conversion_manager
-        self._resource_mediator = resource_mediator
+        self._client_tracker = client_tracker
+        self._client_factory = client_factory
 
-    def _convert_object_value(self, value):
-        if isinstance(value, basestring):
-            return value
+    @property
+    def target_tracker(self):
+        return self._client_tracker
 
-        # Otherwise, presumed to be a Resource
-        store_resource = value
-        client_resource = self._conversion_manager.convert_store_to_client_resource(store_resource,
-                                                                                    self._resource_mediator)
-        return client_resource
+    @property
+    def target_subject_resource(self):
+        return self._client_subject_resource
+
+    def _convert_object_resource(self, source_object_resource):
+        # TODO: update the prototype
+        return self._conversion_manager.convert_store_to_client_resource(source_object_resource, self._client_factory,
+                                                                         self._client_tracker)
+
+    def _extract_source_entry(self, store_attribute):
+        return store_attribute.get_entry(self._store_subject_resource)
