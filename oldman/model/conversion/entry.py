@@ -1,5 +1,5 @@
 from oldman.common import OBJECT_PROPERTY
-from oldman.model.attribute import get_iris, Entry
+from oldman.model.attribute import Entry
 from oldman.resource.reference import ResourceReference
 
 

@@ -244,8 +244,8 @@ context = {
 }
 
 # Cache
-cache_region = None
-# cache_region = make_region().configure('dogpile.cache.memory_pickle')
+# cache_region = None
+cache_region = make_region().configure('dogpile.cache.memory_pickle')
 
 data_store = SparqlStore(data_graph, schema_graph=schema_graph, cache_region=cache_region)
 # Takes the prefixes from the schema graph

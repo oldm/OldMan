@@ -523,23 +523,18 @@ class Entry(object):
         return value
 
 
-def get_iri(x):
-    """ Gets the IRI from Resource or a IRI."""
-    return x.id.iri if hasattr(x, "id") else x
-
-
-def get_iris(values):
+def get_iris(references):
     """TODO: describe it """
-    if isinstance(values, list):
-        return [get_iri(v) for v in values]
-    elif isinstance(values, set):
-        return {get_iri(v) for v in values}
-    elif isinstance(values, dict):
+    if isinstance(references, list):
+        return [ref.object_iri for ref in references]
+    elif isinstance(references, set):
+        return {ref.object_iri for ref in references}
+    elif isinstance(references, dict):
         raise NotImplementedError(u"Should we implement it?")
-    elif values is not None:
+    elif references is not None:
         # A Resource object or an IRI
-        v = values
-        return get_iri(v)
+        ref = references
+        return ref.object_iri
     else:
         return None
 
