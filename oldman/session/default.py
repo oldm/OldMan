@@ -98,6 +98,10 @@ class DefaultSession(Session):
         """ Not for end-users!"""
         self._tracker.receive_reference(reference, object_resource=object_resource, object_iri=object_iri)
 
+    def receive_reference_removal_notification(self, reference):
+        """ Not for end-users!"""
+        self._tracker.receive_reference_removal_notification(reference)
+
     def get_updated_iri(self, tmp_iri):
         """TODO: remove it """
         return self._updated_iris.get(tmp_iri, tmp_iri)

@@ -83,6 +83,13 @@ class ClientResource(Resource):
         """
         self._session.receive_reference(reference, object_resource=object_resource, object_iri=object_iri)
 
+    def notify_reference_removal(self, reference):
+        """ Not for end-users!
+
+            TODO: describe
+        """
+        self._session.receive_reference_removal_notification(reference)
+
     def receive_local_deletion_notification(self):
         """TODO: explain and find a better name.
 

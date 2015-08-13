@@ -29,6 +29,9 @@ class ResourceTracker(ResourceFinder):
     def receive_reference(self, reference, object_resource=None, object_iri=None):
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
+    def receive_reference_removal_notification(self, reference):
+        raise NotImplementedError("Should be implemented by a concrete implementation.")
+
     def forget_resources_to_delete(self):
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
@@ -51,11 +54,11 @@ class BasicResourceTracker(ResourceTracker):
         # TODO: add an index for resources
 
         # { Source resource -> Reference }
-        self._subject_references = defaultdict(list)
+        self._subject_references = defaultdict(set)
         # { Target resource -> Reference }
-        self._object_references = defaultdict(list)
+        self._object_references = defaultdict(set)
         # { Target permanent IRI -> Reference }
-        self._object_iri_references = defaultdict(list)
+        self._object_iri_references = defaultdict(set)
 
     def add(self, resource):
         self._resources.add(resource)
@@ -74,11 +77,11 @@ class BasicResourceTracker(ResourceTracker):
         if object_resource is None and object_iri is None:
             raise ValueError("the target_resource OR the target_iri must be given")
 
-        self._subject_references[reference.subject_resource].append(reference)
+        self._subject_references[reference.subject_resource].add(reference)
         if object_resource is not None:
-            self._object_references[object_resource].append(reference)
+            self._object_references[object_resource].add(reference)
         else:
-            self._object_iri_references[object_iri].append(reference)
+            self._object_iri_references[object_iri].add(reference)
 
     def find(self, iri):
         """TODO: re-implement """
@@ -101,3 +104,16 @@ class BasicResourceTracker(ResourceTracker):
         # TODO: only resources that we know they have been modified.
         return self._resources.difference(self._resources_to_delete)
 
+    def receive_reference_removal_notification(self, reference):
+        subject_references = self._subject_references[reference.subject_resource]
+        if reference in subject_references:
+            subject_references.remove(reference)
+
+        if reference.is_bound_to_object_resource:
+            object_references = self._object_references[reference.get()]
+            if reference in object_references:
+                object_references.remove(reference)
+
+        object_iri_references = self._object_iri_references[reference.object_iri]
+        if reference in object_iri_references:
+            object_iri_references.remove(reference)

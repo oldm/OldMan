@@ -3,7 +3,6 @@ from collections import namedtuple
 from weakref import WeakKeyDictionary
 
 from rdflib import Literal
-from oldman.common import is_temporary_blank_node
 
 from oldman.exception import OMAttributeTypeCheckError, OMRequiredPropertyError, OMReadOnlyAttributeError, OMEditError
 from oldman.iri.id import generate_uuid_iri
@@ -334,6 +333,8 @@ class OMAttribute(object):
         if entry is None:
             entry = Entry()
             self._entries[resource] = entry
+        else:
+            self._detach_previous_value(entry.current_value)
 
         entry.current_value = value
 
@@ -406,6 +407,11 @@ class OMAttribute(object):
         for v in vs:
             self._value_format.check_value(v)
 
+    def _detach_previous_value(self, previous_value):
+        """TODO: explain """
+        # By default, does nothing
+        pass
+
 
 class ObjectOMAttribute(OMAttribute):
     """An :class:`~oldman.attribute.ObjectOMAttribute` object is an :class:`~oldman.attribute.OMAttribute` object
@@ -471,6 +477,20 @@ class ObjectOMAttribute(OMAttribute):
 
         OMAttribute.set(self, resource, value_to_store)
 
+    def _detach_previous_value(self, previous_value):
+        """TODO: explain """
+        if previous_value is None:
+            references = []
+        elif isinstance(previous_value, ResourceReference):
+            references = [previous_value]
+        elif isinstance(previous_value, (list, set)):
+            references = previous_value
+        else:
+            raise ValueError("Unsupported previous_value: %s" % previous_value)
+
+        for ref in references:
+            ref.detach()
+
 
 class Entry(object):
     """ Mutable.
@@ -503,7 +523,7 @@ class Entry(object):
 
     def diff(self):
         """TODO: explain """
-        #TODO: find a better exception
+        # TODO: find a better exception
         if not self.has_changed():
             raise Exception("No diff")
         return self._clone_value(self._former_value), self._clone_value(self._current_value)
@@ -537,6 +557,4 @@ def get_iris(references):
         return ref.object_iri
     else:
         return None
-
-
 

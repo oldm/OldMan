@@ -85,8 +85,8 @@ class ResourceReference(object):
     def detach(self):
         """TODO: explain"""
         if self._is_attached:
-            self._is_attached = False
             self._unregister()
+            self._is_attached = False
 
     def _register(self):
         if self._object_resource is not None:
@@ -96,6 +96,6 @@ class ResourceReference(object):
 
     def _unregister(self):
         if self._object_resource is not None:
-            self._subject_resource.notify_reference_removal(self, object_resource=self._object_resource)
+            self._subject_resource.notify_reference_removal(self)
         else:
-            self._subject_resource.notify_reference_removal(self, object_iri=self._permanent_object_iri)
+            self._subject_resource.notify_reference_removal(self)

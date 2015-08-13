@@ -52,3 +52,7 @@ class Session(object):
     def receive_reference(self, reference, object_resource=None, object_iri=None):
         """ Not for end-users!"""
         raise NotImplementedError("Should be implemented by a concrete implementation.")
+
+    def receive_reference_removal_notification(self, reference):
+        """ Not for end-users!"""
+        raise NotImplementedError("Should be implemented by a concrete implementation.")
