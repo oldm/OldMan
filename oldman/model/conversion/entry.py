@@ -83,7 +83,7 @@ class EntryExchanger(object):
 
         # If the client target resource is immediately available, convert it
         elif source_reference.is_bound_to_object_resource:
-            source_object_resource = source_reference.get()
+            source_object_resource = source_reference.get(must_be_attached=False)
             target_object_resource = self._convert_object_resource(source_object_resource)
             target_object_resource_or_iri = target_object_resource
         else:

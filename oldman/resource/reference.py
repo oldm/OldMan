@@ -70,11 +70,18 @@ class ResourceReference(object):
     def is_bound_to_object_resource(self):
         return self._object_resource is not None
 
-    def get(self):
+    def get(self, must_be_attached=True):
         if not self._is_attached:
-            # TODO: use a better exception
-            raise Exception("The ResourceReference is not attached anymore")
-        if self._object_resource is None:
+            if must_be_attached:
+                # TODO: use a better exception
+                raise Exception("The ResourceReference is not attached anymore")
+
+            if self._object_resource is None:
+                # TODO: use a better exception
+                raise Exception("Cannot retrieve the object resource "
+                                "(the reference is not attached anymore so cannot forward the request)")
+
+        elif self._object_resource is None:
             self._object_resource = self._subject_resource.get_related_resource(self._permanent_object_iri)
             if self._object_resource is None:
                 # TODO: give another type to this exception
