@@ -43,9 +43,11 @@ class DefaultUserMediator(UserMediator):
     def import_store_model(self, class_iri, data_store=None):
         raise NotImplementedError("TODO: implement me here")
 
-    def import_store_models(self):
+    def import_store_models(self, store=None):
         """TODO: check possible conflicts with local models."""
-        for store in self._store_selector.stores:
+        stores = [store] if store is not None else self._store_selector.stores
+
+        for store in stores:
             for store_model in store.model_manager.models:
                 is_default = (store_model.class_iri is None)
                 client_model = self._model_manager.import_model(store_model, is_default=is_default)
