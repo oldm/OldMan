@@ -82,7 +82,7 @@ class Store(object):
         """
         return self._support_sparql
 
-    def get(self, iri, types=None, eager_with_reversed_attributes=True):
+    def get(self, store_session, iri, types=None, eager_with_reversed_attributes=True):
         """Gets the :class:`~oldman.resource.Resource` object having the given IRI.
 
         The `kwargs` dict can contains regular attribute key-values.
@@ -100,14 +100,14 @@ class Store(object):
 
         types = set(types) if types is not None else set()
 
-        resource = self._get_by_iri(iri)
+        resource = self._get_by_iri(iri, store_session)
         if not types.issubset(resource.types):
             missing_types = types.difference(resource.types)
-            raise OMClassInstanceError(u"%s found, but is not instance of %s" % (id, missing_types))
+            raise OMClassInstanceError(u"%s found, but is not instance of %s" % (iri, missing_types))
         return resource
 
-    def first(self, types=None, hashless_iri=None, eager_with_reversed_attributes=True, pre_cache_properties=None,
-              **kwargs):
+    def first(self, store_session, types=None, hashless_iri=None, eager_with_reversed_attributes=True,
+              pre_cache_properties=None, **kwargs):
         """Gets the first :class:`~oldman.resource.Resource` object matching the given criteria.
 
         The `kwargs` dict can contains regular attribute key-values.
@@ -128,23 +128,24 @@ class Store(object):
         eager = pre_cache_properties is not None and len(pre_cache_properties) > 0
 
         if hashless_iri is None and types is None and len(kwargs) == 0:
-            return self._get_first_resource_found()
+            return self._get_first_resource_found(store_session)
 
         elif hashless_iri is not None:
-            resources = self.filter(types=types, hashless_iri=hashless_iri, eager=eager,
+            resources = self.filter(store_session, types=types, hashless_iri=hashless_iri, eager=eager,
                                     pre_cache_properties=pre_cache_properties, **kwargs)
             return self._select_resource_from_hashless_iri(hashless_iri, list(resources))
 
         else:
             # First found
-            resources = self.filter(types=types, hashless_iri=hashless_iri, limit=1, eager=eager,
+            resources = self.filter(store_session, types=types, hashless_iri=hashless_iri, limit=1, eager=eager,
                                     pre_cache_properties=pre_cache_properties, **kwargs)
             for resource in resources:
                 return resource
 
         return None
 
-    def filter(self, types=None, hashless_iri=None, limit=None, eager=True, pre_cache_properties=None, **kwargs):
+    def filter(self, store_session, types=None, hashless_iri=None, limit=None, eager=True, pre_cache_properties=None,
+               **kwargs):
         """Finds the :class:`~oldman.resource.Resource` objects matching the given criteria.
 
         The `kwargs` dict can contains:
@@ -172,15 +173,15 @@ class Store(object):
         iri = kwargs.pop("iri") if "iri" in kwargs else None
         type_iris = types if types is not None else []
         if iri is not None:
-            return self.get(iri, types=types)
+            return self.get(store_session, iri, types=types)
 
         if len(type_iris) == 0 and len(kwargs) > 0:
             raise OMAttributeAccessError(u"No type given in filter() so attributes %s are ambiguous."
                                          % kwargs.keys())
 
-        return self._filter(type_iris, hashless_iri, limit, eager, pre_cache_properties, **kwargs)
+        return self._filter(store_session, type_iris, hashless_iri, limit, eager, pre_cache_properties, **kwargs)
 
-    def sparql_filter(self, query):
+    def sparql_filter(self, store_session, query):
         """Finds the :class:`~oldman.resource.Resource` objects matching a given query.
 
         Raises an :class:`~oldman.exception.UnsupportedDataStorageFeatureException` exception
@@ -193,32 +194,25 @@ class Store(object):
         raise UnsupportedDataStorageFeatureException("This datastore %s does not support the SPARQL protocol."
                                                      % self.__class__.__name__)
 
-    def save(self, resource, attributes, former_types, is_new):
-        """End-users should not call it directly. Call :func:`oldman.Resource.save()` instead.
-
-        :param resources: Collection of :class:`~oldman.resource.Resource` objects.
-        :param attributes: Ordered list of :class:`~oldman.attribute.OMAttribute` objects.
-        :param former_types: List of RDFS class IRIs previously saved.
+    def flush(self, resources_to_update, resources_to_delete):
         """
-        # Uniqueness test
-        if is_new and self.exists(resource.id):
-            raise OMUniquenessError("Object %s already exist" % resource.id)
-
-        id = self._save_resource_attributes(resource, attributes, former_types)
-        resource.receive_storage_ack(id)
-        # Cache
-        self._resource_cache.set_resource(resource)
-
-    def delete(self, resource, attributes, former_types):
-        """End-users should not call it directly. Call :func:`oldman.Resource.delete()` instead.
-
-        :param resource: :class:`~oldman.resource.Resource` object.
-        :param attributes: Ordered list of :class:`~oldman.attribute.OMAttribute` objects.
-        :param former_types: List of RDFS class IRIs previously saved.
+        TODO: explain
+        :param new_resources:
+        :param resources_to_update:
+        :param resources_to_delete:
+        :return:
         """
-        self._save_resource_attributes(resource, attributes, former_types)
-        # Cache
-        self._resource_cache.remove_resource(resource)
+        for resource in resources_to_update:
+            # Uniqueness test
+            if resource.is_new and self.exists(resource.id):
+                raise OMUniquenessError("Object %s already exist" % resource.id)
+
+        remaining_resources, deleted_resources = self._flush(resources_to_update, resources_to_delete)
+        for resource in remaining_resources:
+            self._resource_cache.set_resource(resource)
+        for resource in deleted_resources:
+            self._resource_cache.remove_resource(resource)
+        return remaining_resources, deleted_resources
 
     def exists(self, resource_iri):
         """ Tests if the IRI of the resource is present in the data_store.
@@ -275,31 +269,25 @@ class Store(object):
                                          incremental_iri=incremental_iri,
                                          context_file_path=context_file_path)
 
-    def _get_first_resource_found(self):
+    def _get_first_resource_found(self, store_session):
         raise UnsupportedDataStorageFeatureException("This datastore %s cannot get a resource at random."
                                                      % self.__class__.__name__)
 
-    def _get_by_iri(self, id):
+    def _get_by_iri(self, id, store_session):
         raise UnsupportedDataStorageFeatureException("This datastore %s cannot get a resource from its IRI."
                                                      % self.__class__.__name__)
 
-    def _filter(self, type_iris, hashless_iri, limit, eager, pre_cache_properties, **kwargs):
+    def _filter(self, store_session, type_iris, hashless_iri, limit, eager, pre_cache_properties, **kwargs):
         raise UnsupportedDataStorageFeatureException("This datastore %s does not support filtering queries."
                                                      % self.__class__.__name__)
 
-    def _save_resource_attributes(self, resource, attributes, former_types):
-        """
-        TODO: describe
-        :param resource:
-        :param attributes:
-        :param former_types:
-        :return: the ID of resource (useful when the IRI was a temporary one (e.g. a skolemized IRI).
-        """
+    def _flush(self, resources_to_update, resources_to_delete):
         raise UnsupportedDataStorageFeatureException("This datastore %s cannot update resources (read-only)."
                                                      % self.__class__.__name__)
 
-    def _new_resource_object(self, id, resource_graph):
-        resource = StoreResource.load_from_graph(self._model_manager, self, id, resource_graph, is_new=False)
+    def _new_resource_object(self, id, resource_graph, session):
+
+        resource = StoreResource.load_from_graph(self._model_manager, self, session, id, resource_graph, is_new=False)
         self.resource_cache.set_resource(resource)
         return resource
 

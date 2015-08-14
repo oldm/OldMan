@@ -11,7 +11,7 @@ class EntryExchanger(object):
         self._store_subject_resource = store_resource
 
     @property
-    def target_tracker(self):
+    def target_session(self):
         raise NotImplementedError("Must be implemented by a sub-class")
 
     @property
@@ -77,7 +77,7 @@ class EntryExchanger(object):
         object_iri = source_reference.object_iri
 
         # First, try to fetch the store_resource in the store tracker
-        target_object_resource = self.target_tracker.find(object_iri)
+        target_object_resource = self.target_session.get_locally(object_iri)
         if target_object_resource is not None:
             target_object_resource_or_iri = target_object_resource
 
@@ -100,15 +100,15 @@ class EntryExchanger(object):
 
 class ClientToStoreEntryExchanger(EntryExchanger):
 
-    def __init__(self, conversion_manager, store, client_resource, store_resource, store_tracker):
+    def __init__(self, conversion_manager, store, client_resource, store_resource, xstore_session):
         EntryExchanger.__init__(self, client_resource, store_resource)
         self._conversion_manager = conversion_manager
         self._store = store
-        self._store_tracker = store_tracker
+        self._xstore_session = xstore_session
 
     @property
-    def target_tracker(self):
-        return self._store_tracker
+    def target_session(self):
+        return self._xstore_session
 
     @property
     def target_subject_resource(self):
@@ -116,7 +116,7 @@ class ClientToStoreEntryExchanger(EntryExchanger):
 
     def _convert_object_resource(self, client_object_resource):
         return self._conversion_manager.convert_client_to_store_resource(client_object_resource, self._store,
-                                                                         self._store_tracker)
+                                                                         self._xstore_session)
 
     def _extract_source_entry(self, client_attribute):
         return client_attribute.get_entry(self._client_subject_resource)
@@ -124,15 +124,15 @@ class ClientToStoreEntryExchanger(EntryExchanger):
 
 class StoreToClientEntryExchanger(EntryExchanger):
 
-    def __init__(self, conversion_manager, client_resource, store_resource, client_tracker, client_factory):
+    def __init__(self, conversion_manager, client_resource, store_resource, client_session, client_factory):
         EntryExchanger.__init__(self, client_resource, store_resource)
         self._conversion_manager = conversion_manager
-        self._client_tracker = client_tracker
+        self._client_session = client_session
         self._client_factory = client_factory
 
     @property
-    def target_tracker(self):
-        return self._client_tracker
+    def target_session(self):
+        return self._client_session
 
     @property
     def target_subject_resource(self):
@@ -141,7 +141,7 @@ class StoreToClientEntryExchanger(EntryExchanger):
     def _convert_object_resource(self, source_object_resource):
         # TODO: update the prototype
         return self._conversion_manager.convert_store_to_client_resource(source_object_resource, self._client_factory,
-                                                                         self._client_tracker)
+                                                                         self._client_session)
 
     def _extract_source_entry(self, store_attribute):
         return store_attribute.get_entry(self._store_subject_resource)

@@ -4,7 +4,7 @@ from oldman.model.conversion.entry import ClientToStoreEntryExchanger, StoreToCl
 class ModelConverter(object):
     """TODO: find a better name and explain """
 
-    def from_client_to_store(self, client_resource, store_resource, conversion_manager, store_tracker):
+    def from_client_to_store(self, client_resource, store_resource, conversion_manager, xstore_session):
         raise NotImplementedError("Should be implemented by a sub-class")
 
     def from_store_to_client(self, store_resource, client_resource, conversion_manager, client_tracker,
@@ -23,9 +23,9 @@ class DirectMappingModelConverter(ModelConverter):
         self._client_to_store_mappings = client_to_store_mappings
         self._store_to_client_mappings = {v: k for k, v in client_to_store_mappings.items()}
 
-    def from_client_to_store(self, client_resource, store_resource, conversion_manager, store_tracker):
+    def from_client_to_store(self, client_resource, store_resource, conversion_manager, xstore_session):
         entry_converter = ClientToStoreEntryExchanger(conversion_manager, store_resource.store, client_resource,
-                                                      store_resource, store_tracker)
+                                                      store_resource, xstore_session)
         self._transfer_values(client_resource, store_resource, self._client_to_store_mappings,
                               entry_converter)
 

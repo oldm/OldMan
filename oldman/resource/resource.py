@@ -86,7 +86,7 @@ class Resource(object):
                                 "_store", "_former_types", "_logger", "_session", "_is_new"]
     _pickle_attribute_names = ["_id", '_types', '_is_new']
 
-    def __init__(self, id, model_manager, types=None, is_new=True, former_types=None, **kwargs):
+    def __init__(self, id, model_manager, session, types=None, is_new=True, former_types=None, **kwargs):
         """Inits but does not save it (in the `data_graph`)."""
         self._models, self._types = model_manager.find_models_and_types(types)
         if former_types is not None:
@@ -96,6 +96,7 @@ class Resource(object):
         self._model_manager = model_manager
         self._is_new = is_new
         self._id = id
+        self._session = session
 
         self._init_non_persistent_attributes(self._id)
 
@@ -174,6 +175,14 @@ class Resource(object):
             return {}
         corresponding_models, _ = self._model_manager.find_models_and_types(possible_non_model_types)
         return possible_non_model_types.difference({m.class_iri for m in corresponding_models})
+
+    @property
+    def attributes(self):
+        """:return: An ordered list of list of :class:`~oldman.attribute.OMAttribute` objects."""
+        attributes = []
+        for model in self._models:
+            attributes += model.om_attributes.values()
+        return attributes
 
     def is_valid(self):
         """Tests if the resource is valid.
@@ -310,16 +319,14 @@ class Resource(object):
 
             TODO: describe
         """
-        # By default, does nothing
-        pass
+        self._session.receive_reference(reference, object_resource=object_resource, object_iri=object_iri)
 
     def notify_reference_removal(self, reference):
         """ Not for end-users!
 
             TODO: describe
         """
-        # By default, does nothing
-        pass
+        self._session.receive_reference_removal_notification(reference)
 
     def receive_storage_ack(self, id):
         """Receives the permanent ID assigned by the store.
@@ -333,15 +340,8 @@ class Resource(object):
 
         # Clears former values
         self._former_types = self._types
-        for attr in self._extract_attribute_list():
+        for attr in self.attributes:
             attr.receive_storage_ack(self)
-
-    def _extract_attribute_list(self):
-        """:return: An ordered list of list of :class:`~oldman.attribute.OMAttribute` objects."""
-        attributes = []
-        for model in self._models:
-            attributes += model.om_attributes.values()
-        return attributes
 
     def to_dict(self, remove_none_values=True, include_different_contexts=False,
                 ignored_iris=None):
@@ -361,7 +361,7 @@ class Resource(object):
 
         dct = {attr.name: self._convert_value(getattr(self, attr.name), ignored_iris, remove_none_values,
                                               include_different_contexts)
-               for attr in self._extract_attribute_list()
+               for attr in self.attributes
                if not attr.is_write_only}
         # filter None values
         if remove_none_values:
@@ -473,7 +473,7 @@ class Resource(object):
         elif full_dict["id"] != self._id.iri:
             raise OMWrongResourceError(u"Wrong IRI %s (%s was expected)" % (full_dict["id"], self._id.iri))
 
-        attributes = self._extract_attribute_list()
+        attributes = self.attributes
         attr_names = [a.name for a in attributes]
         for key in full_dict:
             if key not in attr_names and key not in ["@context", "id", "types"]:
@@ -511,7 +511,7 @@ class Resource(object):
                                    Defaults to `False`.
         :return: The :class:`~oldman.resource.Resource` object itself.
         """
-        for attr in self._extract_attribute_list():
+        for attr in self.attributes:
             attr.update_from_graph(self, subgraph, initial=initial)
         #Types
         if not initial:
@@ -521,11 +521,15 @@ class Resource(object):
 
     def get_related_resource(self, iri):
         """ Not for end-users!
-        Must be implemented by concrete classes.
+
+        Gets a related `Resource` through its session.
 
         If cannot get the resource, return its IRI.
         """
-        raise NotImplementedError("To be implemented by a concrete sub-class")
+        resource = self._session.get(iri=iri)
+        if resource is None:
+            return iri
+        return resource
 
     def _check_and_update_types(self, new_types, allow_new_type, allow_type_removal):
         current_types = set(self._types)
@@ -571,11 +575,11 @@ class Resource(object):
         raise NotImplementedError("Implemented by a sub-class")
 
 
-def should_delete_resource(resource):
-    """Tests if a resource should be deleted.
-
-    :param resource: :class:`~oldman.resource.Resource` object to evaluate.
-    :return: `True` if it should be deleted.
-    """
-    #TODO: make sure these blank nodes are not referenced somewhere else
-    return resource is not None and resource.is_blank_node()
+# def should_delete_resource(resource):
+#     """Tests if a resource should be deleted.
+#
+#     :param resource: :class:`~oldman.resource.Resource` object to evaluate.
+#     :return: `True` if it should be deleted.
+#     """
+#     #TODO: make sure these blank nodes are not referenced somewhere else
+#     return resource is not None and resource.is_blank_node()

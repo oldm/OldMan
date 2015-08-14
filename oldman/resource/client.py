@@ -44,8 +44,7 @@ class ClientResource(Resource):
             resource_id = TemporaryId(suggested_hashless_iri=hashless_iri, collection_iri=collection_iri,
                                       suggested_iri_fragment=iri_fragment)
 
-        self._session = session
-        Resource.__init__(self, resource_id, model_manager, is_new=is_new, **kwargs)
+        Resource.__init__(self, resource_id, model_manager, session, is_new=is_new, **kwargs)
 
     @property
     def session(self):
@@ -69,27 +68,6 @@ class ClientResource(Resource):
         instance.update_from_graph(subgraph, initial=True)
         return instance
 
-    def get_related_resource(self, iri):
-        """ Gets a related `ClientResource` through its session. """
-        resource = self._session.get(iri=iri)
-        if resource is None:
-            return iri
-        return resource
-
-    def notify_reference(self, reference, object_resource=None, object_iri=None):
-        """ Not for end-users!
-
-            TODO: describe
-        """
-        self._session.receive_reference(reference, object_resource=object_resource, object_iri=object_iri)
-
-    def notify_reference_removal(self, reference):
-        """ Not for end-users!
-
-            TODO: describe
-        """
-        self._session.receive_reference_removal_notification(reference)
-
     def receive_local_deletion_notification(self):
         """TODO: explain and find a better name.
 
@@ -104,7 +82,7 @@ class ClientResource(Resource):
         # Clears former values
         self._former_types = self._types
         # Clears values
-        for attr in self._extract_attribute_list():
+        for attr in self.attributes:
             setattr(self, attr.name, None)
             attr.receive_storage_ack(self)
 

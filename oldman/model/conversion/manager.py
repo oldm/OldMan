@@ -77,14 +77,13 @@ class ModelConversionManager(object):
 
         return client_resource
 
-    def convert_client_to_store_resource(self, client_resource, store, store_tracker):
+    def convert_client_to_store_resource(self, client_resource, store, xstore_session):
         """TODO: explain """
         store_former_types, store_new_types = self._extract_types_from_client_resource(client_resource, store)
 
         client_id = client_resource.id
-        store_resource = StoreResource(client_id, store.model_manager, store,
-                                       types=store_new_types, is_new=client_resource.is_new,
-                                       former_types=store_former_types)
+        store_resource = xstore_session.new(client_id, store, types=store_new_types, is_new=client_resource.is_new,
+                                            former_types=store_former_types)
 
         # From the most general to the more specific
         store_models = list(store_resource.models)
@@ -99,7 +98,7 @@ class ModelConversionManager(object):
             converter = self._converters[(client_model, store_model)]
 
             # Update the client resource according to the model properties
-            converter.from_client_to_store(client_resource, store_resource, self, store_tracker)
+            converter.from_client_to_store(client_resource, store_resource, self, xstore_session)
 
         return store_resource
 

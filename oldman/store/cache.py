@@ -45,7 +45,7 @@ class ResourceCache(object):
         """
         self._region = cache_region
 
-    def get_resource(self, iri):
+    def get_resource(self, iri, store_session):
         """Gets a :class:`~oldman.resource.Resource` object from the cache.
 
         :param iri: IRI of the resource.
@@ -55,6 +55,7 @@ class ResourceCache(object):
             return None
         resource = self._region.get(unicode(iri))
         if resource:
+            resource.reattach(store_session)
             self._logger.debug(u"%s found in the cache." % resource.id)
             return resource
         return None

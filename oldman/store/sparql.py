@@ -63,7 +63,7 @@ class SparqlStore(Store):
         for prefix, namespace in other_graph.namespace_manager.namespaces():
             self._data_graph.bind(prefix, namespace)
 
-    def sparql_filter(self, query):
+    def sparql_filter(self, store_session, query):
         """Finds the :class:`~oldman.resource.Resource` objects matching a given query.
 
         :param query: SPARQL SELECT query where the first variable assigned
@@ -76,7 +76,7 @@ class SparqlStore(Store):
             results = self._union_graph.query(query)
         except ParseException as e:
             raise OMSPARQLError(u"%s\n %s" % (query, e))
-        return (self.get(iri=unicode(r[0])) for r in results)
+        return (self.get(store_session, unicode(r[0])) for r in results)
 
     def exists(self, id):
         return bool(self._union_graph.query(u"ASK {?id ?p ?o .}", initBindings={'id': URIRef(id.iri)}))
@@ -138,7 +138,7 @@ class SparqlStore(Store):
                 }""" % class_iri
         self._data_graph.update(insert_req)
 
-    def _get_first_resource_found(self):
+    def _get_first_resource_found(self, store_session):
         self._logger.warn(u"get() called without parameter. Returns the first resource found in the union graph.")
         query = u"SELECT ?s WHERE { ?s ?p ?o } LIMIT 1"
         try:
@@ -146,12 +146,12 @@ class SparqlStore(Store):
         except ParseException as e:
             raise OMSPARQLParseError(u"%s\n %s" % (query, e))
         for r, in results:
-            return self._get_by_iri(unicode(r))
+            return self._get_by_iri(unicode(r), store_session)
         # If no resource in the union graph
         return None
 
-    def _get_by_iri(self, iri, eager_with_reversed_attributes=True):
-        resource = self.resource_cache.get_resource(iri)
+    def _get_by_iri(self, iri, store_session, eager_with_reversed_attributes=True):
+        resource = self.resource_cache.get_resource(iri, store_session)
         if resource:
             return resource
         resource_graph = Graph()
@@ -174,12 +174,12 @@ class SparqlStore(Store):
             }""".replace("?subject", "<%s>" % iri_ref)
             for s, p, o in self._union_graph.query(triple_query):
                 resource_graph.add((s, p, o))
-        #Lazy
+        # Lazy
         else:
             resource_graph += self._union_graph.triples((iri_ref, None, None))
 
             if self.model_manager.include_reversed_attributes:
-                #Extracts the types
+                # Extracts the types
                 types = {unicode(o) for o in resource_graph.objects(iri_ref, RDF.type)}
                 models, _ = self.model_manager.find_models_and_types(types)
 
@@ -203,9 +203,9 @@ class SparqlStore(Store):
                 resource_graph.add((previous, RDF.rest, subList))
             resource_graph.add((subList, RDF.first, value))
 
-        return self._new_resource_object(iri, resource_graph)
+        return self._new_resource_object(iri, resource_graph, store_session)
 
-    def _filter(self, type_iris, hashless_iri, limit, eager, pre_cache_properties, **kwargs):
+    def _filter(self, store_session, type_iris, hashless_iri, limit, eager, pre_cache_properties, **kwargs):
         if len(type_iris) == 0 and len(kwargs) == 0:
             if hashless_iri is None:
                 self._logger.warn(u"filter() called without parameter. Returns every resource in the union graph.")
@@ -236,11 +236,11 @@ class SparqlStore(Store):
             query += u"LIMIT %d" % limit
 
         if eager:
-            return self._filter_eagerly(query, pre_cache_properties)
+            return self._filter_eagerly(query, store_session, pre_cache_properties)
         # Lazy (by default)
-        return self._filter_lazily(query)
+        return self._filter_lazily(query, store_session)
 
-    def _filter_lazily(self, query):
+    def _filter_lazily(self, query, store_session):
         """ Lazy filtering """
         self._logger.debug(u"Filter query: %s" % query)
         try:
@@ -249,9 +249,9 @@ class SparqlStore(Store):
             raise OMSPARQLParseError(u"%s\n %s" % (query, e))
 
         # Generator expression
-        return (self.get(iri=unicode(r[0])) for r in results)
+        return (self.get(store_session, unicode(r[0])) for r in results)
 
-    def _filter_eagerly(self, sub_query, pre_cache_properties, erase_cache=False):
+    def _filter_eagerly(self, sub_query, store_session, pre_cache_properties, erase_cache=False):
         """Eager: requests all the properties of all returned resource
         within one single SPARQL query.
 
@@ -317,21 +317,36 @@ class SparqlStore(Store):
             new_resource_iris = []
             # Resource from cache
             for iri in resource_iris:
-                resource = self.resource_cache.get_resource(iri)
+                resource = self.resource_cache.get_resource(iri, store_session)
                 if resource is None:
                     new_resource_iris.append(iri)
                 elif iri in main_resource_iris:
                     main_resources.append(resource)
 
-        #TODO: retrieve list values on new resource iris
+        # TODO: retrieve list values on new resource iris
 
         for iri in new_resource_iris:
             # Resource created and set in the cache
-            resource = self._new_resource_object(iri, graph)
+            resource = self._new_resource_object(iri, graph, store_session)
             if iri in main_resource_iris:
                 main_resources.append(resource)
 
         return main_resources
+
+    def _flush(self, resources_to_update, resources_to_delete):
+        """TODO: explain.
+
+            TODO: implement it more efficient by grouping the queries.
+
+         """
+        for resource in resources_to_update:
+            id = self._save_resource_attributes(resource, resource.attributes, set(resource.former_types))
+            resource.receive_storage_ack(id)
+
+        for resource in resources_to_delete:
+            self._save_resource_attributes(resource, resource.attributes, set(resource.former_types))
+
+        return resources_to_update, resources_to_delete
 
     def _save_resource_attributes(self, resource, attributes, former_types):
         """Makes a SPARQL DELETE-INSERT request to save the changes into the `data_graph`."""

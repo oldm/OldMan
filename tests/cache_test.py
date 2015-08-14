@@ -2,12 +2,15 @@ import unittest
 from default_model import *
 
 # Force the cache
+from oldman.session.store import DefaultCrossStoreSession
 from oldman.session.tracker import BasicResourceTracker
 
 data_store.resource_cache.change_cache_region(make_region().configure('dogpile.cache.memory_pickle'))
 
 # With the default implementation they are the same object. FOR TEST ONLY!
 resource_mediator = user_mediator
+
+
 
 
 class CacheTest(unittest.TestCase):
@@ -18,9 +21,9 @@ class CacheTest(unittest.TestCase):
         session = user_mediator.create_session()
         alice1 = lp_model.new(session, name=alice_name, mboxes={alice_mail}, short_bio_en=alice_bio_en)
         #For test ONLY. Do not do that yourself
-        store_tracker = BasicResourceTracker()
+        store_session = DefaultCrossStoreSession(user_mediator._store_selector)
         alice_store1 = resource_mediator._conversion_manager.convert_client_to_store_resource(alice1, data_store,
-                                                                                              store_tracker)
+                                                                                              store_session)
         data_store.resource_cache.set_resource(alice_store1)
         alice2 = data_store.resource_cache.get_resource(alice_store1.id.iri)
         self.assertFalse(alice1 is alice2)
