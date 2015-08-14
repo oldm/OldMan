@@ -4,7 +4,22 @@ from oldman.session.tracker import BasicResourceTracker
 from oldman.session.session import Session
 
 
-class DefaultSession(Session):
+class ClientSession(Session):
+
+    def first(self, types=None, hashless_iri=None, eager_with_reversed_attributes=True,
+              pre_cache_properties=None, **kwargs):
+        raise NotImplementedError("Should be implemented by a concrete implementation.")
+
+    def filter(self, types=None, hashless_iri=None, limit=None, eager=True, pre_cache_properties=None, **kwargs):
+        """See :func:`oldman.store.store.Store.filter`."""
+        raise NotImplementedError("Should be implemented by a concrete implementation.")
+
+    def sparql_filter(self, query):
+        """See :func:`oldman.store.store.Store.sparql_filter`."""
+        raise NotImplementedError("Should be implemented by a concrete implementation.")
+
+
+class DefaultClientSession(ClientSession):
     """TODO: find a better name """
 
     def __init__(self, model_manager, store_proxy):

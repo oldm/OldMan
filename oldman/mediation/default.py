@@ -6,7 +6,7 @@ from oldman.model.conversion.manager import ModelConversionManager
 from oldman.mediation.store_selector import StoreSelector
 from oldman.model.manager.client import ClientModelManager
 from oldman.mediation.mediator import UserMediator
-from oldman.session.default import DefaultSession
+from oldman.session.client import DefaultClientSession
 
 DEFAULT_MODEL_NAME = "Default_Client"
 
@@ -58,4 +58,4 @@ class DefaultUserMediator(UserMediator):
 
     def create_session(self):
         """TODO: explain it """
-        return DefaultSession(self._model_manager, self._store_proxy)
+        return DefaultClientSession(self._model_manager, self._store_proxy)
