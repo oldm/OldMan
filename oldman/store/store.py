@@ -194,7 +194,7 @@ class Store(object):
         raise UnsupportedDataStorageFeatureException("This datastore %s does not support the SPARQL protocol."
                                                      % self.__class__.__name__)
 
-    def flush(self, resources_to_update, resources_to_delete):
+    def flush(self, resources_to_update, resources_to_delete, is_end_user):
         """
         TODO: explain
         :param new_resources:
@@ -206,6 +206,7 @@ class Store(object):
             # Uniqueness test
             if resource.is_new and self.exists(resource.id):
                 raise OMUniquenessError("Object %s already exist" % resource.id)
+            resource.check_validity(is_end_user=is_end_user)
 
         remaining_resources, deleted_resources = self._flush(resources_to_update, resources_to_delete)
         for resource in remaining_resources:

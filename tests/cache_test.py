@@ -25,7 +25,7 @@ class CacheTest(unittest.TestCase):
         alice_store1 = resource_mediator._conversion_manager.convert_client_to_store_resource(alice1, data_store,
                                                                                               store_session)
         data_store.resource_cache.set_resource(alice_store1)
-        alice2 = data_store.resource_cache.get_resource(alice_store1.id.iri)
+        alice2 = data_store.resource_cache.get_resource(alice_store1.id.iri, store_session)
         self.assertFalse(alice1 is alice2)
         self.assertEquals(alice1.name, alice2.name)
         #Not true anymore because of temporary IRI.

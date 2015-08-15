@@ -305,14 +305,14 @@ class Resource(object):
             new_types.add(additional_type)
             self._change_types(new_types)
 
-    def check_validity(self):
+    def check_validity(self, is_end_user=True):
         """Checks its validity.
 
         Raises an :class:`oldman.exception.OMEditError` exception if invalid.
         """
         for model in self._models:
             for attr in model.om_attributes.values():
-                attr.check_validity(self)
+                attr.check_validity(self, is_end_user=is_end_user)
 
     def notify_reference(self, reference, object_resource=None, object_iri=None):
         """ Not for end-users!

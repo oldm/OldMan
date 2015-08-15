@@ -101,10 +101,12 @@ class DefaultStoreProxy(StoreProxy):
 
             :return list of ClientResource ?
         """
+        store_session = self._create_session()
         store_resources = [r for store in self._store_selector.select_sparql_stores(query)
-                           for r in store.sparql_filter(query)]
+                           for r in store.sparql_filter(store_session, query)]
         client_resources = self._conversion_manager.convert_store_to_client_resources(store_resources, client_tracker,
                                                                                       resource_factory)
+        store_session.close()
         return client_resources
 
     def flush(self, resource_factory, client_resources_to_update, client_resources_to_delete, is_end_user):
@@ -151,7 +153,7 @@ class DefaultStoreProxy(StoreProxy):
 
             # New store resource
             if client_resource is None:
-                raise NotImplementedError("TODO: retrieve the client_resource")
+                raise NotImplementedError("TODO: retrieve the client_resource %s" % store_resource.id)
             if client_resource is not None:
                 client_resource.receive_storage_ack(store_resource.id)
                 updated_client_resources.append(client_resource)

@@ -11,7 +11,7 @@ class EntryExchanger(object):
         self._store_subject_resource = store_resource
 
     @property
-    def target_session(self):
+    def target_tracker(self):
         raise NotImplementedError("Must be implemented by a sub-class")
 
     @property
@@ -77,7 +77,7 @@ class EntryExchanger(object):
         object_iri = source_reference.object_iri
 
         # First, try to fetch the store_resource in the store tracker
-        target_object_resource = self.target_session.get_locally(object_iri)
+        target_object_resource = self.target_tracker.find(object_iri)
         if target_object_resource is not None:
             target_object_resource_or_iri = target_object_resource
 
@@ -107,8 +107,8 @@ class ClientToStoreEntryExchanger(EntryExchanger):
         self._xstore_session = xstore_session
 
     @property
-    def target_session(self):
-        return self._xstore_session
+    def target_tracker(self):
+        return self._xstore_session.tracker
 
     @property
     def target_subject_resource(self):
@@ -131,7 +131,7 @@ class StoreToClientEntryExchanger(EntryExchanger):
         self._client_factory = client_factory
 
     @property
-    def target_session(self):
+    def target_tracker(self):
         return self._client_session
 
     @property
