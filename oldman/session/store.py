@@ -51,12 +51,14 @@ class DefaultCrossStoreSession(CrossStoreSession):
     def flush(self, is_end_user=True):
         """TODO: re-implement it """
 
-        store_cluster = cluster_by_store_and_status(self._tracker.modified_resources, self._tracker.resources_to_delete)
+        all_resources_to_update = self._sort_resources_to_update(self._tracker.modified_resources)
+        store_cluster = cluster_by_store_and_status(all_resources_to_update, self._tracker.resources_to_delete)
 
         all_updated_resources = []
         all_deleted_resources = []
-        for store in store_cluster:
+        for store in self._sort_stores(all_resources_to_update):
             resources_to_update, resources_to_delete = store_cluster[store]
+
             updated_resources, deleted_resources = store.flush(resources_to_update, resources_to_delete, is_end_user)
             all_updated_resources.extend(updated_resources)
             all_deleted_resources.extend(deleted_resources)
@@ -102,6 +104,26 @@ class DefaultCrossStoreSession(CrossStoreSession):
     def close(self):
         """Does nothing"""
         pass
+
+    def _sort_resources_to_update(self, resources_to_update):
+        """ TODO: implement it seriously. Construct a dependency graph.
+
+            The order is important when saving resources with temporary IDs.
+        """
+        return resources_to_update
+
+    @staticmethod
+    def _sort_stores(all_resources_to_update):
+        """ TODO: explain.
+
+            TODO: improve the implementation to throw an exception if the order
+            cannot be enforced.
+        """
+        stores = []
+        for resource in all_resources_to_update:
+            if resource.store not in stores:
+                stores.append(resource.store)
+        return stores
 
 
 def cluster_by_store_and_status(resources_to_update, resources_to_delete):
