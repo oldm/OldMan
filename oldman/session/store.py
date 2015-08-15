@@ -95,10 +95,7 @@ class DefaultCrossStoreSession(CrossStoreSession):
             from the store.
         """
         self._tracker.mark_to_delete(store_resource)
-
-        # Removes its attribute
-        for attr in store_resource.attributes:
-            setattr(store_resource, attr.name, None)
+        store_resource.prepare_deletion()
 
     def receive_reference(self, reference, object_resource=None, object_iri=None):
         self._tracker.receive_reference(reference, object_resource=object_resource, object_iri=object_iri)

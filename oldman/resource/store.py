@@ -109,6 +109,13 @@ class StoreResource(Resource):
             # TODO: find a better exception
             raise Exception("Already attached StoreResource %s" % self)
 
+    def prepare_deletion(self):
+        self._former_types = self._types
+        self._types = []
+        # Removes its attribute
+        for attr in self.attributes:
+            setattr(self, attr.name, None)
+
     # def save(self, is_end_user=True):
     #     """Saves it into the `data_store` and its `resource_cache`.
     #

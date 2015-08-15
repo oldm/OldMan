@@ -467,7 +467,6 @@ class Resource(object):
                                    Defaults to `False`.
         :return: The :class:`~oldman.resource.Resource` object itself.
         """
-        #if not self.is_blank_node() and "id" not in full_dict:
         if "id" not in full_dict:
             raise OMWrongResourceError(u"Cannot update an object without IRI")
         elif full_dict["id"] != self._id.iri:
@@ -571,15 +570,3 @@ class Resource(object):
         #self._logger.debug(u"%s" % self._manager._registry.model_names)
         raise AttributeError(u"%s has not attribute %s" % (self, name))
 
-    def _filter_objects_to_delete(self, ids):
-        raise NotImplementedError("Implemented by a sub-class")
-
-
-# def should_delete_resource(resource):
-#     """Tests if a resource should be deleted.
-#
-#     :param resource: :class:`~oldman.resource.Resource` object to evaluate.
-#     :return: `True` if it should be deleted.
-#     """
-#     #TODO: make sure these blank nodes are not referenced somewhere else
-#     return resource is not None and resource.is_blank_node()
