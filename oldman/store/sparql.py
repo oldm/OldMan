@@ -300,14 +300,14 @@ class SparqlStore(Store):
         if pre_cache_properties is not None:
             for s, s2, p2, o2 in results:
                 main_resource_iris.add(s)
-                resource_iris.add(s2)
+                resource_iris.add(unicode(s2))
                 graph.add((s2, p2, o2))
         else:
             # Same set
             resource_iris = main_resource_iris
             for s, p, o in results:
                 # Also add it implicitly in main_resource_iris
-                resource_iris.add(s)
+                resource_iris.add(unicode(s))
                 graph.add((s, p, o))
 
         main_resources = []
