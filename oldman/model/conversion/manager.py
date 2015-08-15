@@ -82,8 +82,11 @@ class ModelConversionManager(object):
         store_former_types, store_new_types = self._extract_types_from_client_resource(client_resource, store)
 
         client_id = client_resource.id
-        store_resource = xstore_session.new(client_id, store, types=store_new_types, is_new=client_resource.is_new,
-                                            former_types=store_former_types)
+
+        store_resource = xstore_session.tracker.find(client_id.iri)
+        if store_resource is None:
+            store_resource = xstore_session.new(client_id, store, types=store_new_types, is_new=client_resource.is_new,
+                                                former_types=store_former_types)
 
         # From the most general to the more specific
         store_models = list(store_resource.models)
