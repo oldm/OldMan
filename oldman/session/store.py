@@ -52,11 +52,12 @@ class DefaultCrossStoreSession(CrossStoreSession):
         """TODO: re-implement it """
 
         all_resources_to_update = self._sort_resources_to_update(self._tracker.modified_resources)
-        store_cluster = cluster_by_store_and_status(all_resources_to_update, self._tracker.resources_to_delete)
+        all_resources_to_delete = self._tracker.resources_to_delete
+        store_cluster = cluster_by_store_and_status(all_resources_to_update, all_resources_to_delete)
 
         all_updated_resources = []
         all_deleted_resources = []
-        for store in self._sort_stores(all_resources_to_update):
+        for store in self._sort_stores(all_resources_to_update, all_resources_to_delete):
             resources_to_update, resources_to_delete = store_cluster[store]
 
             updated_resources, deleted_resources = store.flush(resources_to_update, resources_to_delete, is_end_user)
@@ -95,6 +96,10 @@ class DefaultCrossStoreSession(CrossStoreSession):
         """
         self._tracker.mark_to_delete(store_resource)
 
+        # Removes its attribute
+        for attr in store_resource.attributes:
+            setattr(store_resource, attr.name, None)
+
     def receive_reference(self, reference, object_resource=None, object_iri=None):
         self._tracker.receive_reference(reference, object_resource=object_resource, object_iri=object_iri)
 
@@ -113,14 +118,20 @@ class DefaultCrossStoreSession(CrossStoreSession):
         return resources_to_update
 
     @staticmethod
-    def _sort_stores(all_resources_to_update):
+    def _sort_stores(all_resources_to_update, all_resources_to_delete):
         """ TODO: explain.
 
             TODO: improve the implementation to throw an exception if the order
             cannot be enforced.
         """
         stores = []
+        # Here the order matters
         for resource in all_resources_to_update:
+            if resource.store not in stores:
+                stores.append(resource.store)
+
+        # Probably the order does not really matters here
+        for resource in all_resources_to_delete:
             if resource.store not in stores:
                 stores.append(resource.store)
         return stores
