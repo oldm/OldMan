@@ -110,6 +110,7 @@ class CrudTest(unittest.TestCase):
         doc_iri = bob.id.hashless_iri
         alice = lp_model.new(session, iri=(doc_iri + "#alice"), name=alice_name, mboxes={alice_mail},
                              short_bio_en=alice_bio_en)
+        session.flush()
         alice_ref = URIRef(alice.id.iri)
         bob_ref = URIRef(bob.id.iri)
         new_alice_name = alice_name + " A."

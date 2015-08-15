@@ -34,7 +34,7 @@ class CacheTest(unittest.TestCase):
         self.assertEquals(set(alice1.mboxes), set(alice2.mboxes))
 
         data_store.resource_cache.remove_resource(alice1)
-        self.assertFalse(data_store.resource_cache.get_resource(alice1.id.iri))
+        self.assertFalse(data_store.resource_cache.get_resource(alice1.id.iri, store_session))
 
     def test_simple_get(self):
         session1 = user_mediator.create_session()
