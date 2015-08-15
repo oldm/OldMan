@@ -38,7 +38,7 @@ session1 = user_mediator.create_session()
 alice = lp_model.new(session1, name="Alice", emails={"alice@example.org"},
                      short_bio_en="I am ...")
 bob = lp_model.new(session1, name="Bob",
-                   #blog="http://blog.example.com/",
+                   blog="http://blog.example.com/",
                    short_bio_fr=u"J'ai grandi en ... .")
 
 print bob.is_valid()
@@ -47,7 +47,7 @@ print bob.is_valid()
 
 session1.flush()
 
-# alice.friends = {bob}
+alice.friends = {bob}
 bob.friends = {alice}
 session1.flush()
 
