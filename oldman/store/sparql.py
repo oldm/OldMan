@@ -350,7 +350,13 @@ class SparqlStore(Store):
 
     def _save_resource_attributes(self, resource, attributes, former_types):
         """Makes a SPARQL DELETE-INSERT request to save the changes into the `data_graph`."""
-        id = resource.id
+
+        original_id = resource.id
+        if not original_id.is_permanent:
+            main_model = self._model_manager.find_main_model(resource.types)
+            id = main_model.generate_permanent_id(original_id)
+        else:
+            id = original_id
 
         former_lines = u""
         new_lines = u""

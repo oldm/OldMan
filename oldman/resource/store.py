@@ -20,12 +20,7 @@ class StoreResource(Resource):
     """
 
     def __init__(self, previous_id, model_manager, store, session, types=None, is_new=True, **kwargs):
-        # TODO: move this to the store!
-        if not previous_id.is_permanent:
-            main_model = model_manager.find_main_model(types)
-            resource_id = main_model.generate_permanent_id(previous_id)
-        else:
-            resource_id = previous_id
+        resource_id = previous_id
         Resource.__init__(self, resource_id, model_manager, session, types=types, is_new=is_new, **kwargs)
         self._store = store
 
