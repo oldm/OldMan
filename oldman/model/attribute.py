@@ -287,7 +287,8 @@ class OMAttribute(object):
         if language is None:
             language = self.language
         if jsonld_type == "@id":
-            return u"<%s>" % value.object_iri
+            iri = value.object_iri if isinstance(value, ResourceReference) else value
+            return u"<%s>" % iri
         elif language:
             return u'"%s"@%s' % (Literal(value), language)
         elif jsonld_type:
