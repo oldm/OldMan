@@ -83,7 +83,7 @@ class Resource(object):
     """
 
     _special_attribute_names = ["_models", "_id", "_types", "_is_blank_node", "_model_manager",
-                                "_store", "_former_types", "_logger", "_session", "_is_new"]
+                                "_store", "_former_types", "_logger", "_session", "_is_new", "_tmp_attribute_values"]
     _pickle_attribute_names = ["_id", '_types', '_is_new']
 
     def __init__(self, id, model_manager, session, types=None, is_new=True, former_types=None, **kwargs):

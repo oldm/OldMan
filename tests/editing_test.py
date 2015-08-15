@@ -447,6 +447,9 @@ class BasicEditingTest(unittest.TestCase):
 
         alice_iri = alice1.id.iri
 
+        # If any cache
+        data_store.resource_cache.remove_resource(alice1)
+
         session2 = user_mediator.create_session()
         alice2 = lp_model.get(session2, alice_iri)
         self.assertTrue(alice2.employee is not None)
@@ -456,6 +459,8 @@ class BasicEditingTest(unittest.TestCase):
         session2.flush()
 
         bob_iri = bob1.id.iri
+        # If any cache
+        data_store.resource_cache.remove_resource(bob1)
         session3 = user_mediator.create_session()
         bob2 = lp_model.get(session3, bob_iri)
         self.assertTrue(bob2.employer is None)
@@ -471,6 +476,9 @@ class BasicEditingTest(unittest.TestCase):
         bob.employer = alice
         session1.flush()
         alice_iri = alice.id.iri
+
+        # If any cache
+        data_store.resource_cache.remove_resource(alice)
 
         session2 = user_mediator.create_session()
         alice2 = lp_model.get(session2, alice_iri)

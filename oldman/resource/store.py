@@ -89,6 +89,8 @@ class StoreResource(Resource):
         self._models, self._types = self._model_manager.find_models_and_types(state["_types"])
         self._former_types = set(self._types)
 
+        self._tmp_attribute_values = {}
+
         # Attributes (Python attributes or OMAttributes)
         for name, value in state.iteritems():
             if name in ["store_name", "_id", "_types", "_is_new"]:
@@ -97,14 +99,19 @@ class StoreResource(Resource):
                 setattr(self, name, value)
             # OMAttributes
             else:
-                attribute = self._get_om_attribute(name)
-                attribute.set(self, value)
-                # Clears former values (allows modification)
-                attribute.receive_storage_ack(self)
+                self._tmp_attribute_values[name] = value
 
     def reattach(self, xstore_session):
         if self._session is None:
             self._session = xstore_session
+
+            # Affects the attribute values
+            for name, value in self._tmp_attribute_values.iteritems():
+                attribute = self._get_om_attribute(name)
+                attribute.set(self, value)
+                # Clears former values (allows modification)
+                attribute.receive_storage_ack(self)
+            self._tmp_attribute_values = None
         else:
             # TODO: find a better exception
             raise Exception("Already attached StoreResource %s" % self)
