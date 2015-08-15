@@ -23,6 +23,11 @@ def extract_title(film):
 
 def extract_name(person):
     """French name first, English second"""
+    # Sometimes the DBpedia entries are very incomplete: few actors are not known to be persons...
+    # Thus no name can then be extracted
+    if "http://xmlns.com/foaf/0.1/Person" not in person.types:
+        return None
+
     if person.names is not None and len(person.names) > 0:
         for key in ["fr", "en"]:
             if key in person.names:
