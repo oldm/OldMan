@@ -29,7 +29,8 @@ setup(name="OldMan",
                         'validate_email',
                         'dogpile.cache',
                         'requests',
-                        'negotiator'
+                        'negotiator',
+                        'networkx'
       ],
       license="BSD",
       classifiers=[

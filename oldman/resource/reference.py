@@ -38,8 +38,8 @@ class ResourceReference(object):
                 self._permanent_object_iri = None
 
         elif is_temporary_blank_node(object_resource_or_iri):
-            raise ValueError("Cannot directly assign an temporary skolemized IRI. "
-                             "Please assign a Resource object instead.")
+            raise ValueError("Cannot directly assign an temporary skolemized IRI (%s). "
+                             "Please assign a Resource object instead." % object_resource_or_iri)
         else:
             self._object_resource = None
             self._permanent_object_iri = object_resource_or_iri

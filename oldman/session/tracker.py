@@ -1,17 +1,7 @@
 from collections import defaultdict
 
 
-class ResourceFinder(object):
-    """
-        Interface without side-effect method.
-
-        TODO: should we still keep distinct?
-    """
-    def find(self, iri):
-        raise NotImplementedError("Should be implemented by a concrete implementation.")
-
-
-class ResourceTracker(ResourceFinder):
+class ResourceTracker(object):
 
     def find(self, iri):
         """ Inherited. See YYYY """
@@ -43,6 +33,9 @@ class ResourceTracker(ResourceFinder):
     def modified_resources(self):
         """ TODO: explain
         Excludes resources to be deleted."""
+        raise NotImplementedError("Should be implemented by a concrete implementation.")
+
+    def get_dependencies(self, resource):
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
 
@@ -117,3 +110,10 @@ class BasicResourceTracker(ResourceTracker):
         object_iri_references = self._object_iri_references[reference.object_iri]
         if reference in object_iri_references:
             object_iri_references.remove(reference)
+
+    def get_dependencies(self, resource):
+        return {ref.get() for ref in self._subject_references[resource]
+                if ref.is_bound_to_object_resource}
+
+
+

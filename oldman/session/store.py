@@ -1,7 +1,10 @@
 from collections import defaultdict
+import logging
 from oldman.resource.store import StoreResource
 from oldman.session.session import Session
 from oldman.session.tracker import BasicResourceTracker
+import networkx as nx
+from networkx.algorithms.dag import is_directed_acyclic_graph, topological_sort
 
 
 class CrossStoreSession(Session):
@@ -43,6 +46,7 @@ class DefaultCrossStoreSession(CrossStoreSession):
     def __init__(self, store_selector):
         self._store_selector = store_selector
         self._tracker = BasicResourceTracker()
+        self._logger = logging.getLogger(__name__)
 
     @property
     def tracker(self):
@@ -112,7 +116,27 @@ class DefaultCrossStoreSession(CrossStoreSession):
 
             The order is important when saving resources with temporary IDs.
         """
-        return resources_to_update
+        if len(resources_to_update) == 1:
+            return resources_to_update
+
+        graph = nx.DiGraph()
+        for resource in resources_to_update:
+            if resource not in graph:
+                graph.add_node(resource)
+            dependencies = self._tracker.get_dependencies(resource)
+            for dep_resource in dependencies:
+                if dep_resource not in graph:
+                    graph.add_node(dep_resource)
+                # Inverse dependency edge
+                graph.add_edge(dep_resource, resource)
+
+        if is_directed_acyclic_graph(graph):
+            return topological_sort(graph)
+        else:
+            self._logger.warn("Some resources are mutually dependent so cannot be sorted. \n"
+                              "This may cause problems when flushing new resources (with temporary IDs)"
+                              "to some stores.")
+            return resources_to_update
 
     @staticmethod
     def _sort_stores(all_resources_to_update, all_resources_to_delete):
@@ -145,7 +169,7 @@ def cluster_by_store_and_status(resources_to_update, resources_to_delete):
 
 
 def cluster_by_store(resources):
-    cluster = defaultdict(set)
+    cluster = defaultdict(list)
     for resource in resources:
-        cluster[resource.store].add(resource)
+        cluster[resource.store].append(resource)
     return cluster
