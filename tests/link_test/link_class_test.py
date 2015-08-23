@@ -1,8 +1,10 @@
 from unittest import TestCase
 from os.path import join, dirname
+
 from rdflib import Graph
+
 from oldman import SparqlStore
-from oldman.schema.hydra import HydraSchemaAdapter
+from oldman.storage.hydra.schema_adapter import HydraSchemaAdapter
 
 
 class LinkClassTest(TestCase):

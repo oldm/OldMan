@@ -7,8 +7,8 @@ from unittest import TestCase
 
 from rdflib import Graph, RDFS, URIRef, BNode, Literal
 
-from oldman.model.ancestry import ClassAncestry
-from oldman.vocabulary import MODEL_PRIORITY_IRI, MODEL_HAS_PRIORITY_IRI, MODEL_PRIORITY_CLASS_IRI
+from oldman.core.model.ancestry import ClassAncestry
+from oldman.core.vocabulary import MODEL_PRIORITY_IRI, MODEL_HAS_PRIORITY_IRI, MODEL_PRIORITY_CLASS_IRI
 
 
 EXAMPLE = "http://localhost/vocab#"

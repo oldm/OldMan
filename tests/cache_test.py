@@ -1,9 +1,10 @@
 import unittest
+
 from default_model import *
 
+
 # Force the cache
-from oldman.session.store import DefaultCrossStoreSession
-from oldman.session.tracker import BasicResourceTracker
+from oldman.storage.session import DefaultCrossStoreSession
 
 data_store.resource_cache.change_cache_region(make_region().configure('dogpile.cache.memory_pickle'))
 

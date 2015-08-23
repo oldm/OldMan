@@ -6,11 +6,13 @@ No cache.
 
 from unittest import TestCase
 from os import path
-from rdflib import ConjunctiveGraph, URIRef
 import json
 from copy import copy
+
+from rdflib import ConjunctiveGraph, URIRef
+
 from oldman import create_user_mediator, parse_graph_safely, SparqlStore
-from oldman.exception import OMRequiredPropertyError, OMAttributeTypeCheckError
+from oldman.core.exception import OMRequiredPropertyError, OMAttributeTypeCheckError
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))

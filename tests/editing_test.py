@@ -1,7 +1,9 @@
 import unittest
+
 from rdflib import URIRef
+
 from default_model import *
-from oldman.exception import OMAttributeTypeCheckError, OMRequiredPropertyError
+from oldman.core.exception import OMAttributeTypeCheckError, OMRequiredPropertyError
 
 
 class BasicEditingTest(unittest.TestCase):

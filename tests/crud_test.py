@@ -1,7 +1,9 @@
 import unittest
+
 from rdflib import URIRef, Literal, RDF, XSD
+
 from default_model import *
-from oldman.exception import OMBadRequestException, OMHashIriError, OMObjectNotFoundError, OMDifferentHashlessIRIError, \
+from oldman.core.exception import OMBadRequestException, OMHashIriError, OMObjectNotFoundError, OMDifferentHashlessIRIError, \
     OMForbiddenSkolemizedIRIError
 
 

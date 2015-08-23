@@ -1,8 +1,9 @@
 import unittest
+
 from default_model import *
-from oldman.common import is_blank_node
-from oldman.exception import OMUniquenessError, OMIriError
-from oldman.iri.id import PermanentId, TemporaryId
+from oldman.core.common import is_blank_node
+from oldman.core.exception import OMUniquenessError, OMIriError
+from oldman.core.id import PermanentId, TemporaryId
 
 
 class IriTest(unittest.TestCase):

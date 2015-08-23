@@ -1,9 +1,11 @@
 from copy import deepcopy
 from unittest import TestCase
 from os.path import dirname, join
+
 from rdflib import Graph
+
 from oldman import SparqlStore, create_user_mediator
-from oldman.exception import OMAttributeTypeCheckError, OMAlreadyDeclaredDatatypeError
+from oldman.core.exception import OMAttributeTypeCheckError, OMAlreadyDeclaredDatatypeError
 
 NO_PROPERTY_CONTEXT_DICT = {
     "@context": {

@@ -1,5 +1,6 @@
 import unittest
-from oldman.model.attribute import Entry
+
+from oldman.core.model.attribute import Entry
 
 
 class AttributeEntryTest(unittest.TestCase):

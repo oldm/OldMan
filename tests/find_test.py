@@ -1,6 +1,7 @@
 import unittest
+
 from default_model import *
-from oldman.exception import OMAttributeAccessError
+from oldman.core.exception import OMAttributeAccessError
 
 
 class FindTest(unittest.TestCase):

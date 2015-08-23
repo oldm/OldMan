@@ -7,8 +7,7 @@ from rdflib import Dataset, Graph
 from rdflib.namespace import FOAF
 
 from oldman import create_user_mediator, parse_graph_safely, SparqlStore
-from oldman.rest.crud import HashLessCRUDer
-
+from oldman.client.rest.crud import HashLessCRUDer
 
 logging.config.fileConfig(path.join(path.dirname(__file__), 'logging.ini'))
 

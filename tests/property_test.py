@@ -5,10 +5,12 @@
 
 from unittest import TestCase
 from os import path
-from rdflib import ConjunctiveGraph, URIRef, Literal, Graph, XSD
 import json
+
+from rdflib import ConjunctiveGraph, URIRef, Literal, Graph, XSD
+
 from oldman import create_user_mediator, parse_graph_safely, SparqlStore
-from oldman.exception import OMPropertyDefError, OMReadOnlyAttributeError
+from oldman.core.exception import OMPropertyDefError, OMReadOnlyAttributeError
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))

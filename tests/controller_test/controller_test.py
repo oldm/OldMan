@@ -1,8 +1,10 @@
-from rdflib import Graph
-from oldman import SparqlStore, create_user_mediator, parse_graph_safely
-from oldman.rest.controller import HTTPController
 from os import path
 import unittest
+
+from rdflib import Graph
+
+from oldman import SparqlStore, create_user_mediator, parse_graph_safely
+from oldman.client.rest.controller import HTTPController
 
 schema_graph = Graph()
 schema_file = path.join(path.dirname(__file__), "controller-schema.ttl")

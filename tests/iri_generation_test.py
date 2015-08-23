@@ -3,9 +3,9 @@ from unittest import TestCase
 from rdflib import ConjunctiveGraph, URIRef, RDF, BNode, Graph
 
 from oldman import create_user_mediator, SparqlStore
-from oldman.iri.permanent import UUIDFragmentPermanentIDGenerator
-from oldman.exception import OMRequiredHashlessIRIError
-from oldman.rest.crud import HashLessCRUDer
+from oldman.client.rest.crud import HashLessCRUDer
+from oldman.storage.id_generation import UUIDFragmentPermanentIDGenerator
+from oldman.core.exception import OMRequiredHashlessIRIError
 
 
 EXAMPLE = "http://localhost/vocab#"
