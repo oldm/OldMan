@@ -1,7 +1,7 @@
 from logging import getLogger
 
 from oldman.client.mediation.store_proxy import DefaultStoreProxy
-from oldman.client.model_manager import ClientModelManager
+from oldman.client.model.manager import ClientModelManager
 from oldman.storage.model.conversion.converter import EquivalentModelConverter
 from oldman.storage.model.conversion.manager import ModelConversionManager
 from oldman.client.mediation.store_selector import StoreSelector

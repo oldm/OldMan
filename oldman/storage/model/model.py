@@ -15,15 +15,13 @@ class StoreModel(Model):
     :param methods: `dict` of Python functions that takes as first argument a
                     :class:`~oldman.resource.Resource` object. Keys are the method names.
                     Defaults to `{}`. TODO: see if is still needed.
-    :param operations: TODO: describe.
     :param local_context: TODO: describe.
     """
 
     def __init__(self, name, class_iri, ancestry_iris, context, om_attributes,
-                 id_generator, operations=None, local_context=None):
+                 id_generator, local_context=None):
         Model.__init__(self, name, class_iri, ancestry_iris, context, om_attributes,
-                       id_generator.is_generating_blank_nodes, operations=operations,
-                       local_context=local_context)
+                       id_generator.is_generating_blank_nodes, local_context=local_context)
         self._id_generator = id_generator
 
     def generate_permanent_id(self, previous_id):

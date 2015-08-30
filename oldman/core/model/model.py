@@ -35,12 +35,11 @@ class Model(object):
     :param methods: `dict` of Python functions that takes as first argument a
                     :class:`~oldman.resource.Resource` object. Keys are the method names.
                     Defaults to `{}`. TODO: remove??
-    :param operations: TODO: describe.
     :param local_context: TODO: describe.
     """
 
     def __init__(self, name, class_iri, ancestry_iris, context, om_attributes,
-                 accept_new_blank_nodes, operations=None, local_context=None):
+                 accept_new_blank_nodes, local_context=None):
         reserved_names = ["id", "hashless_iri", "_types", "types"]
         for field in reserved_names:
             if field in om_attributes:
@@ -52,9 +51,6 @@ class Model(object):
         self._om_attributes = om_attributes
         self._accept_new_blank_nodes = accept_new_blank_nodes
         self._class_types = ancestry_iris
-        self._operations = operations if operations is not None else {}
-        self._operation_by_name = {op.name: op for op in operations.values()
-                                   if op.name is not None}
 
         self._has_reversed_attributes = True in [a.reversed for a in self._om_attributes.values()]
         self._logger = logging.getLogger(__name__)
@@ -110,14 +106,6 @@ class Model(object):
         """TODO: describe. Useful for knowing if a bnode ID of a resource
          is temporary or maybe not."""
         return self._accept_new_blank_nodes
-
-    def get_operation(self, http_method):
-        """TODO: describe"""
-        return self._operations.get(http_method)
-
-    def get_operation_by_name(self, name):
-        """TODO: describe"""
-        return self._operation_by_name.get(name)
 
     def is_subclass_of(self, model):
         """Returns `True` if its RDFS class is a sub-class *(rdfs:subClassOf)*

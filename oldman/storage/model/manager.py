@@ -1,6 +1,4 @@
 from oldman.core.exception import OMInternalError
-from oldman.core.vocabulary import HYDRA_COLLECTION_IRI, HTTP_POST, HYDRA_PAGED_COLLECTION_IRI
-from oldman.storage.hydra.operation import append_to_hydra_collection, append_to_hydra_paged_collection
 from oldman.storage.id_generation import IncrementalIriGenerator, PrefixedUUIDPermanentIDGenerator, \
     BlankNodePermanentIDGenerator
 from oldman.core.model.manager import ModelManager
@@ -8,14 +6,6 @@ from oldman.storage.model.model import StoreModel
 
 
 class StoreModelManager(ModelManager):
-
-    def __init__(self, declare_default_operation_functions=True, **kwargs):
-        ModelManager.__init__(self, **kwargs)
-
-        # TODO: examine their relevance
-        if declare_default_operation_functions:
-            self.declare_operation_function(append_to_hydra_collection, HYDRA_COLLECTION_IRI, HTTP_POST)
-            self.declare_operation_function(append_to_hydra_paged_collection, HYDRA_PAGED_COLLECTION_IRI, HTTP_POST)
 
     def create_model(self, class_name_or_iri, context_iri_or_payload, store, iri_prefix=None,
                      iri_fragment=None, iri_generator=None, untyped=False, incremental_iri=False,
@@ -56,7 +46,7 @@ class StoreModelManager(ModelManager):
                                   context_file_path=context_file_path, store=store)
 
     def _instantiate_model(self, class_name_or_iri, class_iri, ancestry, context_iri_or_payload, om_attributes,
-                           operations, local_context, iri_fragment=None, iri_prefix=None, iri_generator=None,
+                           local_context, iri_fragment=None, iri_prefix=None, iri_generator=None,
                            incremental_iri=False, store=None):
 
         if store is None:
@@ -73,4 +63,4 @@ class StoreModelManager(ModelManager):
             id_generator = BlankNodePermanentIDGenerator()
 
         return StoreModel(class_name_or_iri, class_iri, ancestry.bottom_up, context_iri_or_payload,
-                          om_attributes, id_generator, operations=operations, local_context=local_context)
+                          om_attributes, id_generator, local_context=local_context)

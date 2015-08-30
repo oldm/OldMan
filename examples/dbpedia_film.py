@@ -63,7 +63,7 @@ if __name__ == "__main__":
     store.create_model("Person", context_url)
 
     # Mediator for users
-    user_mediator = create_user_mediator(store)
+    user_mediator = create_user_mediator(store, schema_graph=schema_graph)
     # Re-uses the models of the data store
     user_mediator.import_store_models()
     film_model = user_mediator.get_client_model("http://dbpedia.org/ontology/Film")

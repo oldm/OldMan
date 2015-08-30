@@ -11,17 +11,23 @@ class ClientModel(Model):
      """
 
     @classmethod
-    def copy_store_model(cls, store_model):
+    def copy_store_model(cls, store_model, operations):
         """TODO: describe """
         return ClientModel(store_model.name, store_model.class_iri, store_model.ancestry_iris,
-                           store_model.context, store_model.om_attributes, operations=store_model._operations,
+                           store_model.context, store_model.om_attributes,
                            local_context=store_model.local_context,
+                           operations=operations,
                            accept_new_blank_nodes=store_model.accept_new_blank_nodes)
 
     def __init__(self, name, class_iri, ancestry_iris, context, om_attributes, operations=None,
                  local_context=None, accept_new_blank_nodes=False):
         Model.__init__(self, name, class_iri, ancestry_iris, context, om_attributes,
-                       accept_new_blank_nodes, operations=operations, local_context=local_context)
+                       accept_new_blank_nodes, local_context=local_context)
+
+        self._operations = operations if operations is not None else {}
+        self._operation_by_name = {op.name: op for op in self._operations.values()
+                                   if op.name is not None}
+
         # {method_name: ancestor_class_iri}
         self._method_inheritance = {}
         # {method_name: method}
@@ -33,6 +39,14 @@ class ClientModel(Model):
         :class:`~oldman.resource.Resource` object. Keys are the method names.
         """
         return dict(self._methods)
+
+    def get_operation(self, http_method):
+        """TODO: describe"""
+        return self._operations.get(http_method)
+
+    def get_operation_by_name(self, name):
+        """TODO: describe"""
+        return self._operation_by_name.get(name)
 
     def declare_method(self, method, name, ancestor_class_iri):
         """TODO: describe. Not for end-users! """

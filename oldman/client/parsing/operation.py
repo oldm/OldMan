@@ -4,7 +4,7 @@ from rdflib import URIRef
 
 from oldman.core.vocabulary import HYDRA_SUPPORTED_OPERATION, HYDRA_METHOD, HYDRA_EXCEPTS
 from oldman.core.vocabulary import HYDRA_RETURNS, OLDM_SHORTNAME
-from oldman.core.model.operation import Operation
+from oldman.client.model.operation import Operation
 
 
 def get_operation_function(operation_functions, class_iri, ancestry, method):

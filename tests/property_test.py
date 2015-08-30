@@ -92,7 +92,7 @@ context = {
 data_store = SparqlStore(data_graph, schema_graph=schema_graph)
 data_store.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
 
-user_mediator = create_user_mediator(data_store)
+user_mediator = create_user_mediator(data_store, schema_graph=schema_graph)
 user_mediator.import_store_models()
 lc_model = user_mediator.get_client_model("LocalClass")
 

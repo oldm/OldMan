@@ -28,7 +28,7 @@ store.create_model("LocalPerson", ctx_iri, iri_prefix="http://localhost/persons/
                    iri_fragment="me", incremental_iri=True)
 
 #User Mediator
-user_mediator = create_user_mediator(store)
+user_mediator = create_user_mediator(store, schema_graph=schema_graph)
 user_mediator.import_store_models()
 
 lp_model = user_mediator.get_client_model("LocalPerson")

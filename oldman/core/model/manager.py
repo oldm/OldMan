@@ -5,7 +5,6 @@ from urlparse import urlparse
 from rdflib import Graph
 
 from oldman.core.exception import OMUndeclaredClassNameError, OMExpiredMethodDeclarationTimeSlotError
-from oldman.core.parsing.operation import HydraOperationExtractor
 from oldman.core.parsing.schema.attribute import OMAttributeExtractor
 from oldman.core.model.registry import ModelRegistry
 from oldman.core.model.ancestry import ClassAncestry
@@ -25,12 +24,10 @@ class ModelManager(object):
                             will extract :class:`~oldman.attribute.OMAttribute` for generating
                             new :class:`~oldman.model.Model` objects.
                             Defaults to a new instance of :class:`~oldman.parsing.attribute.OMAttributeExtractor`.
-    :param oper_extractor: TODO: describe.
     """
 
-    def __init__(self, schema_graph=None, attr_extractor=None, oper_extractor=None):
+    def __init__(self, schema_graph=None, attr_extractor=None):
         self._attr_extractor = attr_extractor if attr_extractor is not None else OMAttributeExtractor()
-        self._operation_extractor = oper_extractor if oper_extractor is not None else HydraOperationExtractor()
         self._schema_graph = schema_graph
         self._operation_functions = {}
         self._registry = ModelRegistry()
@@ -106,11 +103,8 @@ class ModelManager(object):
                                                          context_file_path_or_payload,
                                                          self._schema_graph)
 
-        operations = self._operation_extractor.extract(ancestry, self._schema_graph,
-                                                       self._operation_functions)
-
         model = self._instantiate_model(class_name_or_iri, class_iri, ancestry, context_iri_or_payload,
-                                        om_attributes, operations, context_file_path, **kwargs)
+                                        om_attributes, context_file_path, **kwargs)
 
         self._add_model(model, is_default=is_default)
 
@@ -124,7 +118,7 @@ class ModelManager(object):
         return model
 
     def _instantiate_model(self, class_name_or_iri, class_iri, ancestry, context_iri_or_payload, om_attributes,
-                           operations, local_context, **kwargs):
+                           local_context, **kwargs):
         raise NotImplementedError("To be implemented in sub-classes")
 
     def get_model(self, class_name_or_iri):
