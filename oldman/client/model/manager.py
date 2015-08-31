@@ -1,6 +1,5 @@
 from oldman.client.hydra.operation import append_to_hydra_collection, append_to_hydra_paged_collection
 from oldman.client.model.model import ClientModel
-from oldman.client.parsing.operation import HydraOperationExtractor
 from oldman.core.model.ancestry import ClassAncestry
 from oldman.core.model.manager import ModelManager
 from oldman.core.vocabulary import HYDRA_COLLECTION_IRI, HTTP_POST, HYDRA_PAGED_COLLECTION_IRI
@@ -12,10 +11,10 @@ class ClientModelManager(ModelManager):
     In charge of the conversion between and store and client models.
     """
 
-    def __init__(self, declare_default_operation_functions=True, oper_extractor=None, **kwargs):
+    def __init__(self, oper_extractor, declare_default_operation_functions=True, **kwargs):
         ModelManager.__init__(self, **kwargs)
-        self._operation_extractor = oper_extractor if oper_extractor is not None else HydraOperationExtractor()
 
+        self._operation_extractor = oper_extractor
         if declare_default_operation_functions:
             self.declare_operation_function(append_to_hydra_collection, HYDRA_COLLECTION_IRI, HTTP_POST)
             self.declare_operation_function(append_to_hydra_paged_collection, HYDRA_PAGED_COLLECTION_IRI, HTTP_POST)

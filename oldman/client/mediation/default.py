@@ -13,12 +13,12 @@ DEFAULT_MODEL_NAME = "Default_Client"
 
 class DefaultUserMediator(UserMediator):
 
-    def __init__(self, data_stores, schema_graph=None, attr_extractor=None, oper_extractor=None):
+    def __init__(self, data_stores, oper_extractor, schema_graph=None, attr_extractor=None):
         self._logger = getLogger(__name__)
         self._store_selector = StoreSelector(data_stores)
 
-        self._model_manager = ClientModelManager(schema_graph=schema_graph, attr_extractor=attr_extractor,
-                                                 oper_extractor=oper_extractor)
+        self._model_manager = ClientModelManager(oper_extractor, schema_graph=schema_graph,
+                                                 attr_extractor=attr_extractor)
 
         # Default model
         self._model_manager.create_model(DEFAULT_MODEL_NAME, {u"@context": {}}, untyped=True,is_default=True,

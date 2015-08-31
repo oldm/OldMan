@@ -6,6 +6,7 @@
 """
 
 from rdflib.plugin import register, Parser, Serializer
+from oldman.client.parsing.operation import HydraOperationExtractor
 
 from .storage.store.sparql import SparqlStore
 from .storage.store.http import HttpStore
@@ -23,7 +24,10 @@ register('application/ld+json', Parser, 'rdflib_jsonld.parser', 'JsonLDParser')
 def create_user_mediator(data_stores, schema_graph=None, attr_extractor=None, oper_extractor=None,
                          mediator_class=DefaultUserMediator):
     """TODO: describe """
-    return mediator_class(data_stores, schema_graph=schema_graph, attr_extractor=attr_extractor,
-                          oper_extractor=oper_extractor)
+    # By default, extracts Hydra operations
+    if oper_extractor is None:
+        oper_extractor = HydraOperationExtractor()
+
+    return mediator_class(data_stores, oper_extractor, schema_graph=schema_graph, attr_extractor=attr_extractor)
 
 
