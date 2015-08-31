@@ -48,7 +48,8 @@ class DefaultUserMediator(UserMediator):
         for store in stores:
             for store_model in store.model_manager.models:
                 is_default = (store_model.class_iri is None)
-                client_model = self._model_manager.import_model(store_model, is_default=is_default)
+                client_model = self._model_manager.import_model(store_model, is_default=is_default,
+                                                                store_schema_graph=store.model_manager.schema_graph)
                 # Converter
                 converter = EquivalentModelConverter(client_model, store_model)
                 self._conversion_manager.register_model_converter(client_model, store_model, store, converter)

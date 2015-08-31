@@ -19,7 +19,7 @@ data_store.create_model("Collection", context_file, iri_prefix="http://localhost
                         incremental_iri=True)
 data_store.create_model("Item", context_file, iri_prefix="http://localhost/items/")
 
-user_mediator = create_user_mediator(data_store, schema_graph=schema_graph)
+user_mediator = create_user_mediator(data_store)
 user_mediator.import_store_models()
 
 collection_model = user_mediator.get_client_model("Collection")

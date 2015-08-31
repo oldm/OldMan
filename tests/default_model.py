@@ -256,7 +256,7 @@ data_store.create_model(lp_name_or_iri, context, iri_prefix="http://localhost/pe
 data_store.create_model("LocalRSAPublicKey", context)
 data_store.create_model("LocalGPGPublicKey", context)
 
-user_mediator = create_user_mediator(data_store, schema_graph=schema_graph)
+user_mediator = create_user_mediator(data_store)
 user_mediator.import_store_models()
 
 lp_model = user_mediator.get_client_model(lp_name_or_iri)

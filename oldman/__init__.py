@@ -22,10 +22,6 @@ register('application/ld+json', Parser, 'rdflib_jsonld.parser', 'JsonLDParser')
 
 def create_user_mediator(data_stores, schema_graph=None, attr_extractor=None, oper_extractor=None,
                          mediator_class=DefaultUserMediator):
-    if schema_graph is None:
-        raise NotImplementedError("schema_graph extraction from the data stores in not yet supported. "
-                                  "Please provide it.")
-
     """TODO: describe """
     return mediator_class(data_stores, schema_graph=schema_graph, attr_extractor=attr_extractor,
                           oper_extractor=oper_extractor)

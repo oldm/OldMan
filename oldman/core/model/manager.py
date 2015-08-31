@@ -54,6 +54,10 @@ class ModelManager(object):
         """TODO: describe."""
         return self._registry.non_default_models
 
+    @property
+    def schema_graph(self):
+        return self._schema_graph
+
     def has_default_model(self):
         return self._registry.default_model is not None
 
