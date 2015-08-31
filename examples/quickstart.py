@@ -86,16 +86,17 @@ print john.to_jsonld()
 print bob.to_rdf("turtle")
 
 ## Email is required
-#lp_model.create(name="Jack")
+# lp_model.new(session1, name="Jack")
+# session1.flush()
 
 ## Invalid email
-#bob.emails = {'you_wont_email_me'}
+# bob.emails = {'you_wont_email_me'}
 
 ## Not a set
-#bob.emails = "bob@example.com"
+# bob.emails = "bob@example.com"
 
 ##Invalid name
-#bob.name = 5
+# bob.name = 5
 
 session1.close()
 session2.close()

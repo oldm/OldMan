@@ -32,7 +32,7 @@ Here, we just need its IRI::
 We now have almost enough domain knowledge to create our store and its models.
 
 
-Here, we consider an in-memory SPARQL endpoint as a store (:class:`~oldman.store.sparql.SparqlStore`)::
+Here, we consider an in-memory SPARQL endpoint as a store (:class:`~oldman.storage.store.sparql.SparqlStore`)::
 
     # In-memory RDF graph
     data_graph = Graph()
@@ -43,7 +43,7 @@ We extract the prefix information from the schema graph::
     store.extract_prefixes(schema_graph)
 
 
-We create a `LocalPerson` :class:`~oldman.model.model.Model` for the store.
+We create a `LocalPerson` :class:`~oldman.storage.model.model.StoreModel` for the store.
 For that, we need:
  * The IRI or a JSON-LD term of the RDFS class of the model. Here `"LocalPerson"` is an alias
    for `<http://example.org/myvoc#LocalPerson>`_ defined in the context file ;
@@ -51,7 +51,7 @@ For that, we need:
  * A prefix for creating the IRI of new resources (optional) ;
  * An IRI fragment (optional);
  * To declare that we want to generate incremental IRIs with short numbers
-   for new :class:`~oldman.resource.resource.Resource` objects. ::
+   for new :class:`~oldman.core.resource.resource.Resource` objects. ::
 
     store.create_model("LocalPerson", ctx_iri, iri_prefix="http://localhost/persons/",
                             iri_fragment="me", incremental_iri=True)
@@ -59,24 +59,27 @@ For that, we need:
 
 
 Models of the store are not directly manipulated; the user is expected to use their relative client models instead.
-Here, we instantiate a :class:`~oldman.mediation.mediator.UserMediator` object that (i) gives access to client models and (ii) offers convenient method to retrieve and create :class:`~oldman.resource.resource.Resource` objects::
+Here, we instantiate a :class:`~oldman.client.mediation.mediator.UserMediator` object that (i) gives access to client models
+and (ii) can create :class:`~oldman.client.session.ClientSession` objects::
 
 
     user_mediator = create_user_mediator(store)
     user_mediator.import_store_models()
     lp_model = user_mediator.get_client_model("LocalPerson")
 
+    session1 = user_mediator.create_session()
 
 Resource editing
 ----------------
-Now that the domain logic has been declared, we can create :class:`~oldman.resource.resource.Resource` objects
-for two persons, Alice and Bob::
+Now that the domain logic has been declared, we can create :class:`~oldman.client.resource.ClientResource` objects
+for two persons, Alice and Bob (TODO: explain session)::
 
-    alice = lp_model.create(name="Alice", emails={"alice@example.org"},
+    alice = lp_model.new(session1, name="Alice", emails={"alice@example.org"},
                             short_bio_en="I am ...")
-    bob = lp_model.new(name="Bob", blog="http://blog.example.com/",
+    bob = lp_model.new(session1, name="Bob", blog="http://blog.example.com/",
                        short_bio_fr=u"J'ai grandi en ... .")
 
+TODO: UPDATE.
 Alice is already stored in the `store` but not Bob.
 Actually, it cannot be saved yet because some information is still missing: its email addresses.
 This information is required by our domain logic. Let's satisfy this constraint and save Bob::
@@ -86,14 +89,13 @@ This information is required by our domain logic. Let's satisfy this constraint 
     >>> bob.emails = {"bob@localhost", "bob@example.org"}
     >>> bob.is_valid()
     True
-    >>> bob.save()
+    >>> session1.flush()
 
 Let's now declare that they are friends::
 
     alice.friends = {bob}
     bob.friends = {alice}
-    alice.save()
-    bob.save()
+    session1.flush()
 
 That's it. Have you seen many IRIs? Only one, for the blog.
 Let's look at them::
@@ -119,8 +121,9 @@ and at some other attributes::
 We can assign an IRI when creating a  :class:`~oldman.resource.resource.Resource` object::
 
     >>> john_iri = "http://example.org/john#me"
-    >>> john = lp_model.create(id=john_iri, name="John", emails={"john@example.org"})
-    >>> john.id
+    >>> john = lp_model.new(session1, iri=john_iri, name="John", emails={"john@example.org"})
+    >>> session1.flush()
+    >>> john.id.iri
     "http://example.org/john#me"
 
 
@@ -130,10 +133,11 @@ Resource retrieval
 By default, resource are not cached.
 We can retrieve Alice and Bob from the data graph as follows::
 
-    >>> alice_iri = alice.id
+    >>> alice_iri = alice.id.iri
+    >>> session2 = user_mediator.create_session()
     >>> # First person found named Bob
-    >>> bob = lp_model.get(name="Bob")
-    >>> alice = lp_model.get(id=alice_iri)
+    >>> bob = lp_model.first(session2, name="Bob")
+    >>> alice = lp_model.get(session2, iri=alice_iri)
 
     >>> # Or retrieve her as the unique friend of Bob
     >>> alice = list(bob.friends)[0]
@@ -142,11 +146,11 @@ We can retrieve Alice and Bob from the data graph as follows::
 
 Finds all the persons::
 
-    >>> set(lp_model.all())
-    set([Resource(<http://example.org/john#me>), Resource(<http://localhost/persons/2#me>), Resource(<http://localhost/persons/1#me>)])
+    >>> set(lp_model.all(session2))
+    set([ClientResource(<http://example.org/john#me>), ClientResource(<http://localhost/persons/2#me>), ClientResource(<http://localhost/persons/1#me>)])
     >>> # Equivalent to
-    >>> set(lp_model.filter())
-    set([Resource(<http://localhost/persons/1#me>), Resource(<http://localhost/persons/2#me>), Resource(<http://example.org/john#me>)])
+    >>> set(lp_model.filter(session2))
+    set([ClientResource(<http://localhost/persons/1#me>), ClientResource(<http://localhost/persons/2#me>), ClientResource(<http://example.org/john#me>)])
 
 
 Serialization
@@ -211,20 +215,25 @@ Validation
 Validation is also there::
 
     >>> # Email is required
-    >>> lp_model.create(name="Jack")
-    oldman.exception.OMRequiredPropertyError: emails
+    >>> lp_model.new(session1, name="Jack")
+    >>> session1.flush()
+    oldman.core.exception.OMRequiredPropertyError: emails
 
-    >>> #Invalid email
+    >>> # Invalid email
     >>> bob.emails = {'you_wont_email_me'}
-    oldman.exception.OMAttributeTypeCheckError: you_wont_email_me is not a valid email (bad format)
+    oldman.core.exception.OMAttributeTypeCheckError: you_wont_email_me is not a valid email (bad format)
 
     >>> # Not a set
     >>> bob.emails = "bob@example.com"
-    oldman.exception.OMAttributeTypeCheckError: A container (<type 'set'>) was expected instead of <type 'str'>
+    oldman.core.exception.OMAttributeTypeCheckError: A container (<type 'set'>) was expected instead of <type 'str'>
 
-    >>> #Invalid name
+    >>> # Invalid name
     >>> bob.name = 5
-    oldman.exception.OMAttributeTypeCheckError: 5 is not a (<type 'str'>, <type 'unicode'>)
+    oldman.core.exception.OMAttributeTypeCheckError: 5 is not a (<type 'str'>, <type 'unicode'>)
+
+    >>> session1.close()
+    >>> session2.close()
+
 
 Domain logic
 ------------

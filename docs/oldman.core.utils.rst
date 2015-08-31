@@ -1,21 +1,21 @@
-oldman.rest package
-===================
+oldman.core.utils package
+=========================
 
 Submodules
 ----------
 
-oldman.rest.controller module
+oldman.core.utils.crud module
 -----------------------------
 
-.. automodule:: oldman.rest.controller
+.. automodule:: oldman.core.utils.crud
     :members:
     :undoc-members:
     :show-inheritance:
 
-oldman.rest.crud module
------------------------
+oldman.core.utils.sparql module
+-------------------------------
 
-.. automodule:: oldman.rest.crud
+.. automodule:: oldman.core.utils.sparql
     :members:
     :undoc-members:
     :show-inheritance:
@@ -24,7 +24,7 @@ oldman.rest.crud module
 Module contents
 ---------------
 
-.. automodule:: oldman.rest
+.. automodule:: oldman.core.utils
     :members:
     :undoc-members:
     :show-inheritance:

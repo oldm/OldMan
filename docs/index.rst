@@ -26,12 +26,12 @@ User's Guide
 API reference
 =============
 
-Main classes manipulated by end-users: :class:`~oldman.mediation.mediator.UserMediator`,
-:class:`~oldman.model.Model` and :class:`~oldman.resource.Resource`.
+Main classes manipulated by end-users: :class:`~oldman.client.mediation.mediator.UserMediator`,
+:class:`~oldman.client.model.model.ClientModel` and :class:`~oldman.client.resource.ClientResource`.
 
-:class:`~oldman.iri.IriGenerator` classes can be found in the :class:`oldman.iri` module.
+:class:`~oldman.storage.id_generation.PermanentIDGenerator` classes can be found in the :class:`oldman.storage.id_generation` module.
 
-:class:`~oldman.store.datastore.DataStore` classes can be found in the package :class:`oldman.store.datastore`.
+:class:`~oldman.storage.store.store.Store` classes can be found in the package :class:`oldman.storage.store`.
 
 .. toctree::
    :maxdepth: 2
