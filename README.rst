@@ -31,7 +31,7 @@ and **RDF graphs**. This terminology uses the same initials than the well-known 
 Mapper* (ORM) that consider *table rows* instead of *RDF graphs*.
 
 The *Object Linked Data Mapper* (OLDM) term avoids this confusion.
-It also emphasizes that the manipulated resources are supposed to be **on the Web**,
+It also emphasizes that the manipulated resources can be **on the Web**,
 not just in a local database. It should lead users to interact with data stores
 on which they not always have full control (e.g. a tiers Web API).
 
@@ -75,11 +75,12 @@ Current core features
      - Literal validation for common XSD types;
      - Literal validation for arbitrary property (e.g. `foaf:mbox <http://xmlns.com/foaf/spec/#term_mbox>`_);
      - `JSON-LD collections <http://www.w3.org/TR/json-ld/#sets-and-lists>`_ (set, list and language maps);
- * IRI generation for new resources (objects);
  * Inheritance (attributes and Python methods);
  * An attribute can require its value to be a collection (a set, a list or a language map);
  * Arbitrary attribute names (e.g. plural names for collections);
+ * Separation between the client and data store models;
  * Extensibility to various sorts of data stores (not just SPARQL endpoints);
+ * IRI generation for new resources (if not done by the remote data store);
  * Optional resource cache relying on the popular `dogpile.cache <https://bitbucket.org/zzzeek/dogpile.cache>`_ library.
 
 .. _Hydra: http://www.hydra-cg.com/spec/latest/core/
@@ -95,7 +96,7 @@ Status
 .. image:: https://coveralls.io/repos/oldm/OldMan/badge.png
    :target: https://coveralls.io/r/oldm/OldMan
 
-OldMan is a young project **under active development** started in April 2014.
+OldMan is a young project still in an early stage.
 Feel free to `contribute <https://github.com/oldm/OldMan>`_ and to subscribe
 to our mailing list `oldman AT librelist.com`.
 
