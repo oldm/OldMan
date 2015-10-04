@@ -5,12 +5,15 @@ Quickstart
 ==========
 
 Model creation
---------------
+==============
+
+1. Get the declared domain knowledge
+------------------------------------
 
 First, let's import some functions and classes::
 
     from rdflib import Graph
-    from oldman import create_user_mediator, parse_graph_safely, SparqlStore
+    from oldman import create_mediator, parse_graph_safely, SparqlStore
 
 and create the RDF graph `schema_graph` that will contain our schema::
 
@@ -29,8 +32,10 @@ Here, we just need its IRI::
 
     ctx_iri = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_context.jsonld"
 
-We now have almost enough domain knowledge to create our store and its models.
+We now have most of the domain knowledge we need to instantiate the store and its models.
 
+2. Instantiate the store
+------------------------
 
 Here, we consider an in-memory SPARQL endpoint as a store (:class:`~oldman.storage.store.sparql.SparqlStore`)::
 
@@ -43,46 +48,67 @@ We extract the prefix information from the schema graph::
     store.extract_prefixes(schema_graph)
 
 
+3. Create the store model
+-------------------------
+
 We create a `LocalPerson` :class:`~oldman.storage.model.model.StoreModel` for the store.
-For that, we need:
+Like for any model, we need:
  * The IRI or a JSON-LD term of the RDFS class of the model. Here `"LocalPerson"` is an alias
    for `<http://example.org/myvoc#LocalPerson>`_ defined in the context file ;
- * The JSON-LD context;
+ * The JSON-LD context.
+Moreover, since this model is associated to a :class:`~oldman.storage.store.sparql.SparqlStore`, it also have
+the responsibility to generate IRIs for the new resources. Here we provide the following additional information:
  * A prefix for creating the IRI of new resources (optional) ;
  * An IRI fragment (optional);
  * To declare that we want to generate incremental IRIs with short numbers
-   for new :class:`~oldman.core.resource.resource.Resource` objects. ::
+   for new :class:`~oldman.core.resource.resource.Resource` objects (optional). ::
 
     store.create_model("LocalPerson", ctx_iri, iri_prefix="http://localhost/persons/",
                             iri_fragment="me", incremental_iri=True)
 
 
+4. Load the mediator and the client model
+-----------------------------------------
+Store models are not directly manipulated; the user is expected to use their relative client models instead.
+Oldman distinguishes client and store models so that they can have (if necessary) a slightly different but compatible domain logic.
+However here, for the sake of simplicity, client models are directly derived (i.e. imported) from the store models.
 
-Models of the store are not directly manipulated; the user is expected to use their relative client models instead.
-Here, we instantiate a :class:`~oldman.client.mediation.mediator.UserMediator` object that (i) gives access to client models
-and (ii) can create :class:`~oldman.client.session.ClientSession` objects::
+First we instantiate a :class:`~oldman.client.mediation.mediator.Mediator` object that will be in charge of the mediation
+between the client and store models::
+
+    mediator = create_mediator(store)
 
 
-    user_mediator = create_user_mediator(store)
-    user_mediator.import_store_models()
-    lp_model = user_mediator.get_client_model("LocalPerson")
+Then we import the client model from the store model::
 
-    session1 = user_mediator.create_session()
+    mediator.import_store_models()
+
+    lp_model = mediator.get_client_model("LocalPerson")
+
+That's it, now our client model is ready to be used for creating new resources.
 
 Resource editing
-----------------
+================
+
 Now that the domain logic has been declared, we can create :class:`~oldman.client.resource.ClientResource` objects
-for two persons, Alice and Bob (TODO: explain session)::
+for two persons, Alice and Bob.
+
+Oldman requires the creation of a new :class:`~oldman.client.resource.ClientResource` to be done
+inside a :class:`~oldman.client.session.ClientSession`.
+This allows to reduce the number of round-trips between the client and the remote store (the SPARQL endpoint)
+by grouping the updates into a smaller number of requests. ::
+
+    session1 = mediator.create_session()
 
     alice = lp_model.new(session1, name="Alice", emails={"alice@example.org"},
                             short_bio_en="I am ...")
     bob = lp_model.new(session1, name="Bob", blog="http://blog.example.com/",
                        short_bio_fr=u"J'ai grandi en ... .")
 
-TODO: UPDATE.
-Alice is already stored in the `store` but not Bob.
-Actually, it cannot be saved yet because some information is still missing: its email addresses.
-This information is required by our domain logic. Let's satisfy this constraint and save Bob::
+We now have to :class:`~oldman.client.resource.ClientResource` in memory but Alice and Bob are not yet
+in the `store`.
+Actually, Bob is not ready yet to be persisted because some information is still missing: its email addresses.
+This information is required by our domain logic. Let's satisfy this constraint and flush the session::
 
     >>> bob.is_valid()
     False
@@ -91,7 +117,7 @@ This information is required by our domain logic. Let's satisfy this constraint 
     True
     >>> session1.flush()
 
-Let's now declare that they are friends::
+Let's now declare that they are friends and save this change::
 
     alice.friends = {bob}
     bob.friends = {alice}
@@ -118,7 +144,7 @@ and at some other attributes::
     >>> bob.short_bio_fr
     u"J'ai grandi en ... ."
 
-We can assign an IRI when creating a  :class:`~oldman.resource.resource.Resource` object::
+We can also assign an IRI when creating a :class:`~oldman.client.resource.ClientResource` object::
 
     >>> john_iri = "http://example.org/john#me"
     >>> john = lp_model.new(session1, iri=john_iri, name="John", emails={"john@example.org"})
@@ -128,13 +154,13 @@ We can assign an IRI when creating a  :class:`~oldman.resource.resource.Resource
 
 
 Resource retrieval
-------------------
+==================
 
-By default, resource are not cached.
+By default, resources are not cached.
 We can retrieve Alice and Bob from the data graph as follows::
 
     >>> alice_iri = alice.id.iri
-    >>> session2 = user_mediator.create_session()
+    >>> session2 = mediator.create_session()
     >>> # First person found named Bob
     >>> bob = lp_model.first(session2, name="Bob")
     >>> alice = lp_model.get(session2, iri=alice_iri)
@@ -154,7 +180,7 @@ Finds all the persons::
 
 
 Serialization
--------------
+=============
 JSON::
 
     >>> print alice.to_json()
@@ -211,7 +237,7 @@ Turtle::
         foaf:weblog <http://blog.example.com/> .
 
 Validation
-----------
+==========
 Validation is also there::
 
     >>> # Email is required
@@ -236,7 +262,7 @@ Validation is also there::
 
 
 Domain logic
-------------
+============
 
 Here is the declared domain logic that we used:
 
