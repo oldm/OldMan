@@ -3,7 +3,7 @@ import unittest
 
 from rdflib import Graph
 
-from oldman import SparqlStore, create_user_mediator, parse_graph_safely
+from oldman import SparqlStore, create_mediator, parse_graph_safely
 from oldman.client.rest.controller import HTTPController
 
 schema_graph = Graph()
@@ -19,7 +19,7 @@ data_store.create_model("Collection", context_file, iri_prefix="http://localhost
                         incremental_iri=True)
 data_store.create_model("Item", context_file, iri_prefix="http://localhost/items/")
 
-user_mediator = create_user_mediator(data_store)
+user_mediator = create_mediator(data_store)
 user_mediator.import_store_models()
 
 collection_model = user_mediator.get_client_model("Collection")

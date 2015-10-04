@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from rdflib import Graph
-from oldman import create_user_mediator, parse_graph_safely, SparqlStore
+from oldman import create_mediator, parse_graph_safely, SparqlStore
 
 # In-memory RDFLIB store
 rdflib_store = "default"
@@ -28,12 +28,12 @@ store.create_model("LocalPerson", ctx_iri, iri_prefix="http://localhost/persons/
                    iri_fragment="me", incremental_iri=True)
 
 #User Mediator
-user_mediator = create_user_mediator(store)
-user_mediator.import_store_models()
+mediator = create_mediator(store)
+mediator.import_store_models()
 
-lp_model = user_mediator.get_client_model("LocalPerson")
+lp_model = mediator.get_client_model("LocalPerson")
 
-session1 = user_mediator.create_session()
+session1 = mediator.create_session()
 
 alice = lp_model.new(session1, name="Alice", emails={"alice@example.org"},
                      short_bio_en="I am ...")
@@ -67,7 +67,7 @@ print john.id.iri
 
 alice_iri = alice.id.iri
 
-session2 = user_mediator.create_session()
+session2 = mediator.create_session()
 
 # First person found named Bob
 bob = lp_model.first(session2, name="Bob")

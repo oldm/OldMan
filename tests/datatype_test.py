@@ -12,7 +12,7 @@ from datetime import date, datetime, time
 
 from rdflib import ConjunctiveGraph, URIRef
 
-from oldman import create_user_mediator, parse_graph_safely, SparqlStore
+from oldman import create_mediator, parse_graph_safely, SparqlStore
 from oldman.core.exception import OMAttributeTypeCheckError
 
 default_graph = ConjunctiveGraph()
@@ -152,7 +152,7 @@ context = {
 data_store = SparqlStore(data_graph, schema_graph=schema_graph)
 data_store.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
 
-user_mediator = create_user_mediator(data_store)
+user_mediator = create_mediator(data_store)
 user_mediator.import_store_models()
 lc_model = user_mediator.get_client_model("LocalClass")
 default_list_en = ["w1", "w2"]

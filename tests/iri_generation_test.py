@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from rdflib import ConjunctiveGraph, URIRef, RDF, BNode, Graph
 
-from oldman import create_user_mediator, SparqlStore
+from oldman import create_mediator, SparqlStore
 from oldman.client.rest.crud import HashLessCRUDer
 from oldman.storage.id_generation import UUIDFragmentPermanentIDGenerator
 from oldman.core.exception import OMRequiredHashlessIRIError
@@ -30,7 +30,7 @@ context = {
 data_store = SparqlStore(data_graph, schema_graph=schema_graph)
 data_store.create_model("MyClass", context, iri_generator=UUIDFragmentPermanentIDGenerator())
 
-user_mediator = create_user_mediator(data_store)
+user_mediator = create_mediator(data_store)
 user_mediator.import_store_models()
 crud_controller = HashLessCRUDer(user_mediator)
 model = user_mediator.get_client_model("MyClass")

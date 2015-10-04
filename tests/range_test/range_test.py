@@ -4,7 +4,7 @@ from os.path import dirname, join
 
 from rdflib import Graph
 
-from oldman import SparqlStore, create_user_mediator
+from oldman import SparqlStore, create_mediator
 from oldman.core.exception import OMAttributeTypeCheckError, OMAlreadyDeclaredDatatypeError
 
 NO_PROPERTY_CONTEXT_DICT = {
@@ -27,7 +27,7 @@ class RangeTest(TestCase):
 
     def test_no_property_context(self):
         self.store.create_model("MyClass", NO_PROPERTY_CONTEXT_DICT)
-        user_mediator = create_user_mediator(self.store)
+        user_mediator = create_mediator(self.store)
         user_mediator.import_store_models()
         model = user_mediator.get_client_model("MyClass")
 
@@ -41,7 +41,7 @@ class RangeTest(TestCase):
         context = deepcopy(NO_PROPERTY_CONTEXT_DICT)
         context["@context"]["hasX"] = "test:hasX"
         self.store.create_model("MyClass", context)
-        user_mediator = create_user_mediator(self.store)
+        user_mediator = create_mediator(self.store)
         user_mediator.import_store_models()
         model = user_mediator.get_client_model("MyClass")
 
@@ -67,7 +67,7 @@ class RangeTest(TestCase):
             "@type": "xsd:int"
         }
         self.store.create_model("MyClass", context)
-        user_mediator = create_user_mediator(self.store)
+        user_mediator = create_mediator(self.store)
         user_mediator.import_store_models()
         model = user_mediator.get_client_model("MyClass")
 

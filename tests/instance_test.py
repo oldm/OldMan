@@ -5,7 +5,7 @@
 
 from unittest import TestCase
 from rdflib import ConjunctiveGraph, URIRef
-from oldman import create_user_mediator, parse_graph_safely, SparqlStore
+from oldman import create_mediator, parse_graph_safely, SparqlStore
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
@@ -95,7 +95,7 @@ data_store.create_model("GrandParentClass", context, iri_prefix="http://localhos
 data_store.create_model("ParentClass", context, iri_prefix="http://localhost/parents/")
 
 
-user_mediator = create_user_mediator(data_store)
+user_mediator = create_mediator(data_store)
 user_mediator.import_store_models()
 # Methods
 user_mediator.declare_method(square_value, "square_value", EXAMPLE + "GrandParentClass")

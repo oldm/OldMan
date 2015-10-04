@@ -1,4 +1,4 @@
-class UserMediator(object):
+class Mediator(object):
     """
     TODO: describe
 

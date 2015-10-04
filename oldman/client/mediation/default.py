@@ -5,13 +5,13 @@ from oldman.client.model.manager import ClientModelManager
 from oldman.storage.model.conversion.converter import EquivalentModelConverter
 from oldman.storage.model.conversion.manager import ModelConversionManager
 from oldman.client.mediation.store_selector import StoreSelector
-from oldman.client.mediation.mediator import UserMediator
+from oldman.client.mediation.mediator import Mediator
 from oldman.client.session import DefaultClientSession
 
 DEFAULT_MODEL_NAME = "Default_Client"
 
 
-class DefaultUserMediator(UserMediator):
+class DefaultMediator(Mediator):
 
     def __init__(self, data_stores, oper_extractor, schema_graph=None, attr_extractor=None):
         self._logger = getLogger(__name__)

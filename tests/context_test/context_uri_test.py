@@ -2,7 +2,7 @@ import json
 from unittest import TestCase
 from os import path
 from rdflib import Graph
-from oldman import create_user_mediator, parse_graph_safely, SparqlStore
+from oldman import create_mediator, parse_graph_safely, SparqlStore
 
 schema_graph = Graph()
 my_class_def = {
@@ -26,7 +26,7 @@ context_iri = "/contexts/context.jsonld"
 store = SparqlStore(Graph(), schema_graph=schema_graph)
 store.create_model("MyClass", context_iri, context_file_path=context_file_path)
 
-user_mediator = create_user_mediator(store)
+user_mediator = create_mediator(store)
 user_mediator.import_store_models()
 model = user_mediator.get_client_model("MyClass")
 

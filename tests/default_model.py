@@ -6,7 +6,7 @@ from dogpile.cache import make_region
 from rdflib import Dataset, Graph
 from rdflib.namespace import FOAF
 
-from oldman import create_user_mediator, parse_graph_safely, SparqlStore
+from oldman import create_mediator, parse_graph_safely, SparqlStore
 from oldman.client.rest.crud import HashLessCRUDer
 
 logging.config.fileConfig(path.join(path.dirname(__file__), 'logging.ini'))
@@ -256,7 +256,7 @@ data_store.create_model(lp_name_or_iri, context, iri_prefix="http://localhost/pe
 data_store.create_model("LocalRSAPublicKey", context)
 data_store.create_model("LocalGPGPublicKey", context)
 
-user_mediator = create_user_mediator(data_store)
+user_mediator = create_mediator(data_store)
 user_mediator.import_store_models()
 
 lp_model = user_mediator.get_client_model(lp_name_or_iri)
