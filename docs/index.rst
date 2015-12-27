@@ -26,7 +26,7 @@ User's Guide
 API reference
 =============
 
-Main classes manipulated by end-users: :class:`~oldman.client.mediation.mediator.UserMediator`,
+Main classes manipulated by end-users: :class:`~oldman.client.mediation.mediator.Mediator`,
 :class:`~oldman.client.model.model.ClientModel` and :class:`~oldman.client.resource.ClientResource`.
 
 :class:`~oldman.storage.id_generation.PermanentIDGenerator` classes can be found in the :class:`oldman.storage.id_generation` module.

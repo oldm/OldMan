@@ -56,8 +56,8 @@ Like for any model, we need:
  * The IRI or a JSON-LD term of the RDFS class of the model. Here `"LocalPerson"` is an alias
    for `<http://example.org/myvoc#LocalPerson>`_ defined in the context file ;
  * The JSON-LD context.
-Moreover, since this model is associated to a :class:`~oldman.storage.store.sparql.SparqlStore`, it also have
-the responsibility to generate IRIs for the new resources. Here we provide the following additional information:
+Moreover, since this model is associated to a store with limited capabilities  (:class:`~oldman.storage.store.sparql.SparqlStore`), it also has
+to generate IRIs for new resources. Here we provide the following additional information:
  * A prefix for creating the IRI of new resources (optional) ;
  * An IRI fragment (optional);
  * To declare that we want to generate incremental IRIs with short numbers
@@ -94,19 +94,17 @@ Now that the domain logic has been declared, we can create :class:`~oldman.clien
 for two persons, Alice and Bob.
 
 Oldman requires the creation of a new :class:`~oldman.client.resource.ClientResource` to be done
-inside a :class:`~oldman.client.session.ClientSession`.
-This allows to reduce the number of round-trips between the client and the remote store (the SPARQL endpoint)
-by grouping the updates into a smaller number of requests. ::
+inside a :class:`~oldman.client.session.ClientSession` for performance reasons. ::
 
     session1 = mediator.create_session()
 
     alice = lp_model.new(session1, name="Alice", emails={"alice@example.org"},
-                            short_bio_en="I am ...")
+                         short_bio_en="I am ...")
     bob = lp_model.new(session1, name="Bob", blog="http://blog.example.com/",
                        short_bio_fr=u"J'ai grandi en ... .")
 
 We now have to :class:`~oldman.client.resource.ClientResource` in memory but Alice and Bob are not yet
-in the `store`.
+in the store.
 Actually, Bob is not ready yet to be persisted because some information is still missing: its email addresses.
 This information is required by our domain logic. Let's satisfy this constraint and flush the session::
 
