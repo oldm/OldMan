@@ -37,9 +37,9 @@ We now have most of the domain knowledge we need to instantiate the store and it
 2. Instantiate the store
 ------------------------
 
-Here, we consider an in-memory SPARQL endpoint as a store (:class:`~oldman.storage.store.sparql.SparqlStore`)::
+Here, we consider an in-memory triplestore (read-write SPARQL endpoint) as a store (:class:`~oldman.storage.store.sparql.SparqlStore`)::
 
-    # In-memory RDF graph
+    # In-memory triplestore
     data_graph = Graph()
     store = SparqlStore(data_graph, schema_graph=schema_graph)
 
