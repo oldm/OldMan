@@ -26,9 +26,8 @@ class ModelManager(object):
                             Defaults to a new instance of :class:`~oldman.parsing.attribute.OMAttributeExtractor`.
     """
 
-    def __init__(self, schema_graph=None, attr_extractor=None):
+    def __init__(self, attr_extractor=None):
         self._attr_extractor = attr_extractor if attr_extractor is not None else OMAttributeExtractor()
-        self._schema_graph = schema_graph
         self._operation_functions = {}
         self._registry = ModelRegistry()
         self._logger = logging.getLogger(__name__)
@@ -53,10 +52,6 @@ class ModelManager(object):
     def non_default_models(self):
         """TODO: describe."""
         return self._registry.non_default_models
-
-    @property
-    def schema_graph(self):
-        return self._schema_graph
 
     def has_default_model(self):
         return self._registry.default_model is not None
@@ -89,12 +84,12 @@ class ModelManager(object):
         return self._registry.find_descendant_models(top_ancestor_name_or_iri)
 
     def _create_model(self, class_name_or_iri, context_iri_or_payload,
-                      untyped=False, is_default=False, context_file_path=None, **kwargs):
+                      schema_graph, untyped=False, is_default=False, context_file_path=None, **kwargs):
 
         # Only for the DefaultModel
         if untyped:
             class_iri = None
-            ancestry = ClassAncestry(class_iri, self._schema_graph)
+            ancestry = ClassAncestry(class_iri, schema_graph)
             om_attributes = {}
 
         # Regular models
@@ -102,12 +97,12 @@ class ModelManager(object):
             context_file_path_or_payload = context_file_path if context_file_path is not None \
                 else context_iri_or_payload
             class_iri = _extract_class_iri(class_name_or_iri, context_file_path_or_payload)
-            ancestry = ClassAncestry(class_iri, self._schema_graph)
+            ancestry = ClassAncestry(class_iri, schema_graph)
             om_attributes = self._attr_extractor.extract(class_iri, ancestry.bottom_up,
                                                          context_file_path_or_payload,
-                                                         self._schema_graph)
+                                                         schema_graph)
 
-        model = self._instantiate_model(class_name_or_iri, class_iri, ancestry, context_iri_or_payload,
+        model = self._instantiate_model(class_name_or_iri, class_iri, schema_graph, ancestry, context_iri_or_payload,
                                         om_attributes, context_file_path, **kwargs)
 
         self._add_model(model, is_default=is_default)
@@ -121,8 +116,8 @@ class ModelManager(object):
 
         return model
 
-    def _instantiate_model(self, class_name_or_iri, class_iri, ancestry, context_iri_or_payload, om_attributes,
-                           local_context, **kwargs):
+    def _instantiate_model(self, class_name_or_iri, class_iri, schema_graph, ancestry, context_iri_or_payload,
+                           om_attributes, local_context, **kwargs):
         raise NotImplementedError("To be implemented in sub-classes")
 
     def get_model(self, class_name_or_iri):

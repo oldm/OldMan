@@ -7,7 +7,7 @@ from oldman.storage.model.model import StoreModel
 
 class StoreModelManager(ModelManager):
 
-    def create_model(self, class_name_or_iri, context_iri_or_payload, store, iri_prefix=None,
+    def create_model(self, class_name_or_iri, context_iri_or_payload, store, schema_graph, iri_prefix=None,
                      iri_fragment=None, iri_generator=None, untyped=False, incremental_iri=False,
                      is_default=False, context_file_path=None):
         """Creates a :class:`~oldman.model.store.StoreModel` object.
@@ -40,13 +40,13 @@ class StoreModelManager(ModelManager):
         :param context_file_path: TODO: describe.
         """
 
-        return self._create_model(class_name_or_iri, context_iri_or_payload, iri_prefix=iri_prefix,
+        return self._create_model(class_name_or_iri, context_iri_or_payload, schema_graph, iri_prefix=iri_prefix,
                                   iri_fragment=iri_fragment, iri_generator=iri_generator, untyped=untyped,
                                   incremental_iri=incremental_iri, is_default=is_default,
                                   context_file_path=context_file_path, store=store)
 
-    def _instantiate_model(self, class_name_or_iri, class_iri, ancestry, context_iri_or_payload, om_attributes,
-                           local_context, iri_fragment=None, iri_prefix=None, iri_generator=None,
+    def _instantiate_model(self, class_name_or_iri, class_iri, schema_graph, ancestry, context_iri_or_payload,
+                           om_attributes, local_context, iri_fragment=None, iri_prefix=None, iri_generator=None,
                            incremental_iri=False, store=None):
 
         if store is None:

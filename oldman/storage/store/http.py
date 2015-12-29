@@ -6,10 +6,10 @@ from rdflib import Graph
 from oldman.client.rest.crud import JSON_TYPES
 
 from oldman.storage.model.manager import StoreModelManager
-from oldman.storage.store.store import Store
+from oldman.storage.store.store import StoreProxy
 
 
-class HttpStore(Store):
+class HttpStoreProxy(StoreProxy):
     """
         Read only. No search feature.
     """

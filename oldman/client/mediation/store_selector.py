@@ -1,25 +1,21 @@
 
 
 class StoreSelector:
-    """TODO: continue"""
+    """TODO: implement seriously"""
 
-    def __init__(self, stores):
-        if (stores is None) or (isinstance(stores, (list, set)) and len(stores) == 0):
-            #TODO: find a better type of exception
-            raise Exception("At least one data store must be given.")
-
-        self._stores = list(stores) if isinstance(stores, (list, set)) else [stores]
-        #TODO: remove
-        if len(self._stores) > 1:
-            raise NotImplementedError("Multiple data stores are not yet supported.")
-
-    @property
-    def stores(self):
-        return self._stores
+    def __init__(self):
+        self._store_proxies = set([])
 
     def select_stores(self, id=None, **kwargs):
         #TODO: implement seriously
-        return self._stores
+        return list(self._store_proxies)
+
+    def bind_store(self, store_proxy, model):
+        #TODO: implement seriously
+        if len(self._store_proxies) == 0:
+            self._store_proxies.add(store_proxy)
+        else:
+            raise NotImplementedError("TODO: multiple stores are not yet supported")
 
     def select_store(self, client_resource, **kwargs):
         """TODO: what is the correct behavior when multiple stores are returned? """
@@ -27,4 +23,4 @@ class StoreSelector:
 
     def select_sparql_stores(self, query):
         #TODO: look at the query for filtering
-        return filter(lambda s: s.support_sparql_filtering(), self._stores)
+        return filter(lambda s: s.support_sparql_filtering(), self._store_proxies)

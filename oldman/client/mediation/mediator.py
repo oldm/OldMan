@@ -1,5 +1,8 @@
 class Mediator(object):
     """
+
+    High-level (for users)
+
     TODO: describe
 
     """
@@ -26,11 +29,18 @@ class Mediator(object):
         """TODO: explain it """
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
-    def import_store_model(self, class_iri, store=None):
+    def create_model(self, class_name_or_iri, context_iri_or_payload, schema_graph,
+                     context_file_path=None):
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
-    def import_store_models(self, store=None):
-        raise NotImplementedError("Should be implemented by a concrete implementation.")
+    # def import_store_model(self, class_iri, store=None):
+    #     raise NotImplementedError("Should be implemented by a concrete implementation.")
+    #
+    # def import_store_models(self, store=None):
+    #     raise NotImplementedError("Should be implemented by a concrete implementation.")
 
     def get_client_model(self, class_name_or_iri):
+        raise NotImplementedError("Should be implemented by a concrete implementation.")
+
+    def bind_store(self, store_proxy, client_model):
         raise NotImplementedError("Should be implemented by a concrete implementation.")

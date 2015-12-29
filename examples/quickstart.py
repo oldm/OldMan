@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 from rdflib import Graph
-from oldman import create_mediator, parse_graph_safely, SparqlStore
+from oldman import create_mediator, parse_graph_safely, SparqlStoreProxy
 
-# In-memory RDFLIB store
 rdflib_store = "default"
 
 # from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
@@ -18,27 +17,33 @@ parse_graph_safely(schema_graph, schema_url, format="turtle")
 
 ctx_iri = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_context.jsonld"
 
-data_graph = Graph()
-store = SparqlStore(data_graph, schema_graph=schema_graph)
-# Only for SPARQL data stores
-store.extract_prefixes(schema_graph)
+# In-memory triple store
+triplestore = Graph()
 
-#LocalPerson store model
-store.create_model("LocalPerson", ctx_iri, iri_prefix="http://localhost/persons/",
-                   iri_fragment="me", incremental_iri=True)
+# store_proxy = SparqlStoreProxy(triplestore)
 
-#User Mediator
-mediator = create_mediator(store)
-mediator.import_store_models()
+# TODO: remove these lines
+store_proxy = SparqlStoreProxy(triplestore, schema_graph=schema_graph)
+store_proxy.extract_prefixes(schema_graph)
+store_proxy.create_model("LocalPerson", ctx_iri, iri_prefix="http://localhost/persons/",
+                         iri_fragment="me", incremental_iri=True)
 
-lp_model = mediator.get_client_model("LocalPerson")
+
+# User Mediator
+mediator = create_mediator()
+
+# Model
+lp_model = mediator.create_model("LocalPerson", ctx_iri, schema_graph)
+# store_proxy.add_id_generator("LocalPerson", context=ctx_iri, iri_prefix="http://localhost/persons/",
+#                             iri_fragment="me", incremental_iri=True)
+mediator.bind_store(store_proxy, lp_model)
 
 session1 = mediator.create_session()
 
 alice = lp_model.new(session1, name="Alice", emails={"alice@example.org"},
                      short_bio_en="I am ...")
 bob = lp_model.new(session1, name="Bob",
-                   blog="http://blog.example.com/",
+                   # blog="http://blog.example.com/",
                    short_bio_fr=u"J'ai grandi en ... .")
 
 print bob.is_valid()

@@ -9,7 +9,7 @@ from oldman.core.exception import OMObjectNotFoundError, OMClassInstanceError
 DEFAULT_MODEL_PREFIX = "Default_"
 
 
-class Store(object):
+class StoreProxy(object):
     """A :class:`~oldman.store.store.Store` object manages CRUD operations on
     :class:`~oldman.resource.store.StoreResource` objects.
 
@@ -29,7 +29,7 @@ class Store(object):
     _stores = {}
 
     def __init__(self, model_manager, cache_region=None, accept_iri_generation_configuration=True,
-                 support_sparql=False):
+                 support_sparql=False, schema_graph=None):
         self._model_manager = model_manager
         self._logger = logging.getLogger(__name__)
         self._resource_cache = ResourceCache(cache_region)
@@ -37,10 +37,13 @@ class Store(object):
         self._stores[self._name] = self
         self._accept_iri_generation_configuration = accept_iri_generation_configuration
         self._support_sparql=support_sparql
+        # TODO: remove
+        self._schema_graph = schema_graph
 
         if not self._model_manager.has_default_model():
-            self._model_manager.create_model(DEFAULT_MODEL_PREFIX + self._name, {u"@context": {}}, self, untyped=True,
-                                             iri_prefix=u"http://localhost/.well-known/genid/%s/" % self._name,
+            self._model_manager.create_model(DEFAULT_MODEL_PREFIX + self._name, {u"@context": {}}, self, schema_graph,
+                                             untyped=True,
+                                             # iri_prefix=u"http://localhost/.well-known/genid/%s/" % self._name,
                                              is_default=True)
 
     @property
@@ -264,7 +267,8 @@ class Store(object):
             else:
                 iri_generator = self._create_iri_generator(class_name_or_iri)
 
-        self._model_manager.create_model(class_name_or_iri, context_iri_or_payload, self, iri_generator=iri_generator,
+        self._model_manager.create_model(class_name_or_iri, context_iri_or_payload, self, self._schema_graph,
+                                         iri_generator=iri_generator,
                                          iri_prefix=iri_prefix, iri_fragment=iri_fragment,
                                          incremental_iri=incremental_iri,
                                          context_file_path=context_file_path)

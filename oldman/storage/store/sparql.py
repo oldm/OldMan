@@ -9,10 +9,10 @@ from oldman.core.exception import OMSPARQLParseError, OMAttributeAccessError, OM
 from oldman.core.exception import OMHashIriError
 from oldman.core.exception import OMStoreError
 from oldman.storage.model.manager import StoreModelManager
-from oldman.storage.store.store import Store
+from oldman.storage.store.store import StoreProxy
 
 
-class SparqlStore(Store):
+class SparqlStoreProxy(StoreProxy):
     """A :class:`~oldman.store.sparql.SPARQLStore` is a :class:`~oldman.store.store.Store` object
     relying on a SPARQL 1.1 endpoint (Query and Update).
 
@@ -49,8 +49,8 @@ class SparqlStore(Store):
             }"""
 
     def __init__(self, data_graph, schema_graph=None, model_manager=None, union_graph=None, cache_region=None):
-        manager = model_manager if model_manager is not None else StoreModelManager(schema_graph=schema_graph)
-        Store.__init__(self, manager, cache_region, support_sparql=True)
+        manager = model_manager if model_manager is not None else StoreModelManager()
+        StoreProxy.__init__(self, manager, cache_region, support_sparql=True, schema_graph=schema_graph)
         self._logger = logging.getLogger(__name__)
         self._data_graph = data_graph
         self._union_graph = union_graph if union_graph is not None else data_graph

@@ -1,8 +1,11 @@
 from oldman.storage.session import DefaultCrossStoreSession
 
 
-class StoreProxy(object):
-    """TODO: find a better name """
+class Broker(object):
+    """
+    Low-level
+
+    TODO: find a better name """
 
     def get(self, client_tracker, resource_factory, iri, types=None, eager_with_reversed_attributes=True):
         """TODO: explain
@@ -38,7 +41,7 @@ class StoreProxy(object):
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
 
-class DefaultStoreProxy(StoreProxy):
+class Model2ModelBroker(Broker):
 
     def __init__(self, store_selector, conversion_manager):
         self._store_selector = store_selector

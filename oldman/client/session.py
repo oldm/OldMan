@@ -45,11 +45,11 @@ class ClientSession(Session):
 class DefaultClientSession(ClientSession):
     """TODO: find a better name """
 
-    def __init__(self, model_manager, store_proxy):
+    def __init__(self, model_manager, broker):
         self._logger = getLogger(__name__)
 
         self._model_manager = model_manager
-        self._store_proxy = store_proxy
+        self._broker = broker
 
         self._tracker = BasicResourceTracker()
         self._resource_factory = DefaultClientResourceFactory(model_manager, self)
@@ -82,31 +82,31 @@ class DefaultClientSession(ClientSession):
             return local_resource
 
         # If not found locally, queries the stores
-        resource = self._store_proxy.get(self._tracker, self._resource_factory, iri, types=types)
+        resource = self._broker.get(self._tracker, self._resource_factory, iri, types=types)
         if resource is not None:
             self._tracker.add(resource)
         return resource
 
     def filter(self, types=None, hashless_iri=None, limit=None, eager=False, pre_cache_properties=None, **kwargs):
-        client_resources = self._store_proxy.filter(self._tracker, self._resource_factory, types=types,
-                                                    hashless_iri=hashless_iri, limit=limit, eager=eager,
-                                                    pre_cache_properties=pre_cache_properties, **kwargs)
+        client_resources = self._broker.filter(self._tracker, self._resource_factory, types=types,
+                                               hashless_iri=hashless_iri, limit=limit, eager=eager,
+                                               pre_cache_properties=pre_cache_properties, **kwargs)
         self._tracker.add_all(client_resources)
         return client_resources
 
     def first(self, types=None, hashless_iri=None, eager_with_reversed_attributes=True,
               pre_cache_properties=None, **kwargs):
-        client_resource = self._store_proxy.first(self._tracker, self._resource_factory, types=types,
-                                                  hashless_iri=hashless_iri, pre_cache_properties=pre_cache_properties,
-                                                  eager_with_reversed_attributes=eager_with_reversed_attributes,
-                                                  **kwargs)
+        client_resource = self._broker.first(self._tracker, self._resource_factory, types=types,
+                                             hashless_iri=hashless_iri, pre_cache_properties=pre_cache_properties,
+                                             eager_with_reversed_attributes=eager_with_reversed_attributes,
+                                             **kwargs)
         if client_resource is not None:
             self._tracker.add(client_resource)
         return client_resource
 
     def sparql_filter(self, query):
         """See :func:`oldman.store.store.Store.sparql_filter`."""
-        client_resources = self._store_proxy.sparql_filter(self._tracker, self._resource_factory, query)
+        client_resources = self._broker.sparql_filter(self._tracker, self._resource_factory, query)
         self._tracker.add_all(client_resources)
         return client_resources
 
@@ -123,9 +123,9 @@ class DefaultClientSession(ClientSession):
 
            TODO: re-implement it, very naive
          """
-        updated_resources, deleted_resources = self._store_proxy.flush(self._resource_factory,
-                                                                       self._tracker.modified_resources,
-                                                                       self._tracker.resources_to_delete, is_end_user)
+        updated_resources, deleted_resources = self._broker.flush(self._resource_factory,
+                                                                  self._tracker.modified_resources,
+                                                                  self._tracker.resources_to_delete, is_end_user)
         # In case there is new resources
         self._tracker.add_all(updated_resources)
         # TODO: handle deleted resources
