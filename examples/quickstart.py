@@ -2,14 +2,8 @@
 from rdflib import Graph
 from oldman import create_mediator, parse_graph_safely, SparqlStoreProxy
 
-rdflib_store = "default"
-
-# from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
-# rdflib_store = SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
-#                           update_endpoint="http://localhost:3030/test/update")
-
 # Graph containing all the schema RDF triples
-schema_graph = Graph(rdflib_store)
+schema_graph = Graph()
 
 # Load the schema
 schema_url = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_schema.ttl"
@@ -17,8 +11,31 @@ parse_graph_safely(schema_graph, schema_url, format="turtle")
 
 ctx_iri = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_context.jsonld"
 
+# JSON-LD contexts for models
+contexts = {
+    "Person": ctx_iri,
+    "LocalPerson": ctx_iri
+}
+
+# User Mediator (creates models declared in the schema_graph)
+mediator = create_mediator(schema_graph, contexts)
+
+# Model
+#lp_model = mediator.create_model("LocalPerson", ctx_iri, schema_graph)
+lp_model = mediator.get_model("LocalPerson")
+
+
+# Storage concerns
+
+rdflib_store = "default"
+
+# from rdflib.plugins.stores.sparqlstore import SPARQLUpdateStore
+# rdflib_store = SPARQLUpdateStore(queryEndpoint="http://localhost:3030/test/query",
+#                           update_endpoint="http://localhost:3030/test/update")
+
+
 # In-memory triple store
-triplestore = Graph()
+triplestore = Graph(rdflib_store)
 
 # store_proxy = SparqlStoreProxy(triplestore)
 
@@ -28,15 +45,10 @@ store_proxy.extract_prefixes(schema_graph)
 store_proxy.create_model("LocalPerson", ctx_iri, iri_prefix="http://localhost/persons/",
                          iri_fragment="me", incremental_iri=True)
 
-
-# User Mediator
-mediator = create_mediator()
-
-# Model
-lp_model = mediator.create_model("LocalPerson", ctx_iri, schema_graph)
 # store_proxy.add_id_generator("LocalPerson", context=ctx_iri, iri_prefix="http://localhost/persons/",
 #                             iri_fragment="me", incremental_iri=True)
 mediator.bind_store(store_proxy, lp_model)
+
 
 session1 = mediator.create_session()
 

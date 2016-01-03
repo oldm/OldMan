@@ -69,14 +69,6 @@ class ClientResource(Resource):
         instance.update_from_graph(subgraph, initial=True)
         return instance
 
-    def receive_local_deletion_notification(self):
-        """TODO: explain and find a better name.
-
-            "Pre"-deletion.
-        """
-        # TODO: implement it
-        raise NotImplementedError("TODO: implement it")
-
     def receive_deletion_notification_from_store(self):
         """TODO: explain"""
         self._types = None
@@ -89,51 +81,6 @@ class ClientResource(Resource):
 
         self._is_new = False
 
-
-    # def save(self, is_end_user=True):
-    #     """Saves it into the `data_store` and its `resource_cache`.
-    #
-    #     Raises an :class:`oldman.exception.OMEditError` exception if invalid.
-    #
-    #     :param is_end_user: `False` when an authorized user (not a regular end-user)
-    #                          wants to force some rights. Defaults to `True`.
-    #                          See :func:`~oldman.attribute.OMAttribute.check_validity` for further details.
-    #     :return: The :class:`~oldman.resource.resource.Resource` object itself."""
-    #     attributes = self._extract_attribute_list()
-    #     for attr in attributes:
-    #         attr.check_validity(self, is_end_user)
-    #
-    #     # The ID may be updated (if was a temporary IRI before)
-    #     self._id = self._resource_mediator.save_resource(self, is_end_user)
-    #
-    #     # Clears former values
-    #     self._former_types = self._types
-    #     # Clears former values
-    #     for attr in attributes:
-    #         attr.receive_storage_ack(self)
-    #     self._is_new = False
-    #
-    #     return self
-    #
-    # def delete(self):
-    #     """Removes the resource from the `data_store` and its `resource_cache`.
-    #
-    #     TODO: update this comment
-    #
-    #     Cascade deletion is done for related resources satisfying the test
-    #     :func:`~oldman.resource.resource.should_delete_resource`.
-    #     """
-    #
-    #     self._resource_mediator.delete_resource(self)
-    #
-    #     # Clears former values
-    #     self._former_types = self._types
-    #     # Clears values
-    #     for attr in self._extract_attribute_list():
-    #         setattr(self, attr.name, None)
-    #         attr.receive_storage_ack(self)
-    #     self._is_new = False
-
     def __getstate__(self):
         """Cannot be pickled."""
         #TODO: find the appropriate exception
@@ -143,8 +90,3 @@ class ClientResource(Resource):
         """Cannot be pickled."""
         #TODO: find the appropriate exception
         raise Exception("A ClientResource is not serializable.")
-
-    # def _filter_objects_to_delete(self, ids):
-    #     """TODO: consider other cases than blank nodes """
-    #     return [self._resource_mediator.get(id=id) for id in ids
-    #             if id is not None and is_blank_node(id)]

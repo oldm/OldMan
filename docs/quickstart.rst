@@ -41,14 +41,10 @@ Here, we consider an in-memory triplestore (read-write SPARQL endpoint) as a sto
 
     # In-memory triplestore
     data_graph = Graph()
-    store = SparqlStore(data_graph, schema_graph=schema_graph)
-
-We extract the prefix information from the schema graph::
-
-    store.extract_prefixes(schema_graph)
+    store_proxy = SparqlStoreProxy(data_graph, schema_graph=schema_graph)
 
 
-3. Create the store model
+3. Create the client model (TODO: should be directly a client model)
 -------------------------
 
 We create a `LocalPerson` :class:`~oldman.storage.model.model.StoreModel` for the store.
@@ -67,6 +63,9 @@ to generate IRIs for new resources. Here we provide the following additional inf
                             iri_fragment="me", incremental_iri=True)
 
 
+
+
+
 4. Load the mediator and the client model
 -----------------------------------------
 Store models are not directly manipulated; the user is expected to use their relative client models instead.
@@ -78,6 +77,9 @@ between the client and store models::
 
     mediator = create_mediator(store)
 
+We extract the prefix information from the schema graph::
+
+    mediator.extract_prefixes(schema_graph)
 
 Then we import the client model from the store model::
 
@@ -86,6 +88,7 @@ Then we import the client model from the store model::
     lp_model = mediator.get_client_model("LocalPerson")
 
 That's it, now our client model is ready to be used for creating new resources.
+
 
 Resource editing
 ================

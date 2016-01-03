@@ -77,8 +77,7 @@ class DefaultCrossStoreSession(CrossStoreSession):
 
     def get(self, iri, types=None, eager_with_reversed_attributes=True):
         for store in self._store_selector.select_stores(iri=iri, types=types):
-            store_resource = store.get(self, iri, types=types,
-                                       eager_with_reversed_attributes=eager_with_reversed_attributes)
+            store_resource = store.old_get(self, iri, types=types, eager_with_reversed_attributes=eager_with_reversed_attributes)
             if store_resource is not None:
                 return store_resource
         return None

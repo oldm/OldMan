@@ -249,7 +249,7 @@ class SparqlStoreProxy(StoreProxy):
             raise OMSPARQLParseError(u"%s\n %s" % (query, e))
 
         # Generator expression
-        return (self.get(store_session, unicode(r[0])) for r in results)
+        return (self.old_get(store_session, unicode(r[0])) for r in results)
 
     def _filter_eagerly(self, sub_query, store_session, pre_cache_properties, erase_cache=False):
         """Eager: requests all the properties of all returned resource

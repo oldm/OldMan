@@ -21,12 +21,12 @@ register('json-ld', Serializer, 'rdflib_jsonld.serializer', 'JsonLDSerializer')
 register('application/ld+json', Parser, 'rdflib_jsonld.parser', 'JsonLDParser')
 
 
-def create_mediator(attr_extractor=None, oper_extractor=None, mediator_class=DefaultMediator):
+def create_mediator(schema_graph, contexts, attr_extractor=None, oper_extractor=None, mediator_class=DefaultMediator):
     """TODO: describe """
     # By default, extracts Hydra operations
     if oper_extractor is None:
         oper_extractor = HydraOperationExtractor()
 
-    return mediator_class(oper_extractor, attr_extractor=attr_extractor)
+    return mediator_class(schema_graph, contexts, oper_extractor, attr_extractor=attr_extractor)
 
 

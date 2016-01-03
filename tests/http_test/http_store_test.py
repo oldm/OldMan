@@ -1,7 +1,7 @@
 from os import path
 from unittest import TestCase
 from rdflib import Graph
-from oldman import HttpStore, create_mediator, parse_graph_safely
+from oldman import HttpStoreProxy, create_mediator, parse_graph_safely
 
 directory = path.dirname(__file__)
 schema_graph = parse_graph_safely(Graph(), path.join(directory, 'api_schema.ttl'), format="turtle")
@@ -9,7 +9,7 @@ schema_graph.namespace_manager.bind("hydra", "http://www.w3.org/ns/hydra/core#")
 
 context_uri = path.join(directory, 'api_documentation.json')
 
-data_store = HttpStore(schema_graph=schema_graph)
+data_store = HttpStoreProxy(schema_graph=schema_graph)
 data_store.create_model('ApiDocumentation', context_uri)
 
 user_mediator = create_mediator(data_store)

@@ -131,8 +131,9 @@ class ModelConversionManager(object):
         for client_model in client_resource.models:
             store_model = self._client_to_store_models.get((client_model, store))
             if store_model is None:
-                # TODO: See if relevant and find a better name
-                raise Exception("No store model corresponding to %s" % client_model.name)
+                continue
+            #    # TODO: See if relevant and find a better name
+            #    raise Exception("No store model corresponding to %s" % client_model.name)
 
             store_model_type = store_model.class_iri
             if client_model.class_iri in client_resource.former_types:

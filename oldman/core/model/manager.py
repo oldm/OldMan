@@ -96,7 +96,7 @@ class ModelManager(object):
         else:
             context_file_path_or_payload = context_file_path if context_file_path is not None \
                 else context_iri_or_payload
-            class_iri = _extract_class_iri(class_name_or_iri, context_file_path_or_payload)
+            class_iri = extract_class_iri(class_name_or_iri, context_file_path_or_payload)
             ancestry = ClassAncestry(class_iri, schema_graph)
             om_attributes = self._attr_extractor.extract(class_iri, ancestry.bottom_up,
                                                          context_file_path_or_payload,
@@ -137,7 +137,7 @@ class ModelManager(object):
     #             self.create_model(cls_iri, context_iri_or_payload, data_store)
 
 
-def _extract_class_iri(class_name, context):
+def extract_class_iri(class_name, context):
     """Extracts the class IRI as the type of a blank node."""
     g = Graph().parse(data=json.dumps({u"@type": class_name}),
                       context=context, format="json-ld")

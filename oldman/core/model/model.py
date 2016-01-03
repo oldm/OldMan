@@ -103,8 +103,11 @@ class Model(object):
 
     @property
     def accept_new_blank_nodes(self):
-        """TODO: describe. Useful for knowing if a bnode ID of a resource
-         is temporary or maybe not."""
+        """Useful for knowing if a bnode ID of a resource
+         is temporary or maybe not.
+
+         TODO: Remove it?
+         """
         return self._accept_new_blank_nodes
 
     def is_subclass_of(self, model):

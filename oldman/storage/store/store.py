@@ -84,7 +84,10 @@ class StoreProxy(object):
         """
         return self._support_sparql
 
-    def get(self, store_session, iri, types=None, eager_with_reversed_attributes=True):
+    def get(self, request):
+        raise NotImplementedError("TODO: implement it")
+
+    def old_get(self, store_session, iri, types=None, eager_with_reversed_attributes=True):
         """Gets the :class:`~oldman.resource.Resource` object having the given IRI.
 
         The `kwargs` dict can contains regular attribute key-values.

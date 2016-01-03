@@ -39,7 +39,7 @@ class Mediator(object):
     # def import_store_models(self, store=None):
     #     raise NotImplementedError("Should be implemented by a concrete implementation.")
 
-    def get_client_model(self, class_name_or_iri):
+    def get_model(self, class_name_or_iri):
         raise NotImplementedError("Should be implemented by a concrete implementation.")
 
     def bind_store(self, store_proxy, client_model):
