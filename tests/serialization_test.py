@@ -133,7 +133,7 @@ class SerializationTest(unittest.TestCase):
         self.assertTrue(bob.is_valid)
         session1.flush()
         # If any cache
-        data_store.resource_cache.remove_resource(bob)
+        store_proxy.resource_cache.remove_resource(bob)
         session1.close()
 
         session2 = user_mediator.create_session()

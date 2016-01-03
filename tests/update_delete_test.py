@@ -28,7 +28,7 @@ class UpdateDeleteTest(TestCase):
         # But the object is available...
         session1.get(iri=str(jason_iri))
         # Cleans the cache
-        data_store.resource_cache.remove_resource_from_iri(jason_iri)
+        store_proxy.resource_cache.remove_resource_from_iri(jason_iri)
         session1.close()
 
         for class_iri in lp_model.ancestry_iris:
@@ -47,7 +47,7 @@ class UpdateDeleteTest(TestCase):
                          context=context, format="json-ld")
 
         # Clear the cache (out-of-band update)
-        data_store.resource_cache.remove_resource(jason)
+        store_proxy.resource_cache.remove_resource(jason)
         session2.close()
 
         session3 = user_mediator.create_session()
@@ -287,7 +287,7 @@ class UpdateDeleteTest(TestCase):
         session1.flush()
 
         # If any cache
-        data_store.resource_cache.remove_resource(alice)
+        store_proxy.resource_cache.remove_resource(alice)
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -300,7 +300,7 @@ class UpdateDeleteTest(TestCase):
         alice2.update_from_graph(g1, allow_type_removal=True)
         # If any cache
         session2.flush()
-        data_store.resource_cache.remove_resource(alice)
+        store_proxy.resource_cache.remove_resource(alice)
         session2.close()
 
         session3 = user_mediator.create_session()

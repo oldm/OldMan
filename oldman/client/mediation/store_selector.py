@@ -14,7 +14,7 @@ class StoreSelector:
         #TODO: implement seriously
         if len(self._store_proxies) == 0:
             self._store_proxies.add(store_proxy)
-        else:
+        elif store_proxy not in self._store_proxies:
             raise NotImplementedError("TODO: multiple stores are not yet supported")
 
     def select_store(self, client_resource, **kwargs):

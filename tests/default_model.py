@@ -6,7 +6,7 @@ from dogpile.cache import make_region
 from rdflib import Dataset, Graph
 from rdflib.namespace import FOAF
 
-from oldman import create_mediator, parse_graph_safely, SparqlStore
+from oldman import create_mediator, parse_graph_safely, SparqlStoreProxy
 from oldman.client.rest.crud import HashLessCRUDer
 
 logging.config.fileConfig(path.join(path.dirname(__file__), 'logging.ini'))
@@ -242,27 +242,37 @@ context = {
     }
 }
 
+# lp_name_or_iri = "LocalPerson"
+lp_name_or_iri = MY_VOC + "LocalPerson"
+
+contexts = {
+    lp_name_or_iri: context,
+    "LocalRSAPublicKey": context,
+    "LocalGPGPublicKey": context
+}
+
+user_mediator = create_mediator(schema_graph, contexts)
+
+lp_model = user_mediator.get_model(lp_name_or_iri)
+rsa_model = user_mediator.get_model("LocalRSAPublicKey")
+gpg_model = user_mediator.get_model("LocalGPGPublicKey")
+
+
 # Cache
 # cache_region = None
 cache_region = make_region().configure('dogpile.cache.memory_pickle')
 
-data_store = SparqlStore(data_graph, schema_graph=schema_graph, cache_region=cache_region)
+store_proxy = SparqlStoreProxy(data_graph, schema_graph=schema_graph, cache_region=cache_region)
 # Takes the prefixes from the schema graph
-data_store.extract_prefixes(schema_graph)
+store_proxy.extract_prefixes(schema_graph)
 
-#lp_name_or_iri = "LocalPerson"
-lp_name_or_iri = MY_VOC + "LocalPerson"
-data_store.create_model(lp_name_or_iri, context, iri_prefix="http://localhost/persons/", iri_fragment="me")
-data_store.create_model("LocalRSAPublicKey", context)
-data_store.create_model("LocalGPGPublicKey", context)
+store_proxy.create_model(lp_name_or_iri, context, iri_prefix="http://localhost/persons/", iri_fragment="me")
+store_proxy.create_model("LocalRSAPublicKey", context)
+store_proxy.create_model("LocalGPGPublicKey", context)
 
-user_mediator = create_mediator(data_store)
-user_mediator.import_store_models()
-
-lp_model = user_mediator.get_client_model(lp_name_or_iri)
-rsa_model = user_mediator.get_client_model("LocalRSAPublicKey")
-gpg_model = user_mediator.get_client_model("LocalGPGPublicKey")
-
+user_mediator.bind_store(store_proxy, lp_model)
+user_mediator.bind_store(store_proxy, rsa_model)
+user_mediator.bind_store(store_proxy, gpg_model)
 
 crud_controller = HashLessCRUDer(user_mediator)
 
@@ -303,12 +313,12 @@ def tear_down():
         for iri in iris:
             cache_region.delete(iri)
     dataset.update("CLEAR GRAPH <%s>" % data_graph.identifier)
-    data_store.resource_cache.invalidate_cache()
+    store_proxy.resource_cache.invalidate_cache()
 
 
 def set_up(use_default_cache_region=True):
     if use_default_cache_region:
-        data_store.resource_cache.change_cache_region(cache_region)
+        store_proxy.resource_cache.change_cache_region(cache_region)
 
 
 def create_bob(session):

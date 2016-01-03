@@ -83,8 +83,8 @@ class StoreResource(Resource):
         self._session = None
 
         # Store
-        from oldman.storage.store.store import Store
-        self._store = Store.get_store(state["store_name"])
+        from oldman.storage.store.store import StoreProxy
+        self._store = StoreProxy.get_store(state["store_name"])
         self._model_manager = self._store.model_manager
 
         # Models and types

@@ -75,7 +75,7 @@ class BasicEditingTest(unittest.TestCase):
         bob1.name = "You should not retrieve this string"
 
         # If any cache
-        data_store.resource_cache.remove_resource(bob1)
+        store_proxy.resource_cache.remove_resource(bob1)
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -129,7 +129,7 @@ class BasicEditingTest(unittest.TestCase):
         session1.flush()
         bob_iri = bob1.id.iri
         # If any cache
-        data_store.resource_cache.remove_resource(bob1)
+        store_proxy.resource_cache.remove_resource(bob1)
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -160,7 +160,7 @@ class BasicEditingTest(unittest.TestCase):
         bob1.short_bio_en = forbidden_string
         self.assertEquals(bob1.short_bio_en, forbidden_string)
         # If any cache
-        data_store.resource_cache.remove_resource(bob1)
+        store_proxy.resource_cache.remove_resource(bob1)
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -172,7 +172,7 @@ class BasicEditingTest(unittest.TestCase):
         bob2.short_bio_en = bob_bio_en_2
         session2.flush()
         bob2.short_bio_en = "You should not retrieve this string (again)"
-        data_store.resource_cache.remove_resource(bob2)
+        store_proxy.resource_cache.remove_resource(bob2)
         session2.close()
 
         session3 = user_mediator.create_session()
@@ -187,7 +187,7 @@ class BasicEditingTest(unittest.TestCase):
         session1.flush()
         rsa_skolemized_iri = rsa_key1.id.iri
         # If any cache
-        data_store.resource_cache.remove_resource(rsa_key1)
+        store_proxy.resource_cache.remove_resource(rsa_key1)
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -224,9 +224,9 @@ class BasicEditingTest(unittest.TestCase):
 
         # Force reload from the triplestore
         # If any cache
-        data_store.resource_cache.remove_resource(bob)
-        data_store.resource_cache.remove_resource(alice)
-        data_store.resource_cache.remove_resource(john)
+        store_proxy.resource_cache.remove_resource(bob)
+        store_proxy.resource_cache.remove_resource(alice)
+        store_proxy.resource_cache.remove_resource(john)
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -247,9 +247,9 @@ class BasicEditingTest(unittest.TestCase):
 
         # Force reload from the triplestore
         # If any cache
-        data_store.resource_cache.remove_resource(bob)
-        data_store.resource_cache.remove_resource(alice)
-        data_store.resource_cache.remove_resource(john)
+        store_proxy.resource_cache.remove_resource(bob)
+        store_proxy.resource_cache.remove_resource(alice)
+        store_proxy.resource_cache.remove_resource(john)
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -294,9 +294,9 @@ class BasicEditingTest(unittest.TestCase):
 
         bob_children_iris = [c.id.iri for c in bob_children]
         # If any cache
-        data_store.resource_cache.remove_resource(bob)
-        data_store.resource_cache.remove_resource(alice)
-        data_store.resource_cache.remove_resource(john)
+        store_proxy.resource_cache.remove_resource(bob)
+        store_proxy.resource_cache.remove_resource(alice)
+        store_proxy.resource_cache.remove_resource(john)
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -327,8 +327,8 @@ class BasicEditingTest(unittest.TestCase):
         self.assertEquals(bob.gpg_key.hex_id, gpg_hex_id)
 
         # If any cache
-        data_store.resource_cache.remove_resource(bob)
-        data_store.resource_cache.remove_resource(bob.gpg_key)
+        store_proxy.resource_cache.remove_resource(bob)
+        store_proxy.resource_cache.remove_resource(bob.gpg_key)
         session1.close()
 
         session2 = user_mediator.create_session()
@@ -380,7 +380,7 @@ class BasicEditingTest(unittest.TestCase):
 
         # Loads John from the datastore (not from its cache)
         john_iri = john.id.iri
-        data_store.resource_cache.remove_resource(john)
+        store_proxy.resource_cache.remove_resource(john)
 
         session2 = user_mediator.create_session()
         john2 = lp_model.get(session2, iri=john_iri)
@@ -423,7 +423,7 @@ class BasicEditingTest(unittest.TestCase):
 
         # Loads Bob from the datastore (not from its cache)
         bob_iri = bob.id.iri
-        data_store.resource_cache.remove_resource(bob)
+        store_proxy.resource_cache.remove_resource(bob)
 
         session2 = user_mediator.create_session()
         bob2 = lp_model.get(session2, iri=bob_iri)
@@ -431,7 +431,7 @@ class BasicEditingTest(unittest.TestCase):
 
         # Checks if the datastore still extract reversed attributes
         # in "lazy" mode
-        data_store.resource_cache.remove_resource(bob2)
+        store_proxy.resource_cache.remove_resource(bob2)
 
         session3 = user_mediator.create_session()
         bob3 = session3.get(iri=bob_iri, eager_with_reversed_attributes=False)
@@ -450,7 +450,7 @@ class BasicEditingTest(unittest.TestCase):
         alice_iri = alice1.id.iri
 
         # If any cache
-        data_store.resource_cache.remove_resource(alice1)
+        store_proxy.resource_cache.remove_resource(alice1)
 
         session2 = user_mediator.create_session()
         alice2 = lp_model.get(session2, alice_iri)
@@ -462,7 +462,7 @@ class BasicEditingTest(unittest.TestCase):
 
         bob_iri = bob1.id.iri
         # If any cache
-        data_store.resource_cache.remove_resource(bob1)
+        store_proxy.resource_cache.remove_resource(bob1)
         session3 = user_mediator.create_session()
         bob2 = lp_model.get(session3, bob_iri)
         self.assertTrue(bob2.employer is None)
@@ -480,7 +480,7 @@ class BasicEditingTest(unittest.TestCase):
         alice_iri = alice.id.iri
 
         # If any cache
-        data_store.resource_cache.remove_resource(alice)
+        store_proxy.resource_cache.remove_resource(alice)
 
         session2 = user_mediator.create_session()
         alice2 = lp_model.get(session2, alice_iri)

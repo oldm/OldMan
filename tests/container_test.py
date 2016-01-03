@@ -11,7 +11,7 @@ from copy import copy
 
 from rdflib import ConjunctiveGraph, URIRef
 
-from oldman import create_mediator, parse_graph_safely, SparqlStore
+from oldman import create_mediator, parse_graph_safely, SparqlStoreProxy
 from oldman.core.exception import OMRequiredPropertyError, OMAttributeTypeCheckError
 
 default_graph = ConjunctiveGraph()
@@ -118,11 +118,17 @@ context = {
     }
 }
 
-data_store = SparqlStore(data_graph, schema_graph=schema_graph)
-data_store.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
-user_mediator = create_mediator(data_store)
-user_mediator.import_store_models()
-model = user_mediator.get_client_model("LocalClass")
+contexts = {
+    "LocalClass": context
+}
+
+mediator = create_mediator(schema_graph, contexts)
+model = mediator.get_model("LocalClass")
+
+store_proxy = SparqlStoreProxy(data_graph, schema_graph=schema_graph)
+store_proxy.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
+mediator.bind_store(store_proxy, model)
+
 default_list_en = ["w1", "w2"]
 
 
@@ -138,7 +144,7 @@ class ContainerTest(TestCase):
         return obj
 
     def test_basic_list(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj = self.create_object(session1)
         uri = obj.id.iri
         lst = ["Hello", "hi", "hi", "Hello"]
@@ -147,7 +153,7 @@ class ContainerTest(TestCase):
         session1.flush()
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         obj2 = model.get(session2, iri=uri)
         self.assertEquals(lst, backup_list)
         self.assertEquals(obj2.primary_list, lst)
@@ -155,7 +161,7 @@ class ContainerTest(TestCase):
         session2.close()
 
     def test_localized_lists(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj = model.new(session1)
         list_fr = ["Salut", "Bonjour"]
         list_en = ["Hi", "Hello"]
@@ -165,14 +171,14 @@ class ContainerTest(TestCase):
         uri = obj.id.iri
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         obj2 = model.get(session2, iri=uri)
         self.assertEquals(obj2.list_fr, list_fr)
         self.assertEquals(obj2.list_en, list_en)
         session2.close()
 
     def test_required_list(self):
-        session = user_mediator.create_session()
+        session = mediator.create_session()
         obj = model.new(session)
         with self.assertRaises(OMRequiredPropertyError):
             session.flush()
@@ -182,7 +188,7 @@ class ContainerTest(TestCase):
         session.close()
 
     def test_undeclared_set(self):
-        session = user_mediator.create_session()
+        session = mediator.create_session()
         obj = self.create_object(session)
         uri = obj.id.iri
         lst = ["Hello", "hi", "hi", "Hello"]
@@ -198,7 +204,7 @@ class ContainerTest(TestCase):
         session.close()
 
     def test_change_attribute_of_required_property(self):
-        session = user_mediator.create_session()
+        session = mediator.create_session()
         obj = model.new(session)
         list_fr = ["Salut", "Bonjour"]
         list_en = ["Hi", "Hello"]
@@ -211,7 +217,7 @@ class ContainerTest(TestCase):
         session.close()
 
     def test_bool_list(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj = self.create_object(session1)
         uri = obj.id.iri
         lst = [True, False, True, False]
@@ -220,7 +226,7 @@ class ContainerTest(TestCase):
         session1.flush()
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         obj2 = model.get(session2, iri=uri)
         self.assertEquals(obj2.bool_list, lst)
         obj2.bool_list = [True]
@@ -232,14 +238,14 @@ class ContainerTest(TestCase):
         session2.close()
 
     def test_bool_set(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj1 = self.create_object(session1)
         uri = obj1.id.iri
         bools = {False, True}
         obj1.bool_set = bools
         session1.flush()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         obj2 = model.get(session2, iri=uri)
         self.assertEquals(obj2.bool_set, bools)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -248,14 +254,14 @@ class ContainerTest(TestCase):
             obj2.bool_set = {True, "Should not be there"}
 
     def test_lang_map(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj1 = self.create_object(session1)
         uri = obj1.id.iri
         values = {'fr': u"Hé, salut!",
                   'en': u"What's up?"}
         obj1.lang_map = values
         session1.flush()
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         obj2 = model.get(session2, iri=uri)
         self.assertEquals(obj2.lang_map, values)
 

@@ -6,7 +6,7 @@ from default_model import *
 # Force the cache
 from oldman.storage.session import DefaultCrossStoreSession
 
-data_store.resource_cache.change_cache_region(make_region().configure('dogpile.cache.memory_pickle'))
+store_proxy.resource_cache.change_cache_region(make_region().configure('dogpile.cache.memory_pickle'))
 
 # With the default implementation they are the same object. FOR TEST ONLY!
 resource_mediator = user_mediator
@@ -23,10 +23,10 @@ class CacheTest(unittest.TestCase):
         alice1 = lp_model.new(session, name=alice_name, mboxes={alice_mail}, short_bio_en=alice_bio_en)
         #For test ONLY. Do not do that yourself
         store_session = DefaultCrossStoreSession(user_mediator._store_selector)
-        alice_store1 = resource_mediator._conversion_manager.convert_client_to_store_resource(alice1, data_store,
+        alice_store1 = resource_mediator._conversion_manager.convert_client_to_store_resource(alice1, store_proxy,
                                                                                               store_session)
-        data_store.resource_cache.set_resource(alice_store1)
-        alice2 = data_store.resource_cache.get_resource(alice_store1.id.iri, store_session)
+        store_proxy.resource_cache.set_resource(alice_store1)
+        alice2 = store_proxy.resource_cache.get_resource(alice_store1.id.iri, store_session)
         self.assertFalse(alice1 is alice2)
         self.assertEquals(alice1.name, alice2.name)
         #Not true anymore because of temporary IRI.
@@ -34,8 +34,8 @@ class CacheTest(unittest.TestCase):
         self.assertEquals(alice1.short_bio_en, alice2.short_bio_en)
         self.assertEquals(set(alice1.mboxes), set(alice2.mboxes))
 
-        data_store.resource_cache.remove_resource(alice1)
-        self.assertFalse(data_store.resource_cache.get_resource(alice1.id.iri, store_session))
+        store_proxy.resource_cache.remove_resource(alice1)
+        self.assertFalse(store_proxy.resource_cache.get_resource(alice1.id.iri, store_session))
 
     def test_simple_get(self):
         session1 = user_mediator.create_session()
