@@ -15,14 +15,13 @@ class ClientModel(Model):
         """TODO: describe """
         return ClientModel(store_model.name, store_model.class_iri, store_model.ancestry_iris,
                            store_model.context, store_model.om_attributes,
-                           local_context=store_model.local_context,
                            operations=operations,
                            accept_new_blank_nodes=store_model.accept_new_blank_nodes)
 
     def __init__(self, name, class_iri, ancestry_iris, context, om_attributes, operations=None,
-                 local_context=None, accept_new_blank_nodes=False):
+                 accept_new_blank_nodes=False):
         Model.__init__(self, name, class_iri, ancestry_iris, context, om_attributes,
-                       accept_new_blank_nodes, local_context=local_context)
+                       accept_new_blank_nodes)
 
         self._operations = operations if operations is not None else {}
         self._operation_by_name = {op.name: op for op in self._operations.values()

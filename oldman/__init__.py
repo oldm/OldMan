@@ -6,14 +6,14 @@
 """
 
 from rdflib.plugin import register, Parser, Serializer
-from oldman.client.parsing.operation import HydraOperationExtractor
 
-from .storage.store.sparql import SparqlStoreProxy
-from .storage.store.http import HttpStoreProxy
-from .core.utils.sparql import parse_graph_safely
-
-from oldman.client.rest.controller import HTTPController
 from oldman.client.mediation.default import DefaultMediator
+from oldman.client.parsing.operation import HydraOperationExtractor
+from oldman.client.rest.controller import HTTPController
+from oldman.core.context import Context
+from .core.utils.sparql import parse_graph_safely
+from .storage.store.http import HttpStoreProxy
+from .storage.store.sparql import SparqlStoreProxy
 
 register('json-ld', Parser, 'rdflib_jsonld.parser', 'JsonLDParser')
 register('application/ld+json', Parser, 'rdflib_jsonld.parser', 'JsonLDParser')

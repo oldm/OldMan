@@ -65,8 +65,8 @@ class ModelConversionManager(object):
             # Corresponding store model
             store_model = self._client_to_store_models.get((client_model, store))
             if store_model is None:
-                # TODO: find a better exception
-                raise Exception("No store model associate to %s" % client_model.name)
+                continue
+                # raise Exception("No store model associated to %s" % client_model.name)
 
             converter = self._converters[(client_model, store_model)]
 

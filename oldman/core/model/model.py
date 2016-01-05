@@ -39,14 +39,13 @@ class Model(object):
     """
 
     def __init__(self, name, class_iri, ancestry_iris, context, om_attributes,
-                 accept_new_blank_nodes, local_context=None):
+                 accept_new_blank_nodes):
         reserved_names = ["id", "hashless_iri", "_types", "types"]
         for field in reserved_names:
             if field in om_attributes:
                 raise OMReservedAttributeNameError("%s is reserved" % field)
         self._name = name
-        self._context = clean_context(context)
-        self._local_context = local_context if local_context is not None else self._context
+        self._context = context
         self._class_iri = class_iri
         self._om_attributes = om_attributes
         self._accept_new_blank_nodes = accept_new_blank_nodes
@@ -90,13 +89,6 @@ class Model(object):
         return self._context
 
     @property
-    def local_context(self):
-        """ Context available locally (but not to external consumer).
-        TODO: describe further
-        """
-        return self._local_context
-
-    @property
     def has_reversed_attributes(self):
         """Is `True` if one of its attributes is reversed."""
         return self._has_reversed_attributes
@@ -136,14 +128,3 @@ class Model(object):
             return self._om_attributes[name]
         except KeyError:
             raise OMAttributeAccessError("%s has no supported attribute %s" % (self, name))
-
-
-def clean_context(context):
-    """Cleans the context.
-
-    Context can be an IRI, a `list` or a `dict`.
-    """
-    #TODO: - make sure "id": "@id" and "types": "@type" are in
-    if isinstance(context, dict) and "@context" in context.keys():
-        context = context["@context"]
-    return context

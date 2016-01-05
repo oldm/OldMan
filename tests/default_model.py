@@ -6,7 +6,7 @@ from dogpile.cache import make_region
 from rdflib import Dataset, Graph
 from rdflib.namespace import FOAF
 
-from oldman import create_mediator, parse_graph_safely, SparqlStoreProxy
+from oldman import create_mediator, parse_graph_safely, SparqlStoreProxy, Context
 from oldman.client.rest.crud import HashLessCRUDer
 
 logging.config.fileConfig(path.join(path.dirname(__file__), 'logging.ini'))
@@ -147,7 +147,7 @@ local_gpg_key_def = {
 parse_graph_safely(schema_graph, data=json.dumps(local_gpg_key_def), format="json-ld")
 #print schema_graph.serialize(format="turtle")
 
-context = {
+context = Context({
     "@context": {
         "myvoc": MY_VOC,
         "rdfs": RDFS,
@@ -240,7 +240,7 @@ context = {
             "@type": "xsd:hexBinary"
         }
     }
-}
+})
 
 # lp_name_or_iri = "LocalPerson"
 lp_name_or_iri = MY_VOC + "LocalPerson"

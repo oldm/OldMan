@@ -11,7 +11,7 @@ from copy import copy
 
 from rdflib import ConjunctiveGraph, URIRef
 
-from oldman import create_mediator, parse_graph_safely, SparqlStoreProxy
+from oldman import create_mediator, parse_graph_safely, SparqlStoreProxy, Context
 from oldman.core.exception import OMRequiredPropertyError, OMAttributeTypeCheckError
 
 default_graph = ConjunctiveGraph()
@@ -72,7 +72,7 @@ local_person_def = {
 }
 parse_graph_safely(schema_graph, data=json.dumps(local_person_def), format="json-ld")
 
-context = {
+context = Context({
     "@context": {
         "ex": EXAMPLE,
         "xsd": "http://www.w3.org/2001/XMLSchema#",
@@ -116,7 +116,7 @@ context = {
             "@container": "@language"
         }
     }
-}
+})
 
 contexts = {
     "LocalClass": context

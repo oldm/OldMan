@@ -35,7 +35,8 @@ setup(name="OldMan",
                         'dogpile.cache',
                         'requests',
                         'negotiator',
-                        'networkx'
+                        'networkx',
+                        'rfc3987'
       ],
       license="BSD",
       classifiers=[

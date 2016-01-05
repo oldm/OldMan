@@ -83,8 +83,8 @@ class ModelManager(object):
         """TODO: explain. Includes the top ancestor. """
         return self._registry.find_descendant_models(top_ancestor_name_or_iri)
 
-    def _create_model(self, class_name_or_iri, context_iri_or_payload,
-                      schema_graph, untyped=False, is_default=False, context_file_path=None, **kwargs):
+    def _create_model(self, class_name_or_iri, context,
+                      schema_graph, untyped=False, is_default=False, **kwargs):
 
         # Only for the DefaultModel
         if untyped:
@@ -94,16 +94,14 @@ class ModelManager(object):
 
         # Regular models
         else:
-            context_file_path_or_payload = context_file_path if context_file_path is not None \
-                else context_iri_or_payload
-            class_iri = extract_class_iri(class_name_or_iri, context_file_path_or_payload)
+            class_iri = extract_class_iri(class_name_or_iri, context)
             ancestry = ClassAncestry(class_iri, schema_graph)
             om_attributes = self._attr_extractor.extract(class_iri, ancestry.bottom_up,
-                                                         context_file_path_or_payload,
+                                                         context,
                                                          schema_graph)
 
-        model = self._instantiate_model(class_name_or_iri, class_iri, schema_graph, ancestry, context_iri_or_payload,
-                                        om_attributes, context_file_path, **kwargs)
+        model = self._instantiate_model(class_name_or_iri, class_iri, schema_graph, ancestry, context,
+                                        om_attributes, **kwargs)
 
         self._add_model(model, is_default=is_default)
 
@@ -116,8 +114,8 @@ class ModelManager(object):
 
         return model
 
-    def _instantiate_model(self, class_name_or_iri, class_iri, schema_graph, ancestry, context_iri_or_payload,
-                           om_attributes, local_context, **kwargs):
+    def _instantiate_model(self, class_name_or_iri, class_iri, schema_graph, ancestry, context,
+                           om_attributes, **kwargs):
         raise NotImplementedError("To be implemented in sub-classes")
 
     def get_model(self, class_name_or_iri):
@@ -140,7 +138,7 @@ class ModelManager(object):
 def extract_class_iri(class_name, context):
     """Extracts the class IRI as the type of a blank node."""
     g = Graph().parse(data=json.dumps({u"@type": class_name}),
-                      context=context, format="json-ld")
+                      context=context.value_to_load, format="json-ld")
     class_iri = unicode(g.objects().next())
 
     # Check the URI

@@ -1,5 +1,6 @@
 import logging
-from rdflib_jsonld.context import Context, UNDEF
+from rdflib_jsonld.context import UNDEF
+from rdflib_jsonld.context import Context as ParsedContext
 
 
 class OMAttributeMdExtractor(object):
@@ -28,18 +29,18 @@ class JsonLdContextAttributeMdExtractor(OMAttributeMdExtractor):
     def __init__(self):
         self._logger = logging.getLogger(__name__)
 
-    def update(self, om_properties, context_js, schema_graph):
+    def update(self, om_properties, context, schema_graph):
         """See :func:`oldman.parsing.schema.context.OMAttributeMdExtractor.update`."""
-        context = Context(context_js)
+        parsed_context = ParsedContext(context.value_to_load)
 
         for (property_iri, reversed), om_property in om_properties.iteritems():
             # Efficient search
-            term = context.find_term(property_iri)
+            term = parsed_context.find_term(property_iri)
             if term:
                 self._update_property(om_property, term)
             else:
                 # May not have been found because of its type
-                terms = [t for t in context.terms.values()
+                terms = [t for t in parsed_context.terms.values()
                          if t.id == property_iri]
                 if len(terms) > 0:
                     for term in terms:

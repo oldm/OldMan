@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from rdflib import Graph
-from oldman import create_mediator, parse_graph_safely, SparqlStoreProxy
+from oldman import create_mediator, parse_graph_safely, SparqlStoreProxy, Context
 
 # Graph containing all the schema RDF triples
 schema_graph = Graph()
@@ -9,12 +9,12 @@ schema_graph = Graph()
 schema_url = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_schema.ttl"
 parse_graph_safely(schema_graph, schema_url, format="turtle")
 
-ctx_iri = "https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_context.jsonld"
+context = Context("https://raw.githubusercontent.com/oldm/OldMan/master/examples/quickstart_context.jsonld")
 
 # JSON-LD contexts for models
 contexts = {
-    "Person": ctx_iri,
-    "LocalPerson": ctx_iri
+    "Person": context,
+    "LocalPerson": context
 }
 
 # User Mediator (creates models declared in the schema_graph)
@@ -42,7 +42,7 @@ triplestore = Graph(rdflib_store)
 # TODO: remove these lines
 store_proxy = SparqlStoreProxy(triplestore, schema_graph=schema_graph)
 store_proxy.extract_prefixes(schema_graph)
-store_proxy.create_model("LocalPerson", ctx_iri, iri_prefix="http://localhost/persons/",
+store_proxy.create_model("LocalPerson", context, iri_prefix="http://localhost/persons/",
                          iri_fragment="me", incremental_iri=True)
 
 # store_proxy.add_id_generator("LocalPerson", context=ctx_iri, iri_prefix="http://localhost/persons/",

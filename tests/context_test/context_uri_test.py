@@ -2,7 +2,7 @@ import json
 from unittest import TestCase
 from os import path
 from rdflib import Graph
-from oldman import create_mediator, parse_graph_safely, SparqlStoreProxy
+from oldman import create_mediator, parse_graph_safely, SparqlStoreProxy, Context
 
 schema_graph = Graph()
 my_class_def = {
@@ -22,13 +22,13 @@ parse_graph_safely(schema_graph, data=json.dumps(my_class_def), format="json-ld"
 
 context_file_path = path.join(path.dirname(__file__), "basic_context.jsonld")
 context_iri = "/contexts/context.jsonld"
+context = Context(iri=context_iri, file_path=context_file_path)
 
-# TODO: find a way to give the context file path
-mediator = create_mediator(schema_graph, {"MyClass": context_iri})
+mediator = create_mediator(schema_graph, {"MyClass": context})
 model = mediator.get_model("MyClass")
 
 store_proxy = SparqlStoreProxy(Graph(), schema_graph=schema_graph)
-store_proxy.create_model("MyClass", context_iri, context_file_path=context_file_path)
+store_proxy.create_model("MyClass", context)
 mediator.bind_store(store_proxy, model)
 
 
@@ -37,7 +37,7 @@ class ContextUriTest(TestCase):
     def test_context_uri(self):
         session = mediator.create_session()
         obj = model.new(session, is_working=True)
-        self.assertEquals(obj.context, context_iri)
+        self.assertEquals(obj.context.annotation, context_iri)
         self.assertTrue(obj.is_working)
         print obj.to_rdf()
 

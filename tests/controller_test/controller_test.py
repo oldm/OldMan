@@ -3,7 +3,7 @@ import unittest
 
 from rdflib import Graph
 
-from oldman import SparqlStore, create_mediator, parse_graph_safely
+from oldman import SparqlStoreProxy, create_mediator, parse_graph_safely
 from oldman.client.rest.controller import HTTPController
 
 schema_graph = Graph()
@@ -13,7 +13,7 @@ schema_graph = parse_graph_safely(schema_graph, schema_file, format="turtle")
 context_file = "file://" + path.join(path.dirname(__file__), "controller-context.jsonld")
 
 data_graph = Graph()
-data_store = SparqlStore(data_graph, schema_graph=schema_graph)
+data_store = SparqlStoreProxy(data_graph, schema_graph=schema_graph)
 
 data_store.create_model("Collection", context_file, iri_prefix="http://localhost/collections/",
                         incremental_iri=True)

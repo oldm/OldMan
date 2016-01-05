@@ -53,20 +53,18 @@ class ClientModelManager(ModelManager):
     #         self._registry.register(client_model, is_default=False)
     #     return client_model
 
-    def create_model(self, class_name_or_iri, context_iri_or_payload, schema_graph=None, untyped=False,
-                     is_default=False, context_file_path=None, accept_new_blank_nodes=False):
+    def create_model(self, class_name_or_iri, context, schema_graph=None, untyped=False,
+                     is_default=False, accept_new_blank_nodes=False):
         """TODO: describe """
-        return self._create_model(class_name_or_iri, context_iri_or_payload, schema_graph,
-                                  untyped=untyped, is_default=is_default, context_file_path=context_file_path,
-                                  accept_new_blank_nodes=accept_new_blank_nodes)
+        return self._create_model(class_name_or_iri, context, schema_graph, untyped=untyped,
+                                  is_default=is_default, accept_new_blank_nodes=accept_new_blank_nodes)
 
-    def _instantiate_model(self, class_name_or_iri, class_iri, schema_graph, ancestry, context_iri_or_payload,
-                           om_attributes, local_context, accept_new_blank_nodes=False):
+    def _instantiate_model(self, class_name_or_iri, class_iri, schema_graph, ancestry, context,
+                           om_attributes, accept_new_blank_nodes=False):
         operations = self._operation_extractor.extract(ancestry, schema_graph, self._operation_functions)
 
-        return ClientModel(class_name_or_iri, class_iri, ancestry.bottom_up,
-                           context_iri_or_payload, om_attributes, operations=operations,
-                           local_context=local_context, accept_new_blank_nodes=accept_new_blank_nodes)
+        return ClientModel(class_name_or_iri, class_iri, ancestry.bottom_up,context, om_attributes,
+                           operations=operations, accept_new_blank_nodes=accept_new_blank_nodes)
 
 
 def extract_class_iris(schema_graph):

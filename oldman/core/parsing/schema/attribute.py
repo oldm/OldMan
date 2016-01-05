@@ -51,7 +51,7 @@ class OMAttributeExtractor(object):
         if property_extractor not in self._property_extractors:
             self._property_extractors.append(property_extractor)
 
-    def extract(self, class_iri, type_iris, context_js, schema_graph):
+    def extract(self, class_iri, type_iris, context, schema_graph):
         """Extracts metadata and generates :class:`~oldman.property.OMProperty` and
         :class:`~oldman.attribute.OMAttribute` objects.
 
@@ -70,7 +70,7 @@ class OMAttributeExtractor(object):
 
         # Updates om_properties with attribute metadata
         for md_extractor in self._attr_md_extractors:
-            md_extractor.update(om_properties, context_js, schema_graph)
+            md_extractor.update(om_properties, context, schema_graph)
 
         # Generates attributes
         om_attrs = []

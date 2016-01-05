@@ -19,9 +19,9 @@ class StoreModel(Model):
     """
 
     def __init__(self, name, class_iri, ancestry_iris, context, om_attributes,
-                 id_generator, local_context=None):
+                 id_generator):
         Model.__init__(self, name, class_iri, ancestry_iris, context, om_attributes,
-                       id_generator.is_generating_blank_nodes, local_context=local_context)
+                       id_generator.is_generating_blank_nodes)
         self._id_generator = id_generator
 
     def generate_permanent_id(self, previous_id):

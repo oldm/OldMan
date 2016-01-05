@@ -7,9 +7,9 @@ from oldman.storage.model.model import StoreModel
 
 class StoreModelManager(ModelManager):
 
-    def create_model(self, class_name_or_iri, context_iri_or_payload, store, schema_graph, iri_prefix=None,
+    def create_model(self, class_name_or_iri, context, store, schema_graph, iri_prefix=None,
                      iri_fragment=None, iri_generator=None, untyped=False, incremental_iri=False,
-                     is_default=False, context_file_path=None):
+                     is_default=False):
         """Creates a :class:`~oldman.model.store.StoreModel` object.
 
         TODO: remove data_store from the constructor!
@@ -27,7 +27,7 @@ class StoreModelManager(ModelManager):
           * created from the parameters `iri_prefix`, `iri_fragment` and `incremental_iri`.
 
         :param class_name_or_iri: IRI or JSON-LD term of a RDFS class.
-        :param context_iri_or_payload: `dict`, `list` or `IRI` that represents the JSON-LD context .
+        :param context: `dict`, `list` or `IRI` that represents the JSON-LD context .
         :param iri_generator: :class:`~oldman.iri.IriGenerator` object. If given, other `iri_*` parameters are
                ignored.
         :param iri_prefix: Prefix of generated IRIs. Defaults to `None`.
@@ -40,13 +40,12 @@ class StoreModelManager(ModelManager):
         :param context_file_path: TODO: describe.
         """
 
-        return self._create_model(class_name_or_iri, context_iri_or_payload, schema_graph, iri_prefix=iri_prefix,
+        return self._create_model(class_name_or_iri, context, schema_graph, iri_prefix=iri_prefix,
                                   iri_fragment=iri_fragment, iri_generator=iri_generator, untyped=untyped,
-                                  incremental_iri=incremental_iri, is_default=is_default,
-                                  context_file_path=context_file_path, store=store)
+                                  incremental_iri=incremental_iri, is_default=is_default, store=store)
 
-    def _instantiate_model(self, class_name_or_iri, class_iri, schema_graph, ancestry, context_iri_or_payload,
-                           om_attributes, local_context, iri_fragment=None, iri_prefix=None, iri_generator=None,
+    def _instantiate_model(self, class_name_or_iri, class_iri, schema_graph, ancestry, context,
+                           om_attributes, iri_fragment=None, iri_prefix=None, iri_generator=None,
                            incremental_iri=False, store=None):
 
         if store is None:
@@ -62,5 +61,5 @@ class StoreModelManager(ModelManager):
         else:
             id_generator = BlankNodePermanentIDGenerator()
 
-        return StoreModel(class_name_or_iri, class_iri, ancestry.bottom_up, context_iri_or_payload,
-                          om_attributes, id_generator, local_context=local_context)
+        return StoreModel(class_name_or_iri, class_iri, ancestry.bottom_up, context,
+                          om_attributes, id_generator)

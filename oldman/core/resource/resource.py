@@ -133,7 +133,11 @@ class Resource(object):
         Derived from :attr:`oldman.model.Model.context` attributes.
         """
         if len(self._models) > 1:
-            raise NotImplementedError(u"TODO: merge contexts when a Resource has multiple models")
+            contexts = {model.context for model in self._models}
+            if len(contexts) > 1:
+                raise NotImplementedError(u"TODO: merge contexts when a Resource has multiple models")
+            else:
+                return contexts[0]
         return list(self._models)[0].context
 
     @property
@@ -401,7 +405,7 @@ class Resource(object):
         dct = self.to_dict(remove_none_values=remove_none_values,
                            include_different_contexts=include_different_contexts,
                            ignored_iris=ignored_iris)
-        dct['@context'] = self.context
+        dct['@context'] = self.context.annotation
         return json.dumps(dct, sort_keys=True, indent=2)
 
     def to_rdf(self, rdf_format="turtle"):
@@ -412,7 +416,7 @@ class Resource(object):
         :return: A string in the chosen RDF format.
         """
         g = Graph()
-        g.parse(data=self.to_json(), context=self.local_context, format="json-ld")
+        g.parse(data=self.to_json(), context=self.context.value_to_load, format="json-ld")
         return g.serialize(format=rdf_format)
 
     def __str__(self):
