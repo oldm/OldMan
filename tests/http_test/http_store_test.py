@@ -1,28 +1,28 @@
 from os import path
 from unittest import TestCase
 from rdflib import Graph
-from oldman import HttpStoreProxy, create_mediator, parse_graph_safely
+from oldman import HttpStoreProxy, create_mediator, parse_graph_safely, Context
 
 directory = path.dirname(__file__)
 schema_graph = parse_graph_safely(Graph(), path.join(directory, 'api_schema.ttl'), format="turtle")
 schema_graph.namespace_manager.bind("hydra", "http://www.w3.org/ns/hydra/core#")
 
-context_uri = path.join(directory, 'api_documentation.json')
+context = Context(path.join(directory, 'api_documentation.json'))
 
-data_store = HttpStoreProxy(schema_graph=schema_graph)
-data_store.create_model('ApiDocumentation', context_uri)
+mediator = create_mediator(schema_graph, {'ApiDocumentation': context})
+doc_model = mediator.get_model('ApiDocumentation')
 
-user_mediator = create_mediator(data_store)
-user_mediator.import_store_models()
+store_proxy = HttpStoreProxy(schema_graph=schema_graph)
+store_proxy.create_model('ApiDocumentation', context)
 
-doc_model = user_mediator.get_client_model('ApiDocumentation')
+mediator.bind_store(store_proxy, doc_model)
 
 
 class HttpStoreTest(TestCase):
     def test_get(self):
         iri = u"http://www.markus-lanthaler.com/hydra/api-demo/vocab"
 
-        session = user_mediator.create_session()
+        session = mediator.create_session()
 
         doc = doc_model.get(session, iri=iri)
         self.assertTrue(doc is not None)

@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from rdflib import ConjunctiveGraph, URIRef, RDF, BNode, Graph
 
-from oldman import create_mediator, SparqlStore
+from oldman import create_mediator, SparqlStoreProxy, Context
 from oldman.client.rest.crud import HashLessCRUDer
 from oldman.storage.id_generation import UUIDFragmentPermanentIDGenerator
 from oldman.core.exception import OMRequiredHashlessIRIError
@@ -18,22 +18,23 @@ data_graph = default_graph.get_context(URIRef("http://localhost/data"))
 # Declaration (no attribute)
 schema_graph.add((URIRef(EXAMPLE + "MyClass"), RDF.type, URIRef(HYDRA + "Class")))
 
-context = {
+context = Context({
     "@context": {
         "ex": EXAMPLE,
         "id": "@id",
         "type": "@type",
         "MyClass": "ex:MyClass",
     }
-}
+})
 
-data_store = SparqlStore(data_graph, schema_graph=schema_graph)
-data_store.create_model("MyClass", context, iri_generator=UUIDFragmentPermanentIDGenerator())
+mediator = create_mediator(schema_graph, {"MyClass": context})
 
-user_mediator = create_mediator(data_store)
-user_mediator.import_store_models()
-crud_controller = HashLessCRUDer(user_mediator)
-model = user_mediator.get_client_model("MyClass")
+crud_controller = HashLessCRUDer(mediator)
+model = mediator.get_model("MyClass")
+
+store_proxy = SparqlStoreProxy(data_graph, schema_graph=schema_graph)
+store_proxy.create_model("MyClass", context, iri_generator=UUIDFragmentPermanentIDGenerator())
+mediator.bind_store(store_proxy, model)
 
 
 class HashlessIriTest(TestCase):
@@ -43,7 +44,7 @@ class HashlessIriTest(TestCase):
         data_graph.update("CLEAR DEFAULT")
 
     def test_generation(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         hashless_iri = "http://example.org/doc1"
         obj1 = model.new(session1, hashless_iri=hashless_iri)
         session1.flush()
@@ -57,12 +58,12 @@ class HashlessIriTest(TestCase):
         self.assertNotEquals(obj1.id.iri, obj2.id.iri)
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         model.new(session2)
         with self.assertRaises(OMRequiredHashlessIRIError):
             session2.flush()
         session2.close()
-        session3 = user_mediator.create_session()
+        session3 = mediator.create_session()
         model.new(session3, hashless_iri="http://localhost/not#a-base-iri")
         with self.assertRaises(OMRequiredHashlessIRIError):
             session3.flush()
@@ -74,7 +75,7 @@ class HashlessIriTest(TestCase):
         g.add((BNode(), RDF.type, URIRef(EXAMPLE + "MyClass")))
         crud_controller.update(hashless_iri, g.serialize(format="turtle"), "turtle")
 
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         resource = session1.first(hashless_iri=hashless_iri)
         self.assertTrue(resource is not None)
         self.assertTrue(hashless_iri in resource.id.iri)
@@ -93,7 +94,7 @@ class HashlessIriTest(TestCase):
         hashless_iri = "http://example.org/doc3"
         crud_controller.update(hashless_iri, ttl, "turtle", allow_new_type=True)
 
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         resource = session1.first(hashless_iri=hashless_iri)
         self.assertEquals(resource.id.iri, hashless_iri + "#this")
         session1.close()

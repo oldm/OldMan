@@ -5,7 +5,7 @@
 
 from unittest import TestCase
 from rdflib import ConjunctiveGraph, URIRef
-from oldman import create_mediator, parse_graph_safely, SparqlStore
+from oldman import create_mediator, parse_graph_safely, SparqlStoreProxy, Context
 
 default_graph = ConjunctiveGraph()
 schema_graph = default_graph.get_context(URIRef("http://localhost/schema"))
@@ -38,7 +38,7 @@ ex:ChildClass a hydra:Class ;
 
 parse_graph_safely(schema_graph, data=schema_ttl, format="turtle")
 
-context = {
+context = Context({
     "@context": {
         "ex": EXAMPLE,
         "xsd": "http://www.w3.org/2001/XMLSchema#",
@@ -61,7 +61,7 @@ context = {
             "@type": "xsd:string"
         }
     }
-}
+})
 
 old_disclaim = "Old disclam"
 new_disclaim = "New disclam"
@@ -85,31 +85,39 @@ def disclaim2(self):
     return new_disclaim
 
 
-data_store = SparqlStore(data_graph, schema_graph=schema_graph)
+contexts = {
+    "ChildClass": context,
+    "GrandParentClass": context,
+    "ParentClass": context
+}
+
+mediator = create_mediator(schema_graph, contexts)
+# Methods
+mediator.declare_method(square_value, "square_value", EXAMPLE + "GrandParentClass")
+mediator.declare_method(print_new_value, "print_new_value", EXAMPLE + "ChildClass")
+# Method overloading
+mediator.declare_method(disclaim1, "disclaim", EXAMPLE + "GrandParentClass")
+mediator.declare_method(disclaim2, "disclaim", EXAMPLE + "ParentClass")
+
+child_model = mediator.get_model("ChildClass")
+grand_parent_model = mediator.get_model("GrandParentClass")
+parent_model = mediator.get_model("ParentClass")
+
+store_proxy = SparqlStoreProxy(data_graph, schema_graph=schema_graph)
 # ChildClass is generated before its ancestors!!
 child_prefix = "http://localhost/children/"
 uri_fragment = "this"
-data_store.create_model("ChildClass", context, iri_prefix=child_prefix, iri_fragment=uri_fragment, incremental_iri=True)
-data_store.create_model("GrandParentClass", context, iri_prefix="http://localhost/ancestors/",
-                        iri_fragment=uri_fragment)
-data_store.create_model("ParentClass", context, iri_prefix="http://localhost/parents/")
+store_proxy.create_model("ChildClass", context, iri_prefix=child_prefix, iri_fragment=uri_fragment, incremental_iri=True)
+store_proxy.create_model("GrandParentClass", context, iri_prefix="http://localhost/ancestors/",
+                         iri_fragment=uri_fragment)
+store_proxy.create_model("ParentClass", context, iri_prefix="http://localhost/parents/")
 
-
-user_mediator = create_mediator(data_store)
-user_mediator.import_store_models()
-# Methods
-user_mediator.declare_method(square_value, "square_value", EXAMPLE + "GrandParentClass")
-user_mediator.declare_method(print_new_value, "print_new_value", EXAMPLE + "ChildClass")
-# Method overloading
-user_mediator.declare_method(disclaim1, "disclaim", EXAMPLE + "GrandParentClass")
-user_mediator.declare_method(disclaim2, "disclaim", EXAMPLE + "ParentClass")
-
-child_model = user_mediator.get_client_model("ChildClass")
-grand_parent_model = user_mediator.get_client_model("GrandParentClass")
-parent_model = user_mediator.get_client_model("ParentClass")
+mediator.bind_store(store_proxy, child_model)
+mediator.bind_store(store_proxy, grand_parent_model)
+mediator.bind_store(store_proxy, parent_model)
 
 # Only for reset the counter
-child_store_model = data_store.model_manager.get_model(child_model.class_iri)
+child_store_model = store_proxy.model_manager.get_model(child_model.class_iri)
 
 
 class InstanceTest(TestCase):
@@ -120,7 +128,7 @@ class InstanceTest(TestCase):
         child_store_model.reset_counter()
 
     def test_types(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         john = grand_parent_model.new(session1)
         jack = parent_model.new(session1)
         tom = child_model.new(session1)
@@ -130,7 +138,7 @@ class InstanceTest(TestCase):
         session1.close()
 
     def test_ancestor_assignment(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         john = grand_parent_model.new(session1)
         old_value = 5
         john.old_number_value = old_value
@@ -142,7 +150,7 @@ class InstanceTest(TestCase):
             john.new_value = "not saved (again)"
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         john2 = grand_parent_model.get(session2, iri=iri)
         self.assertEquals(john2.old_number_value, old_value)
         with self.assertRaises(AttributeError):
@@ -152,7 +160,7 @@ class InstanceTest(TestCase):
         session2.close()
 
     def test_parent_assignment(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         jack = parent_model.new(session1)
         mid_values = {"Hello", "world"}
         jack.mid_values = mid_values
@@ -164,7 +172,7 @@ class InstanceTest(TestCase):
         uri = jack.id.iri
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         jack2 = parent_model.get(session2, iri=uri)
         self.assertEquals(jack2.mid_values, mid_values)
         self.assertEquals(jack2.old_number_value, old_value)
@@ -173,7 +181,7 @@ class InstanceTest(TestCase):
         session2.close()
 
     def test_child_assignment(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         tom = child_model.new(session1)
         mid_values = {"Hello", "world"}
         tom.mid_values = mid_values
@@ -185,7 +193,7 @@ class InstanceTest(TestCase):
         uri = tom.id.iri
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         tom2 = child_model.get(session2, iri=uri)
         self.assertEquals(tom2.new_value, new_value)
         self.assertEquals(tom2.mid_values, mid_values)
@@ -193,7 +201,7 @@ class InstanceTest(TestCase):
         session2.close()
 
     def test_isinstance(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         john = grand_parent_model.new(session1)
         session1.flush()
         self.assertTrue(john.is_instance_of(grand_parent_model))
@@ -223,7 +231,7 @@ class InstanceTest(TestCase):
         self.assertFalse(grand_parent_model.is_subclass_of(child_model))
 
     def test_square_method(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         john = grand_parent_model.new(session1)
         self.assertEquals(john.square_value(), 0)
         john.old_number_value = 5
@@ -239,7 +247,7 @@ class InstanceTest(TestCase):
         session1.close()
 
     def test_new_method(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         john = grand_parent_model.new(session1)
         with self.assertRaises(AttributeError):
             john.print_new_value()
@@ -253,7 +261,7 @@ class InstanceTest(TestCase):
         session1.close()
 
     def test_method_overloading(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         john = grand_parent_model.new(session1)
         self.assertEquals(john.disclaim(), old_disclaim)
         jack = parent_model.new(session1)
@@ -263,7 +271,7 @@ class InstanceTest(TestCase):
         session1.close()
 
     def test_gets(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         john = grand_parent_model.new(session1)
         jack = parent_model.new(session1)
         jack_mid_values = {"jack"}
@@ -276,21 +284,21 @@ class InstanceTest(TestCase):
         jack_uri = jack.id.iri
         tom_uri = tom.id.iri
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         tom2 = session2.get(iri=tom_uri)
         self.assertEquals(tom2.new_value, tom_new_value)
         self.assertEquals(tom2.disclaim(), new_disclaim)
         self.assertTrue(tom2.is_instance_of(child_model))
         session2.close()
 
-        session3 = user_mediator.create_session()
+        session3 = mediator.create_session()
         jack2 = session3.get(iri=jack_uri)
         self.assertEquals(jack2.mid_values, jack_mid_values)
         self.assertTrue(jack2.is_instance_of(parent_model))
         self.assertFalse(jack2.is_instance_of(child_model))
         session3.close()
 
-        session4 = user_mediator.create_session()
+        session4 = mediator.create_session()
         john2 = session4.get(iri=john_uri)
         self.assertTrue(john2.is_instance_of(grand_parent_model))
         self.assertFalse(john2.is_instance_of(parent_model))
@@ -300,7 +308,7 @@ class InstanceTest(TestCase):
 
     def test_uris(self):
         for i in range(1, 6):
-            session = user_mediator.create_session()
+            session = mediator.create_session()
             child = child_model.new(session)
             session.flush()
             self.assertEquals(child.id.iri, "%s%d#%s" % (child_prefix, i, uri_fragment))

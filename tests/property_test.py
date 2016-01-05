@@ -9,7 +9,7 @@ import json
 
 from rdflib import ConjunctiveGraph, URIRef, Literal, Graph, XSD
 
-from oldman import create_mediator, parse_graph_safely, SparqlStore
+from oldman import create_mediator, parse_graph_safely, SparqlStoreProxy, Context
 from oldman.core.exception import OMPropertyDefError, OMReadOnlyAttributeError
 
 default_graph = ConjunctiveGraph()
@@ -62,7 +62,7 @@ parse_graph_safely(schema_graph, data=json.dumps(local_class_def), format="json-
 parse_graph_safely(schema_graph, data=json.dumps(bad_class_def), format="json-ld")
 
 
-context = {
+context = Context({
     "@context": {
         "ex": EXAMPLE,
         "xsd": "http://www.w3.org/2001/XMLSchema#",
@@ -87,14 +87,18 @@ context = {
             "@type": "xsd:string"
         }
     }
-}
+})
 
-data_store = SparqlStore(data_graph, schema_graph=schema_graph)
-data_store.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
+mediator = create_mediator(schema_graph, {
+    "LocalClass": context,
+    "BadClass": context
+})
+lc_model = mediator.get_client_model("LocalClass")
 
-user_mediator = create_mediator(data_store)
-user_mediator.import_store_models()
-lc_model = user_mediator.get_client_model("LocalClass")
+store_proxy = SparqlStoreProxy(data_graph, schema_graph=schema_graph)
+store_proxy.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
+
+mediator.bind_store(store_proxy, lc_model)
 
 
 class PropertyTest(TestCase):
@@ -105,10 +109,10 @@ class PropertyTest(TestCase):
 
     def test_read_and_write_only(self):
         with self.assertRaises(OMPropertyDefError):
-            data_store.create_model("BadClass", context, data_graph)
+            store_proxy.create_model("BadClass", context, data_graph)
 
     def test_write_only(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj = lc_model.new(session1)
         secret = "My secret"
         obj.secret = secret
@@ -121,7 +125,7 @@ class PropertyTest(TestCase):
         session1.close()
 
     def test_read_only(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj = lc_model.new(session1)
         # End-user
         end_user_str = "A user is not allowed to write this"
@@ -135,19 +139,19 @@ class PropertyTest(TestCase):
         iri = obj.id.iri
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         obj2 = session2.get(iri=iri)
         self.assertEquals(admin_str, obj2.ro_property)
         session2.close()
 
-        session3 = user_mediator.create_session()
+        session3 = mediator.create_session()
         lc_model.new(session3, ro_property=end_user_str)
         with self.assertRaises(OMReadOnlyAttributeError):
             session3.flush()
         session3.close()
 
     def test_read_only_update(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj = lc_model.new(session1)
         admin_str = "An admin is allowed to write it"
         obj.ro_property = admin_str
@@ -166,7 +170,7 @@ class PropertyTest(TestCase):
         session1.close()
 
     def test_read_only_graph_update(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj = lc_model.new(session1)
         admin_str = "An admin is allowed to write it"
         obj.ro_property = admin_str

@@ -103,7 +103,7 @@ class HashLessCRUDer(object):
         if content_type in JSON_TYPES:
             resource = session.first(hashless_iri=hashless_iri)
             graph.parse(data=document_content, format="json-ld", publicID=hashless_iri,
-                        context=resource.context)
+                        context=resource.context.value_to_load)
         #RDF graph
         #TODO: capture unknown type
         else:

@@ -3,29 +3,36 @@ import unittest
 
 from rdflib import Graph
 
-from oldman import SparqlStoreProxy, create_mediator, parse_graph_safely
+from oldman import SparqlStoreProxy, create_mediator, parse_graph_safely, Context
 from oldman.client.rest.controller import HTTPController
 
 schema_graph = Graph()
 schema_file = path.join(path.dirname(__file__), "controller-schema.ttl")
 schema_graph = parse_graph_safely(schema_graph, schema_file, format="turtle")
 
-context_file = "file://" + path.join(path.dirname(__file__), "controller-context.jsonld")
+context = Context("file://" + path.join(path.dirname(__file__), "controller-context.jsonld"))
+contexts = {
+    "Collection": context,
+    "Item": context
+}
 
 data_graph = Graph()
-data_store = SparqlStoreProxy(data_graph, schema_graph=schema_graph)
 
-data_store.create_model("Collection", context_file, iri_prefix="http://localhost/collections/",
-                        incremental_iri=True)
-data_store.create_model("Item", context_file, iri_prefix="http://localhost/items/")
+mediator = create_mediator(schema_graph, contexts)
 
-user_mediator = create_mediator(data_store)
-user_mediator.import_store_models()
+collection_model = mediator.get_model("Collection")
+item_model = mediator.get_model("Item")
 
-collection_model = user_mediator.get_client_model("Collection")
-item_model = user_mediator.get_client_model("Item")
+# TODO: update these 3 lines
+store_proxy = SparqlStoreProxy(data_graph, schema_graph=schema_graph)
+store_proxy.create_model("Collection", context, iri_prefix="http://localhost/collections/",
+                         incremental_iri=True)
+store_proxy.create_model("Item", context, iri_prefix="http://localhost/items/")
 
-controller = HTTPController(user_mediator)
+mediator.bind_store(store_proxy, collection_model)
+mediator.bind_store(store_proxy, item_model)
+
+controller = HTTPController(mediator)
 
 collection1_iri = u"http://localhost/collection1"
 
@@ -33,7 +40,7 @@ collection1_iri = u"http://localhost/collection1"
 class ControllerTest(unittest.TestCase):
 
     def setUp(self):
-        initial_session = user_mediator.create_session()
+        initial_session = mediator.create_session()
         collection_model.new(initial_session, iri=collection1_iri)
         initial_session.flush()
         initial_session.close()
@@ -43,7 +50,7 @@ class ControllerTest(unittest.TestCase):
 
     def test_operation(self):
         """TODO: remove """
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         collection1 = session1.get(collection1_iri)
 
         operation = collection1.get_operation("POST")
@@ -63,7 +70,7 @@ class ControllerTest(unittest.TestCase):
 
         print data_graph.serialize(format="turtle")
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         item = session2.get(iri=item_iri)
         self.assertTrue(item is not None)
         self.assertEquals(item.title, title)
@@ -71,7 +78,7 @@ class ControllerTest(unittest.TestCase):
 
     def test_normal_append_item(self):
 
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         collection1 = session1.get(collection1_iri)
 
         #TODO: test mutiple formats
@@ -90,7 +97,7 @@ class ControllerTest(unittest.TestCase):
             controller.post(collection1.id.iri, content_type, payloads[content_type])
             #TODO: retrieve the IRI of the newly created resource
 
-            session2 = user_mediator.create_session()
+            session2 = mediator.create_session()
             items = list(item_model.filter(session2, title=title))
             self.assertEquals(len(items), 1)
             retrieved_item = items[0]

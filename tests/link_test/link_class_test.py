@@ -3,7 +3,7 @@ from os.path import join, dirname
 
 from rdflib import Graph
 
-from oldman import SparqlStore
+from oldman import SparqlStoreProxy
 from oldman.storage.hydra.schema_adapter import HydraSchemaAdapter
 
 
@@ -25,4 +25,4 @@ class LinkClassTest(TestCase):
                    <http://www.w3.org/ns/hydra/core#supportedOperation> ?op .
             }"""))
 
-        self.store = SparqlStore(Graph(), schema_graph=self.schema_graph)
+        self.store = SparqlStoreProxy(Graph(), schema_graph=self.schema_graph)

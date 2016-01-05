@@ -15,7 +15,7 @@ class HttpStoreProxy(StoreProxy):
     """
 
     def __init__(self, schema_graph=None, cache_region=None, http_session=None):
-        Store.__init__(self, StoreModelManager(schema_graph=schema_graph), cache_region)
+        StoreProxy.__init__(self, StoreModelManager(), cache_region)
         self._http_session = http_session if http_session is not None else requests.session()
         self._logger = getLogger(__name__)
 

@@ -12,7 +12,7 @@ from datetime import date, datetime, time
 
 from rdflib import ConjunctiveGraph, URIRef
 
-from oldman import create_mediator, parse_graph_safely, SparqlStore
+from oldman import create_mediator, parse_graph_safely, SparqlStoreProxy, Context
 from oldman.core.exception import OMAttributeTypeCheckError
 
 default_graph = ConjunctiveGraph()
@@ -71,7 +71,7 @@ local_class_def = {
 }
 parse_graph_safely(schema_graph, data=json.dumps(local_class_def), format="json-ld")
 
-context = {
+context = Context({
     "@context": {
         "ex": EXAMPLE,
         "xsd": "http://www.w3.org/2001/XMLSchema#",
@@ -147,14 +147,16 @@ context = {
             "@type": "xsd:string"
         }
     }
-}
+})
 
-data_store = SparqlStore(data_graph, schema_graph=schema_graph)
-data_store.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
+mediator = create_mediator(schema_graph, {"LocalClass": context})
+lc_model = mediator.get_model("LocalClass")
 
-user_mediator = create_mediator(data_store)
-user_mediator.import_store_models()
-lc_model = user_mediator.get_client_model("LocalClass")
+store_proxy = SparqlStoreProxy(data_graph, schema_graph=schema_graph)
+store_proxy.create_model("LocalClass", context, iri_prefix="http://localhost/objects/")
+
+mediator.bind_store(store_proxy, lc_model)
+
 default_list_en = ["w1", "w2"]
 
 
@@ -170,21 +172,21 @@ class DatatypeTest(TestCase):
         return obj
 
     def test_single_bool(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj1 = self.create_object(session1)
         uri = obj1.id.iri
         obj1.single_bool = True
         session1.flush()
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         obj2 = lc_model.get(session2, iri=uri)
         self.assertEquals(obj2.single_bool, True)
         obj2.single_bool = None
         session2.flush()
         session2.close()
 
-        session3 = user_mediator.create_session()
+        session3 = mediator.create_session()
         obj3 = lc_model.get(session3, iri=uri)
         self.assertEquals(obj3.single_bool, None)
 
@@ -192,13 +194,13 @@ class DatatypeTest(TestCase):
         session3.flush()
         session3.close()
 
-        session4 = user_mediator.create_session()
+        session4 = mediator.create_session()
         obj4 = lc_model.get(session4, iri=uri)
         self.assertEquals(obj4.single_bool, False)
         session4.close()
 
     def test_single_date(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj1 = self.create_object(session1)
         uri = obj1.id.iri
         d = date(2009, 11, 2)
@@ -206,7 +208,7 @@ class DatatypeTest(TestCase):
         session1.flush()
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         obj2 = lc_model.get(session2, iri=uri)
         self.assertEquals(obj2.date, d)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -214,7 +216,7 @@ class DatatypeTest(TestCase):
         session2.close()
 
     def test_single_datetime(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj1 = self.create_object(session1)
         uri = obj1.id.iri
         d = datetime.now()
@@ -222,7 +224,7 @@ class DatatypeTest(TestCase):
         session1.flush()
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         obj2 = lc_model.get(session2, iri=uri)
         self.assertEquals(obj2.datetime, d)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -230,7 +232,7 @@ class DatatypeTest(TestCase):
         session2.close()
 
     def test_single_time(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj1 = self.create_object(session1)
         uri = obj1.id.iri
         t = time(12, 55, 30)
@@ -238,7 +240,7 @@ class DatatypeTest(TestCase):
         session1.flush()
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         obj2 = lc_model.get(session2, iri=uri)
         self.assertEquals(obj2.time, t)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -246,7 +248,7 @@ class DatatypeTest(TestCase):
         session2.close()
 
     def test_int(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj1 = self.create_object(session1)
         uri = obj1.id.iri
         value = -5
@@ -254,7 +256,7 @@ class DatatypeTest(TestCase):
         session1.flush()
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         obj2 = lc_model.get(session2, iri=uri)
         self.assertEquals(obj2.int, value)
         obj2.int = 0
@@ -266,7 +268,7 @@ class DatatypeTest(TestCase):
         session2.close()
 
     def test_integer(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj1 = self.create_object(session1)
         uri = obj1.id.iri
         value = 5
@@ -274,7 +276,7 @@ class DatatypeTest(TestCase):
         session1.flush()
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         obj2 = lc_model.get(session2, iri=uri)
         self.assertEquals(obj2.integer, value)
         obj2.integer = 0
@@ -286,7 +288,7 @@ class DatatypeTest(TestCase):
         session2.close()
 
     def test_short(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj1 = self.create_object(session1)
         uri = obj1.id.iri
         value = -5
@@ -294,7 +296,7 @@ class DatatypeTest(TestCase):
         session1.flush()
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         obj2 = lc_model.get(session2, iri=uri)
         self.assertEquals(obj2.short, value)
         obj2.short = 0
@@ -306,7 +308,7 @@ class DatatypeTest(TestCase):
         session2.close()
 
     def test_positive_int(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj1 = self.create_object(session1)
         uri = obj1.id.iri
         value = 5
@@ -314,7 +316,7 @@ class DatatypeTest(TestCase):
         session1.flush()
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         obj2 = lc_model.get(session2, iri=uri)
         self.assertEquals(obj2.positiveInt, value)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -328,7 +330,7 @@ class DatatypeTest(TestCase):
         session2.close()
 
     def test_negative_int(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj1 = self.create_object(session1)
         uri = obj1.id.iri
         value = -5
@@ -336,7 +338,7 @@ class DatatypeTest(TestCase):
         session1.flush()
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         obj2 = lc_model.get(session2, iri=uri)
         self.assertEquals(obj2.negativeInt, value)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -350,7 +352,7 @@ class DatatypeTest(TestCase):
         session2.close()
 
     def test_non_positive_int(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj = self.create_object(session1)
         uri = obj.id.iri
         value = -5
@@ -358,7 +360,7 @@ class DatatypeTest(TestCase):
         session1.flush()
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         obj = lc_model.get(session2, iri=uri)
         self.assertEquals(obj.nonPositiveInt, value)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -371,7 +373,7 @@ class DatatypeTest(TestCase):
         session2.close()
 
     def test_non_negative_int(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj1 = self.create_object(session1)
         uri = obj1.id.iri
         value = 5
@@ -379,7 +381,7 @@ class DatatypeTest(TestCase):
         session1.flush()
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         obj2 = lc_model.get(session2, iri=uri)
         self.assertEquals(obj2.nonNegativeInt, value)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -392,7 +394,7 @@ class DatatypeTest(TestCase):
         session2.close()
     
     def test_decimal(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj1 = self.create_object(session1)
         uri = obj1.id.iri
         value = Decimal(23.05)
@@ -400,7 +402,7 @@ class DatatypeTest(TestCase):
         session1.flush()
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         obj2 = lc_model.get(session2, iri=uri)
         self.assertEquals(obj2.decimal, value)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -410,7 +412,7 @@ class DatatypeTest(TestCase):
         session2.close()
 
     def test_double(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj1 = self.create_object(session1)
         uri = obj1.id.iri
         value = Decimal(23.05)
@@ -418,7 +420,7 @@ class DatatypeTest(TestCase):
         session1.flush()
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         obj2 = lc_model.get(session2, iri=uri)
         self.assertEquals(obj2.double, value)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -428,7 +430,7 @@ class DatatypeTest(TestCase):
         session2.close()
         
     def test_float(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj1 = self.create_object(session1)
         uri = obj1.id.iri
         value = Decimal(23.05)
@@ -436,7 +438,7 @@ class DatatypeTest(TestCase):
         session1.flush()
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         obj = lc_model.get(session2, iri=uri)
         self.assertEquals(obj.float, value)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -446,7 +448,7 @@ class DatatypeTest(TestCase):
         session2.close()
 
     def test_mbox(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj1 = self.create_object(session1)
         uri = obj1.id.iri
         mail = "john.doe@example.org"
@@ -454,7 +456,7 @@ class DatatypeTest(TestCase):
         session1.flush()
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         obj2 = lc_model.get(session2, iri=uri)
         self.assertEquals(obj2.mbox, mail)
         with self.assertRaises(OMAttributeTypeCheckError):
@@ -467,7 +469,7 @@ class DatatypeTest(TestCase):
         session2.close()
 
     def test_email(self):
-        session1 = user_mediator.create_session()
+        session1 = mediator.create_session()
         obj1 = self.create_object(session1)
         uri = obj1.id.iri
         mail = "john.doe@example.org"
@@ -475,7 +477,7 @@ class DatatypeTest(TestCase):
         session1.flush()
         session1.close()
 
-        session2 = user_mediator.create_session()
+        session2 = mediator.create_session()
         obj2 = lc_model.get(session2, iri=uri)
         self.assertEquals(obj2.email, mail)
         with self.assertRaises(OMAttributeTypeCheckError):

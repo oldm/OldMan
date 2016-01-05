@@ -110,7 +110,7 @@ class HTTPController(object):
                 if content_type in JSON_TYPES:
                     resource = session.first(hashless_iri=hashless_iri)
                     graph.parse(data=payload, format="json-ld", publicID=hashless_iri,
-                                context=resource.context)
+                                context=resource.context.value_to_load)
                 else:
                     graph.parse(data=payload, format=content_type, publicID=hashless_iri)
             except PluginException:

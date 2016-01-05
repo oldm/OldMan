@@ -4,7 +4,7 @@ from os.path import dirname, join
 
 from rdflib import Graph
 
-from oldman import SparqlStore, create_mediator
+from oldman import SparqlStoreProxy, create_mediator, Context
 from oldman.core.exception import OMAttributeTypeCheckError, OMAlreadyDeclaredDatatypeError
 
 NO_PROPERTY_CONTEXT_DICT = {
@@ -23,55 +23,58 @@ class RangeTest(TestCase):
     def setUp(self):
         self.schema_graph = Graph().parse(join(dirname(__file__), "vocab.jsonld"), format="json-ld")
         print self.schema_graph.serialize(format="turtle")
-        self.store = SparqlStore(Graph(), schema_graph=self.schema_graph)
+        self.store_proxy = SparqlStoreProxy(Graph(), schema_graph=self.schema_graph)
 
     def test_no_property_context(self):
-        self.store.create_model("MyClass", NO_PROPERTY_CONTEXT_DICT)
-        user_mediator = create_mediator(self.store)
-        user_mediator.import_store_models()
-        model = user_mediator.get_client_model("MyClass")
+        context = Context(NO_PROPERTY_CONTEXT_DICT)
+        mediator = create_mediator(self.schema_graph, {"MyClass": context})
+        model = mediator.get_model("MyClass")
 
-        session = user_mediator.create_session()
+        self.store_proxy.create_model("MyClass", context)
+        mediator.bind_store(self.store_proxy, model)
+
+        session = mediator.create_session()
         obj = model.new(session, test_hasX=2)
 
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.test_hasX = "not a number"
 
     def test_no_datatype_context(self):
-        context = deepcopy(NO_PROPERTY_CONTEXT_DICT)
-        context["@context"]["hasX"] = "test:hasX"
-        self.store.create_model("MyClass", context)
-        user_mediator = create_mediator(self.store)
-        user_mediator.import_store_models()
-        model = user_mediator.get_client_model("MyClass")
+        context_payload = deepcopy(NO_PROPERTY_CONTEXT_DICT)
+        context_payload["@context"]["hasX"] = "test:hasX"
+        context = Context(context_payload)
 
-        session = user_mediator.create_session()
+        self.store_proxy.create_model("MyClass", context)
+        mediator = create_mediator(self.schema_graph, {"MyClass": context})
+        model = mediator.get_model("MyClass")
+
+        session = mediator.create_session()
         obj = model.new(session, hasX=2)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.hasX = "not a number"
 
     def test_conflicting_datatype_context(self):
-        context = deepcopy(NO_PROPERTY_CONTEXT_DICT)
-        context["@context"]["hasX"] = {
+        context_payload = deepcopy(NO_PROPERTY_CONTEXT_DICT)
+        context_payload["@context"]["hasX"] = {
             "@id": "test:hasX",
             # Not an int
             "@type": "xsd:string"
         }
         with self.assertRaises(OMAlreadyDeclaredDatatypeError):
-            self.store.create_model("MyClass", context)
+            self.store_proxy.create_model("MyClass", Context(context_payload))
 
     def test_complete_context(self):
-        context = deepcopy(NO_PROPERTY_CONTEXT_DICT)
-        context["@context"]["hasX"] = {
+        context_payload = deepcopy(NO_PROPERTY_CONTEXT_DICT)
+        context_payload["@context"]["hasX"] = {
             "@id": "test:hasX",
             "@type": "xsd:int"
         }
-        self.store.create_model("MyClass", context)
-        user_mediator = create_mediator(self.store)
-        user_mediator.import_store_models()
-        model = user_mediator.get_client_model("MyClass")
+        context = Context(context_payload)
+        self.store_proxy.create_model("MyClass", context)
+        mediator = create_mediator(self.schema_graph, {"MyClass": context})
+        model = mediator.get_model("MyClass")
 
-        session = user_mediator.create_session()
+        session = mediator.create_session()
         obj = model.new(session, hasX=2)
         with self.assertRaises(OMAttributeTypeCheckError):
             obj.hasX = "not a number"

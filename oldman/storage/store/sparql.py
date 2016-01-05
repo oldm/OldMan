@@ -76,7 +76,7 @@ class SparqlStoreProxy(StoreProxy):
             results = self._union_graph.query(query)
         except ParseException as e:
             raise OMSPARQLError(u"%s\n %s" % (query, e))
-        return (self.get(store_session, unicode(r[0])) for r in results)
+        return (self.old_get(store_session, unicode(r[0])) for r in results)
 
     def exists(self, id):
         return bool(self._union_graph.query(u"ASK {?id ?p ?o .}", initBindings={'id': URIRef(id.iri)}))
