@@ -137,7 +137,7 @@ class Resource(object):
             if len(contexts) > 1:
                 raise NotImplementedError(u"TODO: merge contexts when a Resource has multiple models")
             else:
-                return contexts[0]
+                return list(contexts)[0]
         return list(self._models)[0].context
 
     @property
